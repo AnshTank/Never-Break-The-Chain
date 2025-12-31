@@ -10,6 +10,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
     }
 
+    if (password.length < 4) {
+      return NextResponse.json({ error: 'Password must be at least 4 characters' }, { status: 400 })
+    }
+
     const client = await clientPromise
     const db = client.db('journey-tracker')
     const users = db.collection('users')

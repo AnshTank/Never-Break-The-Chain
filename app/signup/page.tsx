@@ -21,8 +21,8 @@ export default function Signup() {
       return
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters")
+    if (password.length < 4) {
+      setError("Password must be at least 4 characters")
       setIsLoading(false)
       return
     }
@@ -42,8 +42,13 @@ export default function Signup() {
         throw new Error(data.error || 'Failed to create account')
       }
 
-      // Redirect to login page after successful signup
-      window.location.href = "/login"
+      // Set authentication status and mark as new user
+      localStorage.setItem("isAuthenticated", "true")
+      localStorage.setItem("userEmail", email)
+      localStorage.setItem("userId", data.userId)
+      localStorage.setItem("isNewUser", "true")
+      // Redirect to home page after successful signup
+      window.location.href = "/"
     } catch (err: any) {
       setError(err.message || "Failed to create account")
     } finally {

@@ -1,6 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
+import MNZDInfoModal from "./mnzd-info-modal"
 
 export default function Header() {
   const router = useRouter()
@@ -24,6 +25,9 @@ export default function Header() {
             Touch code. Think once. Use your voice. Move your body. All four must happen for a complete day. No exceptions.
             No substitutions.
           </p>
+          <div className="mt-3">
+            <MNZDInfoModal autoOpen={typeof window !== 'undefined' && localStorage.getItem('isNewUser') === 'true'} />
+          </div>
         </div>
         <button
           onClick={handleLogout}
