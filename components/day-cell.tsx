@@ -72,10 +72,10 @@ export default function DayCell({ day, date, entry, isToday, onEntryChange }: Da
           entry || {
             date: date.toISOString().split("T")[0],
             tasks: [
-              { id: "core", name: "Core Skill Action", completed: false },
-              { id: "thinking", name: "Thinking Action", completed: false },
-              { id: "communication", name: "Communication Action", completed: false },
-              { id: "body", name: "Body Action", completed: false },
+              { id: "code", name: "Code (Career)", completed: false },
+              { id: "think", name: "Think (Problem-Solving)", completed: false },
+              { id: "express", name: "Express (Communication)", completed: false },
+              { id: "move", name: "Move (Body)", completed: false },
             ],
             totalHours: 0,
             note: "",

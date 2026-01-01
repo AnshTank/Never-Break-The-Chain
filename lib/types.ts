@@ -1,5 +1,5 @@
 export interface MNZDTask {
-  id: "core" | "thinking" | "communication" | "body"
+  id: "code" | "think" | "express" | "move"
   name: string
   completed: boolean
   minutes?: number
