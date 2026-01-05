@@ -1,6 +1,6 @@
 # 🔗 Never Break The Chain
 
-A beautiful, modern journey tracking app built with Next.js that helps you maintain consistency in your daily habits using the "Don't Break the Chain" methodology.
+A production-ready journey tracking app built with Next.js that helps you maintain consistency in your daily habits using the "Don't Break the Chain" methodology.
 
 ## ✨ Features
 
@@ -13,12 +13,15 @@ Track 4 essential daily tasks:
 
 ### 📊 **Multiple Views**
 - **Calendar View**: Interactive monthly calendar with color-coded progress
-- **Progress View**: Comprehensive analytics and insights
+- **Progress Analytics**: Comprehensive charts and insights with multiple visualization types
 - **Year Heatmap**: GitHub-style contribution heatmap
-- **Journey Graph**: Visual progress tracking with multiple chart types
+- **Journey Graph**: Visual progress tracking with Area, Bar, Line, Scatter, and Mixed chart types
 
-### 🔐 **Authentication**
-- Secure user registration and login
+### 🔐 **Secure Authentication**
+- Custom JWT-based authentication system
+- Secure user registration and onboarding flow
+- Password setup during welcome process
+- Session management with automatic token refresh
 - MongoDB integration for user data
 - Password encryption with bcrypt
 
@@ -26,6 +29,15 @@ Track 4 essential daily tasks:
 - Mobile-optimized interface
 - Desktop-first progress analytics
 - Smooth animations and transitions
+- Real-time data updates
+
+### 🚀 **Production Features**
+- Database-first data architecture
+- Real-time progress tracking
+- Comprehensive analytics showing actual hours worked
+- Secure API routes with JWT middleware
+- Cache management and cleanup
+- Error handling and validation
 
 ## 🚀 Getting Started
 
@@ -51,6 +63,7 @@ Track 4 essential daily tasks:
    Create a `.env` file in the root directory:
    ```env
    MONGODB_URL="your_mongodb_connection_string"
+   JWT_SECRET="your-super-secret-jwt-key-change-in-production"
    ```
 
 4. **Run the development server**
@@ -66,49 +79,115 @@ Track 4 essential daily tasks:
 - **Framework**: Next.js 16 with App Router
 - **Styling**: Tailwind CSS + shadcn/ui
 - **Database**: MongoDB with Mongoose
-- **Authentication**: Custom JWT-based auth
-- **Charts**: Recharts
+- **Authentication**: Custom JWT-based authentication
+- **Charts**: Recharts with multiple visualization types
 - **Icons**: Lucide React
 - **TypeScript**: Full type safety
+- **Middleware**: Custom JWT verification and session management
 
 ## 📁 Project Structure
 
 ```
 ├── app/                    # Next.js app directory
-│   ├── api/auth/          # Authentication API routes
+│   ├── api/               # API routes
+│   │   ├── auth/          # Authentication endpoints
+│   │   │   ├── login/     # User login
+│   │   │   ├── signup/    # User registration
+│   │   │   ├── setup-password/ # Password setup during onboarding
+│   │   │   ├── logout/    # User logout
+│   │   │   └── cleanup/   # Session cleanup
+│   │   ├── user/          # User management
+│   │   ├── progress/      # Progress tracking
+│   │   ├── analytics/     # Analytics data
+│   │   └── settings/      # User settings
 │   ├── login/             # Login page
 │   ├── signup/            # Signup page
+│   ├── welcome/           # 4-phase onboarding flow
+│   ├── timer/             # Focus timer
 │   └── page.tsx           # Main dashboard
 ├── components/            # React components
 │   ├── ui/               # shadcn/ui components
-│   ├── day-cell.tsx      # Calendar day component
+│   ├── auth-provider.tsx # Authentication context
+│   ├── password-setup-modal.tsx # Password setup during onboarding
+│   ├── journey-graph.tsx # Advanced analytics charts
+│   ├── year-heatmap.tsx  # GitHub-style heatmap
 │   ├── progress-view.tsx # Analytics dashboard
 │   └── ...
 ├── lib/                  # Utilities and configurations
-│   ├── mongodb.ts        # Database connection
-│   ├── dummy-data.ts     # Sample data generator
-│   └── utils.ts          # Helper functions
+│   ├── jwt.ts            # JWT token management
+│   ├── auth-utils.ts     # Authentication utilities
+│   ├── database.ts       # Database service layer
+│   ├── global-state.tsx  # Global state management
+│   ├── session-manager.ts # Session management
+│   ├── cache-utils.ts    # Cache management
+│   └── ...
+├── hooks/                # Custom React hooks
+├── middleware.ts         # JWT authentication middleware
 └── styles/               # Global styles
 ```
 
 ## 🎨 Color System
 
-The app uses a 5-color gradient system based on task completion:
+The app uses a dynamic color system based on actual hours worked:
 
-- 🔴 **Red (0 tasks)**: Missed day
-- 🟠 **Orange (1 task)**: Minimal progress  
-- 🟡 **Yellow (2 tasks)**: Partial completion
-- 🔵 **Blue (3 tasks)**: Good progress
-- 🟢 **Green (4 tasks)**: Perfect day
+- 🔴 **Red (< 0.5h)**: Very Low activity
+- 🟠 **Orange (0.5-1h)**: Low activity  
+- 🟡 **Yellow (1-2h)**: Moderate activity
+- 🟢 **Lime (2-3h)**: Good progress
+- 🔵 **Green (3-4h)**: Very Good progress
+- 🟢 **Emerald (4-6h)**: Excellent progress
+- 🔵 **Teal (6-8h)**: Outstanding progress
+- 🔵 **Cyan (8h+)**: Exceptional progress
 
-## 🔮 Upcoming Features
+## 🔄 Authentication Flow
 
-- [ ] Database integration for real user data
-- [ ] Advanced analytics and insights
-- [ ] Goal setting and streaks
-- [ ] Social features and sharing
-- [ ] Mobile app (React Native)
-- [ ] Data export functionality
+1. **Signup**: User creates account with email only
+2. **Welcome Flow**: 4-phase onboarding process
+   - Phase 1: Hero welcome and motivation
+   - Phase 2: Philosophy and methodology explanation
+   - Phase 3: MNZD system deep dive
+   - Phase 4: Customization and setup
+3. **Password Setup**: Secure password creation with email confirmation
+4. **Main App**: Full access to tracking and analytics
+
+## 📊 Analytics Features
+
+- **Real-time Progress Tracking**: Shows actual hours worked, not just minimum requirements
+- **Multiple Chart Types**: Area, Bar, Line, Scatter, and Mixed visualizations
+- **Year Heatmap**: GitHub-style contribution view
+- **Monthly Analytics**: Detailed breakdown of daily progress
+- **Streak Tracking**: Current and longest streaks
+- **Success Rate**: Completion percentage calculations
+
+## 🔒 Security Features
+
+- JWT-based authentication with refresh tokens
+- Secure HTTP-only cookies
+- Password encryption with bcrypt
+- Input validation and sanitization
+- CSRF protection
+- Session timeout management
+- Automatic cache cleanup on logout
+
+## 🚀 Production Deployment
+
+1. **Build the application**
+   ```bash
+   npm run build
+   ```
+
+2. **Set production environment variables**
+   ```env
+   NODE_ENV=production
+   MONGODB_URL="your_production_mongodb_url"
+   JWT_SECRET="your_production_jwt_secret"
+   ```
+
+3. **Deploy to your preferred platform**
+   - Vercel (recommended)
+   - Netlify
+   - AWS
+   - Digital Ocean
 
 ## 🤝 Contributing
 
@@ -121,8 +200,8 @@ This project is licensed under the MIT License.
 ## 🙏 Acknowledgments
 
 - Inspired by Jerry Seinfeld's "Don't Break the Chain" productivity method
-- Built with modern web technologies and best practices
-- Designed for simplicity and effectiveness
+- Built with modern web technologies and production-ready architecture
+- Designed for scalability, security, and user experience
 
 ---
 
