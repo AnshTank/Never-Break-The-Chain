@@ -19,8 +19,12 @@ function LoginForm() {
 
   useEffect(() => {
     const oauthError = searchParams.get('error')
+    const message = searchParams.get('message')
     if (oauthError) {
       setError('Login failed. Please try again.')
+    } else if (message) {
+      // Show success message for password reset
+      setError('')
     }
   }, [searchParams])
 
@@ -121,8 +125,20 @@ function LoginForm() {
           {error && (
             <div className="mt-4 text-red-600 dark:text-red-400 text-sm text-center">{error}</div>
           )}
+          
+          {searchParams.get('message') && (
+            <div className="mt-4 text-green-600 dark:text-green-400 text-sm text-center">
+              {searchParams.get('message')}
+            </div>
+          )}
 
-          <div className="mt-8 text-center">
+          <div className="mt-6 text-center">
+            <Link href="/forgot-password" className="text-blue-600 dark:text-blue-400 text-sm hover:underline">
+              Forgot your password?
+            </Link>
+          </div>
+
+          <div className="mt-6 text-center">
             <p className="text-slate-600 dark:text-slate-400 text-sm">
               Don't have an account?{" "}
               <Link href="/signup" className="text-blue-600 dark:text-blue-400 font-medium hover:underline">

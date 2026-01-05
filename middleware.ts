@@ -6,7 +6,7 @@ import { ObjectId } from 'mongodb'
 
 export const runtime = 'nodejs'
 
-const publicPaths = ['/login', '/signup', '/api/auth/login', '/api/auth/signup', '/api/auth/setup-password']
+const publicPaths = ['/login', '/signup', '/forgot-password', '/api/auth/login', '/api/auth/signup', '/api/auth/setup-password', '/api/auth/forgot-password']
 const apiAuthPaths = ['/api/auth/refresh', '/api/auth/logout', '/api/auth/cleanup', '/api/progress', '/api/user', '/api/analytics', '/api/timer-data', '/api/settings']
 const welcomeRequiredPaths = ['/welcome']
 

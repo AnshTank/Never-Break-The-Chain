@@ -119,9 +119,12 @@ export default function Home() {
               </button>
               <Link
                 href="/timer"
-                className="relative pb-4 px-1 text-sm font-medium transition-all duration-300 whitespace-nowrap text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 group"
+                className="relative pb-4 px-1 text-sm font-medium transition-all duration-300 whitespace-nowrap text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 group flex items-center gap-1"
               >
                 Focus Timer
+                <svg className="w-4 h-4 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </Link>
             </div>
