@@ -1,31 +1,84 @@
 "use client";
 
+import { useEffect } from "react";
 import { getDaysInMonth, getFirstDayOfMonth } from "@/lib/date-utils";
-import type { JourneyData, DayEntry } from "@/lib/types";
-import { generateDummyData } from "@/lib/dummy-data";
+import { useProgressRange } from "@/hooks/use-data";
+import type { DayEntry } from "@/lib/types";
 import DayCell from "./day-cell";
+import { mnzdEvents } from "@/lib/mnzd-events";
 
 interface MonthlyCalendarProps {
   month: Date;
-  journeyData: JourneyData;
-  onDayClick: (date: Date, entry: DayEntry) => void;
 }
 
-export default function MonthlyCalendar({
-  month,
-  journeyData,
-  onDayClick,
-}: MonthlyCalendarProps) {
+export default function MonthlyCalendar({ month }: MonthlyCalendarProps) {
+  const year = month.getFullYear()
+  const monthNum = month.getMonth()
+  const startDate = `${year}-${String(monthNum + 1).padStart(2, '0')}-01`
+  const lastDay = new Date(year, monthNum + 1, 0).getDate()
+  const endDate = `${year}-${String(monthNum + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+  
+  const { progressData, loading, refetch } = useProgressRange(startDate, endDate);
+  
+  // Listen for progress updates
+  useEffect(() => {
+    const handleProgressUpdate = () => {
+      refetch();
+    };
+    
+    // Listen for both custom events and MNZD events
+    window.addEventListener('progressUpdated', handleProgressUpdate);
+    
+    const unsubscribe = mnzdEvents.onProgressUpdate(() => {
+      refetch();
+    });
+    
+    return () => {
+      window.removeEventListener('progressUpdated', handleProgressUpdate);
+      unsubscribe();
+    };
+  }, [refetch]);
+  
   const daysInMonth = getDaysInMonth(month);
   const firstDay = getFirstDayOfMonth(month);
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   const emptyDays = Array.from({ length: firstDay }, () => null);
 
-  // Combine real data with dummy data
-  const dummyData = generateDummyData(2024);
-  const combinedData = { ...journeyData, ...dummyData };
+  // Convert progress data array to object for easy lookup
+  const progressMap = progressData.reduce((acc, entry) => {
+    acc[entry.date] = entry;
+    return acc;
+  }, {} as Record<string, DayEntry>);
 
   const weekDayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  const handleEntryChange = async (date: Date, newEntry: DayEntry) => {
+    // Update local progress map immediately
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    progressMap[dateStr] = newEntry
+    
+    // Force re-render by refreshing data
+    await refetch()
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-card rounded-lg border border-border p-3 sm:p-6">
+        <div className="animate-pulse">
+          <div className="grid grid-cols-7 gap-1 mb-2">
+            {weekDayLabels.map((day) => (
+              <div key={day} className="h-6 bg-gray-200 dark:bg-gray-700 rounded" />
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-3">
+            {Array.from({ length: 35 }).map((_, i) => (
+              <div key={i} className="h-12 sm:h-16 bg-gray-200 dark:bg-gray-700 rounded" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-card rounded-lg border border-border p-3 sm:p-6">
@@ -48,8 +101,8 @@ export default function MonthlyCalendar({
         ))}
         {days.map((day) => {
           const date = new Date(month.getFullYear(), month.getMonth(), day);
-          const dateStr = date.toISOString().split("T")[0];
-          const entry = combinedData[dateStr];
+          const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+          const entry = progressMap[dateStr];
           const today = new Date();
           const isToday =
             date.getDate() === today.getDate() &&
@@ -63,7 +116,7 @@ export default function MonthlyCalendar({
               date={date}
               entry={entry}
               isToday={isToday}
-              onEntryChange={(newEntry) => onDayClick(date, newEntry)}
+              onEntryChange={handleEntryChange}
             />
           );
         })}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type { JourneyData } from "@/lib/types"
 
 interface YearHeatmapProps {
@@ -9,9 +9,62 @@ interface YearHeatmapProps {
 
 export default function YearHeatmap({ journeyData }: YearHeatmapProps) {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [yearData, setYearData] = useState<JourneyData>({})
+  const [loading, setLoading] = useState(false)
+
+  const fetchYearData = async (year: number) => {
+    setLoading(true)
+    try {
+      const startDate = `${year}-01-01`
+      const endDate = `${year}-12-31`
+      
+      const response = await fetch(`/api/progress-range?startDate=${startDate}&endDate=${endDate}`)
+      if (!response.ok) throw new Error('Failed to fetch year data')
+      
+      const progressData = await response.json()
+      const settingsResponse = await fetch('/api/settings')
+      const settingsData = await settingsResponse.json()
+      const mnzdConfigs = settingsData.mnzdConfigs || []
+      
+      const transformedData: JourneyData = {}
+      progressData.forEach((dayProgress: any) => {
+        transformedData[dayProgress.date] = {
+          date: dayProgress.date,
+          tasks: dayProgress.tasks.map((task: any) => {
+            const config = mnzdConfigs.find((c: any) => c.id === task.id)
+            const minMinutes = config?.minMinutes || 0
+            return {
+              id: task.id,
+              name: task.name || config?.name || task.id,
+              completed: task.minutes >= minMinutes,
+              minutes: task.minutes,
+            }
+          }),
+          totalHours: dayProgress.totalHours || 0,
+          note: dayProgress.note || '',
+          completed: dayProgress.tasks.every((task: any) => {
+            const config = mnzdConfigs.find((c: any) => c.id === task.id)
+            return task.minutes >= (config?.minMinutes || 0)
+          })
+        }
+      })
+      
+      setYearData(transformedData)
+    } catch (error) {
+      console.error('Error fetching year data:', error)
+      setYearData({})
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchYearData(selectedYear)
+  }, [selectedYear])
 
   const getColorForHours = (hours: number) => {
-    if (hours === 0) return "bg-gray-100 dark:bg-gray-800"
+    console.log('getColorForHours - hours:', hours, 'type:', typeof hours)
+    if (hours < 0.1) return "bg-gray-100 dark:bg-gray-800"
     if (hours < 1) return "bg-green-100 dark:bg-green-900"
     if (hours < 2) return "bg-green-200 dark:bg-green-800"
     if (hours < 3) return "bg-green-300 dark:bg-green-700"
@@ -19,138 +72,19 @@ export default function YearHeatmap({ journeyData }: YearHeatmapProps) {
     return "bg-green-500 dark:bg-green-500"
   }
 
-  const getYearData = (year: number) => {
-    // Generate comprehensive dummy data for entire year
-    const dummyData: any = {}
-    
-    // Generate data for every day of the year
-    for (let month = 0; month < 12; month++) {
-      const daysInMonth = new Date(year, month + 1, 0).getDate()
-      for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month, day)
-        const dateStr = date.toISOString().split("T")[0]
-        
-        // Skip future dates
-        if (date > new Date()) continue
-        
-        // Generate realistic data with some variation
-        const dayOfWeek = date.getDay()
-        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
-        
-        // 85% chance of having data on weekdays, 60% on weekends
-        const hasData = Math.random() < (isWeekend ? 0.6 : 0.85)
-        
-        if (hasData) {
-          // Generate hours (0-6 range with realistic distribution)
-          const hours = Math.random() < 0.1 ? 0 : // 10% chance of 0 hours
-                       Math.random() < 0.2 ? Math.random() * 1 : // 20% chance of 0-1 hours
-                       Math.random() < 0.4 ? 1 + Math.random() * 1.5 : // 40% chance of 1-2.5 hours
-                       Math.random() < 0.7 ? 2.5 + Math.random() * 1.5 : // 30% chance of 2.5-4 hours
-                       4 + Math.random() * 2 // 30% chance of 4-6 hours
-          
-          const roundedHours = Math.round(hours * 10) / 10
-          
-          // Generate task completion based on hours
-          const taskCount = hours === 0 ? 0 :
-                           hours < 1 ? 1 :
-                           hours < 2.5 ? 2 :
-                           hours < 4 ? 3 : 4
-          
-          const tasks = Array.from({ length: 4 }, (_, i) => ({
-            completed: i < taskCount
-          }))
-          
-          dummyData[dateStr] = {
-            totalHours: roundedHours,
-            completed: taskCount === 4,
-            tasks
-          }
-        }
-      }
-    }
-    
-    const combinedData = { ...journeyData, ...dummyData }
-    
-    const yearData = []
-    for (let month = 0; month < 12; month++) {
-      const monthData = []
-      const daysInMonth = new Date(year, month + 1, 0).getDate()
-      const firstDay = new Date(year, month, 1).getDay()
-      
-      // Add empty cells for days before month starts
-      for (let i = 0; i < firstDay; i++) {
-        monthData.push(null)
-      }
-      
-      // Add actual days
-      for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month, day)
-        const dateStr = date.toISOString().split("T")[0]
-        const entry = combinedData[dateStr]
-        monthData.push({
-          day,
-          date,
-          hours: entry?.totalHours || 0,
-          entry
-        })
-      }
-      
-      yearData.push(monthData)
-    }
-    return yearData
-  }
-
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-  const yearData = getYearData(selectedYear)
-
-  const getYearStats = (year: number) => {
-    // Generate same dummy data for stats calculation
-    const dummyData: any = {}
-    
-    for (let month = 0; month < 12; month++) {
-      const daysInMonth = new Date(year, month + 1, 0).getDate()
-      for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month, day)
-        const dateStr = date.toISOString().split("T")[0]
-        
-        if (date > new Date()) continue
-        
-        const dayOfWeek = date.getDay()
-        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
-        const hasData = Math.random() < (isWeekend ? 0.6 : 0.85)
-        
-        if (hasData) {
-          const hours = Math.random() < 0.1 ? 0 :
-                       Math.random() < 0.2 ? Math.random() * 1 :
-                       Math.random() < 0.4 ? 1 + Math.random() * 1.5 :
-                       Math.random() < 0.7 ? 2.5 + Math.random() * 1.5 :
-                       4 + Math.random() * 2
-          
-          const roundedHours = Math.round(hours * 10) / 10
-          const taskCount = hours === 0 ? 0 : hours < 1 ? 1 : hours < 2.5 ? 2 : hours < 4 ? 3 : 4
-          
-          dummyData[dateStr] = {
-            totalHours: roundedHours,
-            completed: taskCount === 4
-          }
-        }
-      }
-    }
-    
-    const combinedData = { ...journeyData, ...dummyData }
-    
+  const getYearStats = () => {
     let totalDays = 0
     let completedDays = 0
     let totalHours = 0
     
     for (let month = 0; month < 12; month++) {
-      const daysInMonth = new Date(year, month + 1, 0).getDate()
+      const daysInMonth = new Date(selectedYear, month + 1, 0).getDate()
       for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month, day)
+        const date = new Date(selectedYear, month, day)
         if (date <= new Date()) {
           totalDays++
-          const dateStr = date.toISOString().split("T")[0]
-          const entry = combinedData[dateStr]
+          const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+          const entry = yearData[dateStr]
           if (entry?.completed) {
             completedDays++
           }
@@ -164,7 +98,8 @@ export default function YearHeatmap({ journeyData }: YearHeatmapProps) {
     return { totalDays, completedDays, totalHours }
   }
 
-  const yearStats = getYearStats(selectedYear)
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+  const yearStats = getYearStats()
 
   return (
     <div className="space-y-6">
@@ -209,57 +144,76 @@ export default function YearHeatmap({ journeyData }: YearHeatmapProps) {
         </div>
       </div>
 
-      {/* LeetCode-style Heatmap */}
+      {/* GitHub-style Heatmap */}
       <div className="bg-card rounded-lg border border-border p-4">
         <h3 className="text-sm font-semibold text-foreground mb-4">{selectedYear} Activity</h3>
-        <div className="space-y-4">
-          {Array.from({ length: 3 }, (_, rowIdx) => (
-            <div key={rowIdx} className="grid grid-cols-4 gap-4">
-              {yearData.slice(rowIdx * 4, (rowIdx + 1) * 4).map((monthData, monthIdx) => {
-                const actualMonthIdx = rowIdx * 4 + monthIdx
-                return (
-                  <div key={actualMonthIdx} className="space-y-1">
-                    <div className="text-xs font-medium text-muted-foreground text-center">
-                      {monthNames[actualMonthIdx]}
-                    </div>
-                    <div className="grid grid-cols-7 gap-1">
-                      {monthData.map((dayData, dayIdx) => {
-                        if (!dayData) {
-                          return <div key={`empty-${dayIdx}`} className="w-6 h-6" />
-                        }
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {Array.from({ length: 3 }, (_, rowIdx) => (
+              <div key={rowIdx} className="grid grid-cols-4 gap-6">
+                {Array.from({ length: 4 }, (_, colIdx) => {
+                  const monthIdx = rowIdx * 4 + colIdx
+                  if (monthIdx >= 12) return null
+                  
+                  const daysInMonth = new Date(selectedYear, monthIdx + 1, 0).getDate()
+                  const firstDay = new Date(selectedYear, monthIdx, 1).getDay()
+                  
+                  return (
+                    <div key={monthIdx} className="space-y-2 p-3 rounded-lg bg-gradient-to-br from-gray-50/50 to-gray-100/30 dark:from-gray-800/30 dark:to-gray-700/20">
+                      <div className="text-xs font-medium text-muted-foreground text-center">
+                        {monthNames[monthIdx]}
+                      </div>
+                      <div className="grid grid-cols-7 gap-1">
+                        {/* Empty cells for days before month starts */}
+                        {Array.from({ length: firstDay }, (_, i) => (
+                          <div key={`empty-${i}`} className="w-5 h-5" />
+                        ))}
                         
-                        const isToday = dayData.date.toDateString() === new Date().toDateString()
-                        
-                        return (
-                          <div
-                            key={dayData.day}
-                            title={`${monthNames[actualMonthIdx]} ${dayData.day}, ${selectedYear}: ${dayData.hours.toFixed(1)} hours`}
-                            className={`
-                              w-6 h-6 rounded-sm cursor-default transition-all hover:scale-125
-                              ${getColorForHours(dayData.hours)}
-                              ${isToday ? 'ring-2 ring-blue-500 ring-offset-1' : ''}
-                            `}
-                          />
-                        )
-                      })}
+                        {/* Actual days */}
+                        {Array.from({ length: daysInMonth }, (_, dayIdx) => {
+                          const day = dayIdx + 1
+                          const date = new Date(selectedYear, monthIdx, day)
+                          const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+                          const entry = yearData[dateStr]
+                          const hours = entry?.totalHours || 0
+                          const isToday = date.toDateString() === new Date().toDateString()
+                          
+                          return (
+                            <div
+                              key={day}
+                              title={`${monthNames[monthIdx]} ${day}, ${selectedYear}: ${hours.toFixed(1)} hours${entry?.completed ? ' (MNZD Complete)' : ''}`}
+                              className={`
+                                w-5 h-5 rounded-sm cursor-default transition-all hover:scale-125 hover:z-10 relative
+                                ${getColorForHours(hours)}
+                                ${isToday ? 'ring-1 ring-blue-500 ring-offset-1' : ''}
+                                ${entry?.completed ? 'ring-1 ring-green-400' : ''}
+                              `}
+                            />
+                          )
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
-            </div>
-          ))}
-        </div>
+                  )
+                })}
+              </div>
+            ))}
+          </div>
+        )}
         
         {/* Legend */}
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+        <div className="flex items-center justify-between mt-6 pt-4 border-t border-border">
           <span className="text-xs text-muted-foreground">Less</span>
           <div className="flex gap-1">
-            <div className="w-6 h-6 rounded-sm bg-gray-100 dark:bg-gray-800" />
-            <div className="w-6 h-6 rounded-sm bg-green-100 dark:bg-green-900" />
-            <div className="w-6 h-6 rounded-sm bg-green-200 dark:bg-green-800" />
-            <div className="w-6 h-6 rounded-sm bg-green-300 dark:bg-green-700" />
-            <div className="w-6 h-6 rounded-sm bg-green-400 dark:bg-green-600" />
-            <div className="w-6 h-6 rounded-sm bg-green-500 dark:bg-green-500" />
+            <div className="w-5 h-5 rounded-sm bg-gray-100 dark:bg-gray-800" />
+            <div className="w-5 h-5 rounded-sm bg-green-100 dark:bg-green-900" />
+            <div className="w-5 h-5 rounded-sm bg-green-200 dark:bg-green-800" />
+            <div className="w-5 h-5 rounded-sm bg-green-300 dark:bg-green-700" />
+            <div className="w-5 h-5 rounded-sm bg-green-400 dark:bg-green-600" />
+            <div className="w-5 h-5 rounded-sm bg-green-500 dark:bg-green-500" />
           </div>
           <span className="text-xs text-muted-foreground">More</span>
         </div>

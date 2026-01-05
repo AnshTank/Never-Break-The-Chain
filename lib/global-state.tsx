@@ -1,0 +1,389 @@
+"use client"
+
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react'
+import { MNZDConfig } from '@/lib/models-new'
+import { mnzdEvents } from '@/lib/mnzd-events'
+
+interface GlobalState {
+  settings: { mnzdConfigs: MNZDConfig[] } | null
+  settingsLoading: boolean
+  analytics: {
+    currentStreak: number
+    longestStreak: number
+    totalDays: number
+    totalHours: number
+  } | null
+  analyticsLoading: boolean
+  isNewUser: boolean | null
+  userLoading: boolean
+  dailyProgressCache: Record<string, any>
+  todayProgress: any
+  todayLoading: boolean
+}
+
+interface GlobalStateContextType extends GlobalState {
+  updateSettings: (updates: { mnzdConfigs?: MNZDConfig[]; theme?: 'light' | 'dark' | 'system' }) => Promise<void>
+  updateUserStatus: (newStatus: boolean) => Promise<void>
+  refetchSettings: () => Promise<void>
+  refetchAnalytics: () => Promise<void>
+  refetchUser: () => Promise<void>
+  loadProgressForDate: (date: string) => Promise<any>
+  updateProgressForDate: (date: string, updates: any) => Promise<void>
+  getTodayProgress: () => any
+}
+
+const GlobalStateContext = createContext<GlobalStateContextType | null>(null)
+
+export function GlobalStateProvider({ children }: { children: ReactNode }) {
+  const [state, setState] = useState<GlobalState>({
+    settings: null,
+    settingsLoading: true,
+    analytics: null,
+    analyticsLoading: true,
+    isNewUser: null,
+    userLoading: true,
+    dailyProgressCache: {},
+    todayProgress: null,
+    todayLoading: true,
+  })
+
+  const fetchedRef = useRef<{
+    settings: boolean
+    analytics: string | null
+    user: boolean
+  }>({
+    settings: false,
+    analytics: null,
+    user: false,
+  })
+
+  const fetchSettings = async () => {
+    if (fetchedRef.current.settings) return
+    try {
+      setState(prev => ({ ...prev, settingsLoading: true }))
+      fetchedRef.current.settings = true
+      const response = await fetch('/api/settings')
+      if (!response.ok) {
+        if (response.status === 401) {
+          // User not authenticated, skip settings fetch
+          setState(prev => ({ ...prev, settingsLoading: false }))
+          return
+        }
+        throw new Error('Failed to fetch settings')
+      }
+      const data = await response.json()
+      setState(prev => ({ ...prev, settings: data, settingsLoading: false }))
+    } catch (err) {
+      console.error('Error fetching settings:', err)
+      fetchedRef.current.settings = false
+      setState(prev => ({ ...prev, settingsLoading: false }))
+    }
+  }
+
+  const fetchAnalytics = async (month?: Date) => {
+    const monthKey = month ? month.toISOString().split('T')[0].substring(0, 7) : 'current'
+    if (fetchedRef.current.analytics === monthKey) return
+    
+    try {
+      setState(prev => ({ ...prev, analyticsLoading: true }))
+      fetchedRef.current.analytics = monthKey
+      
+      const url = month ? `/api/analytics?month=${month.toISOString()}` : '/api/analytics'
+      const response = await fetch(url)
+      if (!response.ok) {
+        if (response.status === 401) {
+          setState(prev => ({ ...prev, analyticsLoading: false }))
+          return
+        }
+        throw new Error('Failed to fetch analytics')
+      }
+      const data = await response.json()
+      setState(prev => ({ ...prev, analytics: data, analyticsLoading: false }))
+    } catch (err) {
+      console.error('Error fetching analytics:', err)
+      fetchedRef.current.analytics = null
+      setState(prev => ({ ...prev, analyticsLoading: false }))
+    }
+  }
+
+  const fetchUser = async () => {
+    if (fetchedRef.current.user) return
+    try {
+      setState(prev => ({ ...prev, userLoading: true }))
+      fetchedRef.current.user = true
+      const response = await fetch('/api/user')
+      if (!response.ok) {
+        if (response.status === 401) {
+          setState(prev => ({ ...prev, isNewUser: null, userLoading: false }))
+          return
+        }
+        throw new Error('Failed to fetch user status')
+      }
+      const data = await response.json()
+      setState(prev => ({ ...prev, isNewUser: data.isNewUser, userLoading: false }))
+    } catch (err) {
+      console.error('Error fetching user status:', err)
+      fetchedRef.current.user = false
+      setState(prev => ({ ...prev, isNewUser: null, userLoading: false }))
+    }
+  }
+
+  const updateSettings = async (updates: { mnzdConfigs?: MNZDConfig[]; theme?: 'light' | 'dark' | 'system' }) => {
+    try {
+      const response = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      })
+      if (!response.ok) throw new Error('Failed to update settings')
+      
+      const newSettings = { ...state.settings, ...updates }
+      setState(prev => ({ ...prev, settings: newSettings }))
+      
+      // Emit real-time update event
+      mnzdEvents.emitSettingsUpdate(newSettings)
+    } catch (err) {
+      console.error('Error updating settings:', err)
+    }
+  }
+
+  const updateUserStatus = async (newStatus: boolean) => {
+    try {
+      const response = await fetch('/api/user', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isNewUser: newStatus })
+      })
+      if (!response.ok) throw new Error('Failed to update user status')
+      setState(prev => ({ ...prev, isNewUser: newStatus }))
+    } catch (err) {
+      console.error('Error updating user status:', err)
+    }
+  }
+
+  const refetchSettings = async () => {
+    fetchedRef.current.settings = false
+    await fetchSettings()
+  }
+
+  const refetchAnalytics = async (month?: Date) => {
+    const monthKey = month ? month.toISOString().split('T')[0].substring(0, 7) : 'current'
+    fetchedRef.current.analytics = null
+    await fetchAnalytics(month)
+  }
+
+  const refetchUser = async () => {
+    fetchedRef.current.user = false
+    await fetchUser()
+  }
+
+  const loadProgressForDate = async (date: string) => {
+    try {
+      console.log('Loading progress for date:', date)
+      const response = await fetch(`/api/progress?date=${date}`)
+      console.log('Progress API response:', response.status, response.statusText)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Progress API error:', errorText)
+        
+        // Check if user is authenticated
+        const authResponse = await fetch('/api/user/profile')
+        if (!authResponse.ok) {
+          // User not authenticated, clear all caches
+          localStorage.removeItem('progressCache')
+          localStorage.removeItem('trackedDays')
+          return null
+        }
+        
+        throw new Error(`Failed to fetch progress: ${response.status} ${errorText}`)
+      }
+      
+      const data = await response.json()
+      console.log('Progress data loaded:', data)
+      
+      // Cache the data only after successful server response
+      setState(prev => ({
+        ...prev,
+        dailyProgressCache: {
+          ...prev.dailyProgressCache,
+          [date]: data
+        }
+      }))
+      
+      return data
+    } catch (err) {
+      console.error('Error loading progress:', err)
+      return null
+    }
+  }
+
+  const updateProgressForDate = async (date: string, updates: any) => {
+    try {
+      console.log('Updating progress for date:', date, updates)
+      
+      const response = await fetch('/api/progress', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date, updates })
+      })
+      
+      if (!response.ok) {
+        // Silent fail - UI already updated, just return
+        return
+      }
+      
+      // Update cache
+      setState(prev => {
+        const currentData = prev.dailyProgressCache[date] || {}
+        const updatedData = { ...currentData, ...updates }
+        
+        return {
+          ...prev,
+          dailyProgressCache: {
+            ...prev.dailyProgressCache,
+            [date]: updatedData
+          },
+          // Update today's progress if it's today
+          todayProgress: (() => {
+            const today = new Date()
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+            return date === todayStr ? updatedData : prev.todayProgress
+          })()
+        }
+      })
+      
+      // Emit real-time update events
+      mnzdEvents.emitProgressUpdate(date, { ...state.dailyProgressCache[date], ...updates })
+    } catch (err) {
+      console.error('Error updating progress:', err)
+      throw err
+    }
+  }
+
+  const updateTodayProgressImmediate = (newData: any) => {
+    const today = new Date()
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+    
+    setState(prev => ({
+      ...prev,
+      todayProgress: newData,
+      dailyProgressCache: {
+        ...prev.dailyProgressCache,
+        [todayStr]: newData
+      }
+    }))
+  }
+
+  const getTodayProgress = () => {
+    return state.todayProgress
+  }
+
+  useEffect(() => {
+    // Initialize global state on mount
+    const timer = setTimeout(async () => {
+      try {
+        await fetchUser() // Fetch user status first
+        await fetchSettings()
+        await fetchAnalytics()
+        
+        // Load today's progress on app start
+        const today = new Date()
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+        console.log('Global state - Loading progress for today:', todayStr);
+        try {
+          const data = await loadProgressForDate(todayStr)
+          setState(prev => ({
+            ...prev,
+            todayProgress: data,
+            todayLoading: false
+          }))
+        } catch (progressError) {
+          console.error('Error loading today progress:', progressError)
+          setState(prev => ({
+            ...prev,
+            todayLoading: false
+          }))
+        }
+      } catch (error) {
+        console.error('Error initializing global state:', error)
+        setState(prev => ({
+          ...prev,
+          settingsLoading: false,
+          analyticsLoading: false,
+          userLoading: false,
+          todayLoading: false
+        }))
+      }
+    }, 100)
+    
+    return () => clearTimeout(timer)
+  }, [])
+
+  return (
+    <GlobalStateContext.Provider value={{
+      ...state,
+      updateSettings,
+      updateUserStatus,
+      refetchSettings,
+      refetchAnalytics,
+      refetchUser,
+      loadProgressForDate,
+      updateProgressForDate,
+      getTodayProgress,
+      updateTodayProgressImmediate,
+    }}>
+      {children}
+    </GlobalStateContext.Provider>
+  )
+}
+
+export function useGlobalState() {
+  const context = useContext(GlobalStateContext)
+  if (!context) {
+    throw new Error('useGlobalState must be used within a GlobalStateProvider')
+  }
+  return context
+}
+
+// Individual hooks for backward compatibility
+export function useUserSettings() {
+  const { settings, settingsLoading, updateSettings, refetchSettings } = useGlobalState()
+  return { 
+    settings, 
+    loading: settingsLoading, 
+    updateSettings, 
+    refetch: refetchSettings 
+  }
+}
+
+export function useAnalytics() {
+  const { analytics, analyticsLoading, refetchAnalytics } = useGlobalState()
+  return { 
+    analytics, 
+    loading: analyticsLoading, 
+    refetch: (month?: Date) => refetchAnalytics(month)
+  }
+}
+
+export function useUserStatus() {
+  const { isNewUser, userLoading, updateUserStatus, refetchUser } = useGlobalState()
+  return { 
+    isNewUser, 
+    loading: userLoading, 
+    updateUserStatus, 
+    refetch: refetchUser 
+  }
+}
+
+export function useGlobalDailyProgress() {
+  const { loadProgressForDate, updateProgressForDate, getTodayProgress, todayProgress, todayLoading, updateTodayProgressImmediate } = useGlobalState()
+  return { 
+    loadProgressForDate, 
+    updateProgressForDate,
+    getTodayProgress,
+    todayProgress,
+    todayLoading,
+    updateTodayProgressImmediate
+  }
+}

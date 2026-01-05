@@ -1,65 +1,59 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import type { DayEntry } from "@/lib/types"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { useUserSettings, useDailyProgress } from "@/hooks/use-data"
 
 interface DayDetailsModalProps {
   isOpen: boolean
   onClose: () => void
   date: Date
-  entry: DayEntry | undefined
+  entry?: DayEntry | undefined // Make optional since we'll fetch fresh data
 }
 
-export default function DayDetailsModal({ isOpen, onClose, date, entry }: DayDetailsModalProps) {
+export default function DayDetailsModal({ isOpen, onClose, date }: DayDetailsModalProps) {
+  const { settings } = useUserSettings()
+  const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+  const { progress: entry, loading } = useDailyProgress(dateStr)
   const [isNotesExpanded, setIsNotesExpanded] = useState(false)
-  // Lock body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-    return () => {
-      document.body.style.overflow = 'unset'
-    }
-  }, [isOpen])
-
-  if (!isOpen) return null
 
   const completedTasks = entry?.tasks?.filter(t => t.completed).length || 0
   const totalTasks = entry?.tasks?.length || 4
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ 
-      position: 'fixed',
-      backgroundColor: 'rgba(0, 0, 0, 0.6)',
-      backdropFilter: 'blur(4px)'
-    }}>
-      <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl scrollbar-hide">
-        <style jsx>{`
-          .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-          }
-          .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
-        <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-              {date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
-            </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {entry ? `${completedTasks}/${totalTasks} MNZD tasks completed` : "No activity recorded"}
-            </p>
+  if (loading) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="scrollbar-hide">
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-sm text-muted-foreground">Loading day data...</p>
+            </div>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl">
-            ×
-          </button>
-        </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
 
-        <div className="p-6 space-y-6 bg-white dark:bg-gray-900">
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="scrollbar-hide">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-semibold">
+            {date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+          </DialogTitle>
+          <p className="text-sm text-muted-foreground mt-1">
+            {entry ? `${completedTasks}/${totalTasks} MNZD tasks completed` : "No activity recorded"}
+          </p>
+        </DialogHeader>
+
+        <div className="space-y-6">
           {!entry ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📅</div>
@@ -92,39 +86,46 @@ export default function DayDetailsModal({ isOpen, onClose, date, entry }: DayDet
 
               {/* MNZD Tasks Status */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">MNZD Tasks</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {settings?.mnzdConfigs?.[0]?.name ? 'Custom' : 'MNZD'} Tasks
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {entry.tasks?.map((task, index) => (
-                    <div key={task.id || index} className={`p-4 rounded-lg border-2 transition-all ${
-                      task.completed 
-                        ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800" 
-                        : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                    }`}>
-                      <div className="flex items-center gap-3">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${
-                          task.completed 
-                            ? "bg-green-500 text-white" 
-                            : "bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400"
-                        }`}>
-                          {task.completed ? "✓" : "○"}
-                        </div>
-                        <div className="flex-grow">
-                          <div className={`font-medium ${
+                  {entry.tasks?.map((task, index) => {
+                    const config = settings?.mnzdConfigs?.find(c => c.id === task.id)
+                    const taskName = config?.name || task.name || `Task ${index + 1}`
+                    
+                    return (
+                      <div key={task.id || index} className={`p-4 rounded-lg border-2 transition-all ${
+                        task.completed 
+                          ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800" 
+                          : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                      }`}>
+                        <div className="flex items-center gap-3">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${
                             task.completed 
-                              ? "text-green-800 dark:text-green-300" 
-                              : "text-gray-700 dark:text-gray-300"
+                              ? "bg-green-500 text-white" 
+                              : "bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400"
                           }`}>
-                            {task.name || `Task ${index + 1}`}
+                            {task.completed ? "✓" : "○"}
                           </div>
-                          {task.minutes > 0 && (
-                            <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                              {task.minutes} minutes
+                          <div className="flex-grow">
+                            <div className={`font-medium ${
+                              task.completed 
+                                ? "text-green-800 dark:text-green-300" 
+                                : "text-gray-700 dark:text-gray-300"
+                            }`}>
+                              {taskName}
                             </div>
-                          )}
+                            {task.minutes > 0 && (
+                              <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                {task.minutes} minutes
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
 
@@ -186,7 +187,7 @@ export default function DayDetailsModal({ isOpen, onClose, date, entry }: DayDet
                   </div>
                   <div className="p-3 bg-white dark:bg-gray-800 rounded-lg">
                     <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                      {entry.totalHours > 0 ? (entry.totalHours / completedTasks).toFixed(1) : "0"}h
+                      {completedTasks > 0 ? (entry.totalHours / completedTasks).toFixed(1) : "0"}h
                     </div>
                     <div className="text-xs text-gray-600 dark:text-gray-400">Avg per Task</div>
                   </div>
@@ -203,7 +204,7 @@ export default function DayDetailsModal({ isOpen, onClose, date, entry }: DayDet
             </>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

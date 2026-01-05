@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { AreaChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, LineChart, Cell, ScatterChart, Scatter, ComposedChart } from "recharts"
 import type { JourneyData } from "@/lib/types"
 
@@ -12,6 +12,66 @@ export default function JourneyGraph({ journeyData }: JourneyGraphProps) {
   const [viewMode, setViewMode] = useState<"month">("month")
   const [chartType, setChartType] = useState<"area" | "bar" | "line" | "scatter" | "composed">("area")
   const [selectedMonth, setSelectedMonth] = useState(new Date())
+  const [monthData, setMonthData] = useState<JourneyData>({})
+  const [loading, setLoading] = useState(false)
+
+  const fetchMonthData = async (month: Date) => {
+    setLoading(true)
+    try {
+      const year = month.getFullYear()
+      const monthNum = month.getMonth() + 1
+      const startDate = `${year}-${String(monthNum).padStart(2, '0')}-01`
+      const lastDay = new Date(year, monthNum, 0).getDate()
+      const endDate = `${year}-${String(monthNum).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+      
+      const [progressResponse, settingsResponse] = await Promise.all([
+        fetch(`/api/progress-range?startDate=${startDate}&endDate=${endDate}`),
+        fetch('/api/settings')
+      ])
+      
+      if (!progressResponse.ok || !settingsResponse.ok) {
+        throw new Error('Failed to fetch data')
+      }
+      
+      const progressData = await progressResponse.json()
+      const settingsData = await settingsResponse.json()
+      const mnzdConfigs = settingsData.mnzdConfigs || []
+      
+      const transformedData: JourneyData = {}
+      progressData.forEach((dayProgress: any) => {
+        transformedData[dayProgress.date] = {
+          date: dayProgress.date,
+          tasks: dayProgress.tasks.map((task: any) => {
+            const config = mnzdConfigs.find((c: any) => c.id === task.id)
+            const minMinutes = config?.minMinutes || 0
+            return {
+              id: task.id,
+              name: task.name || config?.name || task.id,
+              completed: task.minutes >= minMinutes,
+              minutes: task.minutes,
+            }
+          }),
+          totalHours: dayProgress.totalHours || 0,
+          note: dayProgress.note || '',
+          completed: dayProgress.tasks.every((task: any) => {
+            const config = mnzdConfigs.find((c: any) => c.id === task.id)
+            return task.minutes >= (config?.minMinutes || 0)
+          })
+        }
+      })
+      
+      setMonthData(transformedData)
+    } catch (error) {
+      console.error('Error fetching month data:', error)
+      setMonthData({})
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchMonthData(selectedMonth)
+  }, [selectedMonth])
 
   const getFilteredData = () => {
     const year = selectedMonth.getFullYear()
@@ -20,54 +80,15 @@ export default function JourneyGraph({ journeyData }: JourneyGraphProps) {
     
     const monthDates = []
     for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = new Date(year, month, day).toISOString().split("T")[0]
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
       monthDates.push(dateStr)
     }
     return monthDates
   }
 
-  // Enhanced dummy data with more variety
-  const getDummyData = () => {
-    const dummyJourneyData = {
-      "2024-12-01": { totalHours: 2.5, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-      "2024-12-02": { totalHours: 4.2, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-03": { totalHours: 1.8, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-04": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-05": { totalHours: 3.7, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-06": { totalHours: 2.1, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-      "2024-12-07": { totalHours: 5.3, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-08": { totalHours: 1.2, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-09": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-10": { totalHours: 4.8, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-11": { totalHours: 2.9, completed: false, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: false}] },
-      "2024-12-12": { totalHours: 3.4, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-13": { totalHours: 1.6, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-14": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-15": { totalHours: 4.1, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-16": { totalHours: 2.7, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-      "2024-12-17": { totalHours: 3.8, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-18": { totalHours: 1.4, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-19": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-20": { totalHours: 5.1, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-21": { totalHours: 2.3, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-      "2024-12-22": { totalHours: 4.6, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-23": { totalHours: 1.9, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-24": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-25": { totalHours: 3.2, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-26": { totalHours: 2.8, completed: false, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: false}] },
-      "2024-12-27": { totalHours: 4.4, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-28": { totalHours: 1.7, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-29": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-30": { totalHours: 3.9, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-31": { totalHours: 2.6, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] }
-    }
-    return { ...journeyData, ...dummyJourneyData }
-  }
-
   const dates = getFilteredData()
-  const dataSource = getDummyData()
   const data = dates.map((dateStr) => {
-    const entry = dataSource[dateStr]
+    const entry = monthData[dateStr]
     const date = new Date(dateStr)
     const tasksCompleted = entry?.tasks ? entry.tasks.filter(t => t.completed).length : 0
     return {
@@ -80,6 +101,15 @@ export default function JourneyGraph({ journeyData }: JourneyGraphProps) {
       weekday: date.toLocaleDateString("en-US", { weekday: "short" })
     }
   })
+
+  if (loading) {
+    return (
+      <div className="bg-card rounded-lg border border-border p-8 text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-muted-foreground">Loading analytics...</p>
+      </div>
+    )
+  }
 
   if (data.length === 0) {
     return (
@@ -109,77 +139,81 @@ export default function JourneyGraph({ journeyData }: JourneyGraphProps) {
   return (
     <div className="space-y-4">
       {/* Enhanced View Controls */}
-      <div className="flex items-center justify-between">
-        <div className="flex gap-2">
-          <div className="border-l border-border mx-2" />
+      <div className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl p-4 shadow-sm">
+        <div className="flex items-center gap-1 bg-white dark:bg-gray-900 rounded-lg p-1 shadow-inner">
           <button
             onClick={() => setChartType("area")}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
               chartType === "area"
-                ? "bg-blue-100 text-blue-800"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md transform scale-105"
+                : "text-gray-600 hover:text-blue-600 hover:bg-blue-50 dark:text-gray-400 dark:hover:text-blue-400 dark:hover:bg-blue-900/20"
             }`}
           >
-            📈 Area
+            Area
           </button>
           <button
             onClick={() => setChartType("bar")}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
               chartType === "bar"
-                ? "bg-blue-100 text-blue-800"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-md transform scale-105"
+                : "text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 dark:text-gray-400 dark:hover:text-emerald-400 dark:hover:bg-emerald-900/20"
             }`}
           >
-            📊 Bar
+            Bar
           </button>
           <button
             onClick={() => setChartType("line")}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
               chartType === "line"
-                ? "bg-blue-100 text-blue-800"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md transform scale-105"
+                : "text-gray-600 hover:text-purple-600 hover:bg-purple-50 dark:text-gray-400 dark:hover:text-purple-400 dark:hover:bg-purple-900/20"
             }`}
           >
-            📈 Line
+            Line
           </button>
           <button
             onClick={() => setChartType("scatter")}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
               chartType === "scatter"
-                ? "bg-blue-100 text-blue-800"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md transform scale-105"
+                : "text-gray-600 hover:text-orange-600 hover:bg-orange-50 dark:text-gray-400 dark:hover:text-orange-400 dark:hover:bg-orange-900/20"
             }`}
           >
-            🔵 Scatter
+            Scatter
           </button>
           <button
             onClick={() => setChartType("composed")}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-md text-sm font-semibold transition-all duration-200 ${
               chartType === "composed"
-                ? "bg-blue-100 text-blue-800"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                ? "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md transform scale-105"
+                : "text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 dark:text-gray-400 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/20"
             }`}
           >
-            🎯 Combined
+            Mixed
           </button>
         </div>
         
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1))}
-            className="px-2 py-1 rounded-md bg-muted hover:bg-muted/80 text-sm"
-          >
-            ←
-          </button>
-          <span className="text-sm font-medium min-w-[120px] text-center">
-            {monthNames[selectedMonth.getMonth()]} {selectedMonth.getFullYear()}
-          </span>
-          <button
-            onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1))}
-            className="px-2 py-1 rounded-md bg-muted hover:bg-muted/80 text-sm"
-          >
-            →
-          </button>
+        <div className="flex items-center gap-3">
+          <div className="text-sm font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-900 px-3 py-1.5 rounded-lg shadow-sm">
+            {chartType === "area" ? "Trend View" : chartType === "bar" ? "Daily Breakdown" : chartType === "line" ? "Line Graph" : chartType === "scatter" ? "Scatter Plot" : "Mixed View"}
+          </div>
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-900 rounded-lg p-1 shadow-inner">
+            <button
+              onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1))}
+              className="px-3 py-2 rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium transition-colors"
+            >
+              ←
+            </button>
+            <span className="text-sm font-semibold min-w-[120px] text-center text-gray-800 dark:text-gray-200 px-2">
+              {monthNames[selectedMonth.getMonth()]} {selectedMonth.getFullYear()}
+            </span>
+            <button
+              onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1))}
+              className="px-3 py-2 rounded-md bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium transition-colors"
+            >
+              →
+            </button>
+          </div>
         </div>
       </div>
 
@@ -204,13 +238,10 @@ export default function JourneyGraph({ journeyData }: JourneyGraphProps) {
       </div>
 
       <div className="bg-card rounded-lg border border-border p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-foreground">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold text-foreground bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
             Hours Invested {viewMode === "month" ? "Each Day" : "Over Time"}
           </h3>
-          <div className="text-sm text-muted-foreground">
-            {chartType === "area" ? "📈 Trend View" : chartType === "bar" ? "📊 Daily Breakdown" : chartType === "line" ? "📈 Line Graph" : chartType === "scatter" ? "🔵 Scatter Plot" : "🎯 Combined View"}
-          </div>
         </div>
         
         <ResponsiveContainer width="100%" height={360}>

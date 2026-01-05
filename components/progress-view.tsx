@@ -5,17 +5,16 @@ import type { JourneyData, DayEntry } from "@/lib/types"
 import CompactMonthView from "./compact-month-view"
 import YearHeatmap from "./year-heatmap"
 import JourneyGraph from "./journey-graph"
+import { useProgressData } from "@/hooks/use-progress-data"
 
 interface ProgressViewProps {
-  journeyData: JourneyData
   onDayEntry: (date: Date, entry: DayEntry) => void
 }
 
-export default function ProgressView({ journeyData, onDayEntry }: ProgressViewProps) {
+export default function ProgressView({ onDayEntry }: ProgressViewProps) {
   const [selectedMonth, setSelectedMonth] = useState(new Date())
   const [viewMode, setViewMode] = useState<"calendar" | "year" | "journey">("calendar")
-  const [filterMode, setFilterMode] = useState<"year" | "lastMonth" | "month">("year")
-  const [filteredMonth, setFilteredMonth] = useState<Date | null>(null)
+  const { data: monthlyData, loading } = useProgressData(selectedMonth)
   const today = new Date()
 
   const isCurrentMonth = (month: Date) => {
@@ -32,161 +31,100 @@ export default function ProgressView({ journeyData, onDayEntry }: ProgressViewPr
     return "past"
   }
 
-  const getDisplayData = () => {
-    // Add dummy data for demonstration
-    const dummyData = {
-      "2024-01-15": { totalHours: 3.2, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-01-20": { totalHours: 2.1, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-      "2024-02-05": { totalHours: 4.5, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-02-14": { totalHours: 1.8, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-03-10": { totalHours: 3.7, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-03-22": { totalHours: 2.9, completed: false, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: false}] },
-      "2024-04-08": { totalHours: 4.1, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-04-18": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-05-12": { totalHours: 3.8, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-05-25": { totalHours: 2.3, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-      "2024-06-07": { totalHours: 4.6, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-06-19": { totalHours: 1.5, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-07-03": { totalHours: 3.4, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-07-16": { totalHours: 2.7, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-      "2024-08-09": { totalHours: 4.3, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-08-21": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-09-04": { totalHours: 3.9, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-09-17": { totalHours: 2.4, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-      "2024-10-11": { totalHours: 4.7, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-10-24": { totalHours: 1.9, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-11-06": { totalHours: 3.6, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-11-18": { totalHours: 2.8, completed: false, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: false}] },
-      "2024-12-01": { totalHours: 2.5, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-      "2024-12-02": { totalHours: 4.2, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-03": { totalHours: 1.8, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-04": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-05": { totalHours: 3.7, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-06": { totalHours: 2.1, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-      "2024-12-07": { totalHours: 5.3, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-08": { totalHours: 1.2, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-09": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-10": { totalHours: 4.8, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-11": { totalHours: 2.9, completed: false, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: false}] },
-      "2024-12-12": { totalHours: 3.4, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-13": { totalHours: 1.6, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-14": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-15": { totalHours: 4.1, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-16": { totalHours: 2.7, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-      "2024-12-17": { totalHours: 3.8, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-18": { totalHours: 1.4, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-19": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-20": { totalHours: 5.1, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-21": { totalHours: 2.3, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-      "2024-12-22": { totalHours: 4.6, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-23": { totalHours: 1.9, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-24": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-25": { totalHours: 3.2, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-26": { totalHours: 2.8, completed: false, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: false}] },
-      "2024-12-27": { totalHours: 4.4, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-28": { totalHours: 1.7, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-29": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-      "2024-12-30": { totalHours: 3.9, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-      "2024-12-31": { totalHours: 2.6, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] }
-    }
-    
-    const combinedData = { ...journeyData, ...dummyData }
-    
-    if (filterMode === "year") {
-      return combinedData
-    } else if (filterMode === "lastMonth") {
-      const now = new Date()
-      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-      return filterByMonth(lastMonth, combinedData)
-    } else {
-      if (!filteredMonth) return combinedData
-      return filterByMonth(filteredMonth, combinedData)
-    }
-  }
-
-  const filterByMonth = (month: Date, data = journeyData) => {
-    const filtered: JourneyData = {}
-    const year = month.getFullYear()
-    const monthNum = month.getMonth()
-    const daysInMonth = new Date(year, monthNum + 1, 0).getDate()
-
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = new Date(year, monthNum, day).toISOString().split("T")[0]
-      if (data[dateStr]) {
-        filtered[dateStr] = data[dateStr]
-      }
-    }
-    return filtered
-  }
-
   const monthNames = ["January", "February", "March", "April", "May", "June", 
                      "July", "August", "September", "October", "November", "December"]
-  const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
-  const years = [2024, 2025, 2026]
-
-  const displayData = getDisplayData()
 
   return (
-    <div className="space-y-4 sm:space-y-8">
-      {/* View Mode Tabs */}
+    <div className="space-y-8 animate-in fade-in-50 duration-700">
+      {/* Enhanced View Mode Tabs */}
       <div className="flex items-center justify-between">
-        <div className="flex gap-1 sm:gap-2 overflow-x-auto">
+        <div className="flex gap-2 overflow-x-auto">
           <button
             onClick={() => setViewMode("calendar")}
-            className={`px-2 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+            className={`flex-shrink-0 px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${
               viewMode === "calendar"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg"
+                : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600"
             }`}
           >
-            Calendar View
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Calendar View
+            </div>
           </button>
           <button
             onClick={() => setViewMode("year")}
-            className={`px-2 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+            className={`flex-shrink-0 px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${
               viewMode === "year"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg"
+                : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600"
             }`}
           >
-            Year at Glance
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 00-2-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              Year Heatmap
+            </div>
           </button>
           <button
             onClick={() => setViewMode("journey")}
-            className={`px-2 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+            className={`flex-shrink-0 px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${
               viewMode === "journey"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg"
+                : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600"
             }`}
           >
-            Your Journey
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+              Analytics
+            </div>
           </button>
         </div>
       </div>
 
       {viewMode === "calendar" && (
-        <>
-          {/* Month Navigation */}
+        <div className="space-y-8 animate-in slide-in-from-left-5 duration-500">
+          {/* Enhanced Month Navigation */}
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-foreground">Monthly Progress</h2>
-            <div className="flex gap-2">
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent">
+              Monthly Progress
+            </h2>
+            <div className="flex gap-3">
               <button
                 onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1))}
-                className="rounded-md bg-muted px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted/80 transition-colors"
+                className="group relative overflow-hidden rounded-xl bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5"
               >
-                ← Prev
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <span className="relative flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Previous
+                </span>
               </button>
               <button
                 onClick={() => setSelectedMonth(new Date())}
-                className="rounded-md bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
+                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:from-blue-600 hover:to-indigo-600"
               >
-                Today
+                <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
+                <span className="relative">Current Month</span>
               </button>
               <button
                 onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1))}
-                className="rounded-md bg-muted px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted/80 transition-colors"
+                className="group relative overflow-hidden rounded-xl bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5"
               >
-                Next →
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <span className="relative flex items-center gap-2">
+                  Next
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </span>
               </button>
             </div>
           </div>
@@ -214,71 +152,22 @@ export default function ProgressView({ journeyData, onDayEntry }: ProgressViewPr
 
             <CompactMonthView 
               month={selectedMonth} 
-              journeyData={(() => {
-                // Combine real data with dummy data
-                const dummyData = {
-                  "2024-01-15": { totalHours: 3.2, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-01-20": { totalHours: 2.1, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                  "2024-02-05": { totalHours: 4.5, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-02-14": { totalHours: 1.8, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                  "2024-03-10": { totalHours: 3.7, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-03-22": { totalHours: 2.9, completed: false, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: false}] },
-                  "2024-04-08": { totalHours: 4.1, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-04-18": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                  "2024-05-12": { totalHours: 3.8, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-05-25": { totalHours: 2.3, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                  "2024-06-07": { totalHours: 4.6, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-06-19": { totalHours: 1.5, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                  "2024-07-03": { totalHours: 3.4, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-07-16": { totalHours: 2.7, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                  "2024-08-09": { totalHours: 4.3, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-08-21": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                  "2024-09-04": { totalHours: 3.9, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-09-17": { totalHours: 2.4, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                  "2024-10-11": { totalHours: 4.7, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-10-24": { totalHours: 1.9, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                  "2024-11-06": { totalHours: 3.6, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-11-18": { totalHours: 2.8, completed: false, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: false}] },
-                  "2024-12-01": { totalHours: 2.5, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                  "2024-12-02": { totalHours: 4.2, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-12-03": { totalHours: 1.8, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                  "2024-12-04": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                  "2024-12-05": { totalHours: 3.7, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-12-06": { totalHours: 2.1, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                  "2024-12-07": { totalHours: 5.3, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-12-08": { totalHours: 1.2, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                  "2024-12-09": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                  "2024-12-10": { totalHours: 4.8, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-12-11": { totalHours: 2.9, completed: false, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: false}] },
-                  "2024-12-12": { totalHours: 3.4, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-12-13": { totalHours: 1.6, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                  "2024-12-14": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                  "2024-12-15": { totalHours: 4.1, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-12-16": { totalHours: 2.7, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                  "2024-12-17": { totalHours: 3.8, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-12-18": { totalHours: 1.4, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                  "2024-12-19": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                  "2024-12-20": { totalHours: 5.1, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-12-21": { totalHours: 2.3, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                  "2024-12-22": { totalHours: 4.6, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-12-23": { totalHours: 1.9, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                  "2024-12-24": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                  "2024-12-25": { totalHours: 3.2, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-12-26": { totalHours: 2.8, completed: false, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: false}] },
-                  "2024-12-27": { totalHours: 4.4, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-12-28": { totalHours: 1.7, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                  "2024-12-29": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                  "2024-12-30": { totalHours: 3.9, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                  "2024-12-31": { totalHours: 2.6, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] }
-                }
-                return { ...journeyData, ...dummyData }
-              })()} 
+              journeyData={monthlyData} 
               onDayEntry={onDayEntry} 
             />
 
             {/* Month Summary */}
             <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
               {(() => {
+                if (loading) {
+                  return Array.from({ length: 4 }, (_, i) => (
+                    <div key={i} className="text-center p-4 bg-gray-50 rounded-lg animate-pulse">
+                      <div className="h-8 bg-gray-200 rounded mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded"></div>
+                    </div>
+                  ))
+                }
+                
                 const year = selectedMonth.getFullYear()
                 const month = selectedMonth.getMonth()
                 const daysInMonth = new Date(year, month + 1, 0).getDate()
@@ -291,70 +180,10 @@ export default function ProgressView({ journeyData, onDayEntry }: ProgressViewPr
                 for (let day = 1; day <= daysInMonth; day++) {
                   const date = new Date(year, month, day)
                   const dateStr = date.toISOString().split("T")[0]
-                  const entry = (() => {
-                    const dummyData = {
-                      "2024-01-15": { totalHours: 3.2, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-01-20": { totalHours: 2.1, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                      "2024-02-05": { totalHours: 4.5, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-02-14": { totalHours: 1.8, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                      "2024-03-10": { totalHours: 3.7, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-03-22": { totalHours: 2.9, completed: false, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: false}] },
-                      "2024-04-08": { totalHours: 4.1, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-04-18": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                      "2024-05-12": { totalHours: 3.8, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-05-25": { totalHours: 2.3, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                      "2024-06-07": { totalHours: 4.6, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-06-19": { totalHours: 1.5, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                      "2024-07-03": { totalHours: 3.4, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-07-16": { totalHours: 2.7, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                      "2024-08-09": { totalHours: 4.3, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-08-21": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                      "2024-09-04": { totalHours: 3.9, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-09-17": { totalHours: 2.4, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                      "2024-10-11": { totalHours: 4.7, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-10-24": { totalHours: 1.9, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                      "2024-11-06": { totalHours: 3.6, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-11-18": { totalHours: 2.8, completed: false, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: false}] },
-                      "2024-12-01": { totalHours: 2.5, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                      "2024-12-02": { totalHours: 4.2, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-12-03": { totalHours: 1.8, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                      "2024-12-04": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                      "2024-12-05": { totalHours: 3.7, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-12-06": { totalHours: 2.1, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                      "2024-12-07": { totalHours: 5.3, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-12-08": { totalHours: 1.2, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                      "2024-12-09": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                      "2024-12-10": { totalHours: 4.8, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-12-11": { totalHours: 2.9, completed: false, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: false}] },
-                      "2024-12-12": { totalHours: 3.4, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-12-13": { totalHours: 1.6, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                      "2024-12-14": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                      "2024-12-15": { totalHours: 4.1, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-12-16": { totalHours: 2.7, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                      "2024-12-17": { totalHours: 3.8, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-12-18": { totalHours: 1.4, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                      "2024-12-19": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                      "2024-12-20": { totalHours: 5.1, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-12-21": { totalHours: 2.3, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                      "2024-12-22": { totalHours: 4.6, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-12-23": { totalHours: 1.9, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                      "2024-12-24": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                      "2024-12-25": { totalHours: 3.2, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-12-26": { totalHours: 2.8, completed: false, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: false}] },
-                      "2024-12-27": { totalHours: 4.4, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-12-28": { totalHours: 1.7, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                      "2024-12-29": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                      "2024-12-30": { totalHours: 3.9, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                      "2024-12-31": { totalHours: 2.6, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] }
-                    }
-                    const combinedData = { ...journeyData, ...dummyData }
-                    return combinedData[dateStr]
-                  })()
+                  const entry = monthlyData[dateStr]
                   
                   // Check if date is before today (not today or future)
-                  const isBeforeToday = date.getDate() < today.getDate() || 
-                                       date.getMonth() < today.getMonth() || 
-                                       date.getFullYear() < today.getFullYear()
+                  const isBeforeToday = date < today
                   
                   if (entry && entry.tasks) {
                     totalHours += entry.totalHours
@@ -425,290 +254,22 @@ export default function ProgressView({ journeyData, onDayEntry }: ProgressViewPr
               })}
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {viewMode === "year" && (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold text-foreground">Year at a Glance</h2>
-          <YearHeatmap journeyData={displayData} />
+          <YearHeatmap journeyData={monthlyData} />
         </div>
       )}
 
       {viewMode === "journey" && (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold text-foreground">Your Journey</h2>
-          <JourneyGraph journeyData={displayData} />
+          <JourneyGraph journeyData={monthlyData} />
         </div>
       )}
-      {/* Progress Filter - Enhanced */}
-      <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl border border-slate-200 p-8 space-y-6 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-slate-800">Filter Your Progress</h3>
-              <p className="text-sm text-slate-600">Analyze your journey with powerful filters</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg px-4 py-2 border border-slate-200 shadow-sm">
-            <div className="text-lg font-bold text-slate-800">
-              {(() => {
-                const totalEntries = Object.keys(displayData).length
-                const completedEntries = Object.values(displayData).filter(entry => entry.completed).length
-                const percentage = totalEntries > 0 ? Math.round((completedEntries / totalEntries) * 100) : 0
-                return `${percentage}%`
-              })()} 
-            </div>
-            <div className="text-xs text-slate-600">
-              {(() => {
-                const totalEntries = Object.keys(displayData).length
-                const completedEntries = Object.values(displayData).filter(entry => entry.completed).length
-                return `${completedEntries}/${totalEntries} completed`
-              })()} 
-            </div>
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Quick Filters */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-              <div className="text-sm font-semibold text-slate-700">Quick Filters</div>
-            </div>
-            <div className="space-y-2">
-              <button
-                onClick={() => setFilterMode("year")}
-                className={`w-full px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  filterMode === "year"
-                    ? "bg-blue-500 text-white shadow-lg transform scale-105"
-                    : "bg-white text-slate-700 hover:bg-blue-50 border border-slate-200 hover:border-blue-300"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span>📅 Full Year {new Date().getFullYear()}</span>
-                  {filterMode === "year" && <span className="text-xs">✓</span>}
-                </div>
-              </button>
-              <button
-                onClick={() => setFilterMode("lastMonth")}
-                className={`w-full px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  filterMode === "lastMonth"
-                    ? "bg-blue-500 text-white shadow-lg transform scale-105"
-                    : "bg-white text-slate-700 hover:bg-blue-50 border border-slate-200 hover:border-blue-300"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span>⏮️ Last Month</span>
-                  {filterMode === "lastMonth" && <span className="text-xs">✓</span>}
-                </div>
-              </button>
-            </div>
-          </div>
-
-          {/* Month Selector */}
-          <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-              <div className="text-sm font-semibold text-slate-700">Select Specific Month</div>
-            </div>
-            <div className="grid grid-cols-4 gap-3">
-              {months.map((month) => {
-                const monthIndex = months.indexOf(month)
-                const monthDate = new Date(new Date().getFullYear(), monthIndex, 1)
-                const isSelected = filterMode === "month" && filteredMonth?.getMonth() === monthIndex
-                
-                // Calculate month stats
-                const monthStats = (() => {
-                  const year = new Date().getFullYear()
-                  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate()
-                  let completed = 0
-                  let total = 0
-                  
-                  // Create combined data for this calculation
-                  const dummyData = {
-                    "2024-01-15": { totalHours: 3.2, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-01-20": { totalHours: 2.1, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                    "2024-02-05": { totalHours: 4.5, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-02-14": { totalHours: 1.8, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                    "2024-03-10": { totalHours: 3.7, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-03-22": { totalHours: 2.9, completed: false, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: false}] },
-                    "2024-04-08": { totalHours: 4.1, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-04-18": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                    "2024-05-12": { totalHours: 3.8, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-05-25": { totalHours: 2.3, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                    "2024-06-07": { totalHours: 4.6, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-06-19": { totalHours: 1.5, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                    "2024-07-03": { totalHours: 3.4, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-07-16": { totalHours: 2.7, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                    "2024-08-09": { totalHours: 4.3, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-08-21": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                    "2024-09-04": { totalHours: 3.9, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-09-17": { totalHours: 2.4, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                    "2024-10-11": { totalHours: 4.7, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-10-24": { totalHours: 1.9, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                    "2024-11-06": { totalHours: 3.6, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-11-18": { totalHours: 2.8, completed: false, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: false}] },
-                    "2024-12-01": { totalHours: 2.5, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                    "2024-12-02": { totalHours: 4.2, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-12-03": { totalHours: 1.8, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                    "2024-12-04": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                    "2024-12-05": { totalHours: 3.7, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-12-06": { totalHours: 2.1, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                    "2024-12-07": { totalHours: 5.3, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-12-08": { totalHours: 1.2, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                    "2024-12-09": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                    "2024-12-10": { totalHours: 4.8, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-12-11": { totalHours: 2.9, completed: false, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: false}] },
-                    "2024-12-12": { totalHours: 3.4, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-12-13": { totalHours: 1.6, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                    "2024-12-14": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                    "2024-12-15": { totalHours: 4.1, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-12-16": { totalHours: 2.7, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                    "2024-12-17": { totalHours: 3.8, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-12-18": { totalHours: 1.4, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                    "2024-12-19": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                    "2024-12-20": { totalHours: 5.1, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-12-21": { totalHours: 2.3, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] },
-                    "2024-12-22": { totalHours: 4.6, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-12-23": { totalHours: 1.9, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                    "2024-12-24": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                    "2024-12-25": { totalHours: 3.2, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-12-26": { totalHours: 2.8, completed: false, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: false}] },
-                    "2024-12-27": { totalHours: 4.4, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-12-28": { totalHours: 1.7, completed: false, tasks: [{completed: true}, {completed: false}, {completed: false}, {completed: false}] },
-                    "2024-12-29": { totalHours: 0, completed: false, tasks: [{completed: false}, {completed: false}, {completed: false}, {completed: false}] },
-                    "2024-12-30": { totalHours: 3.9, completed: true, tasks: [{completed: true}, {completed: true}, {completed: true}, {completed: true}] },
-                    "2024-12-31": { totalHours: 2.6, completed: false, tasks: [{completed: true}, {completed: true}, {completed: false}, {completed: false}] }
-                  }
-                  const combinedData = { ...journeyData, ...dummyData }
-                  
-                  for (let day = 1; day <= daysInMonth; day++) {
-                    const date = new Date(year, monthIndex, day)
-                    if (date <= new Date()) {
-                      total++
-                      const dateStr = date.toISOString().split("T")[0]
-                      if (combinedData[dateStr]?.completed) completed++
-                    }
-                  }
-                  return { completed, total, percentage: total > 0 ? Math.round((completed / total) * 100) : 0 }
-                })()
-                
-                return (
-                  <button
-                    key={month}
-                    onClick={() => {
-                      setFilteredMonth(monthDate)
-                      setFilterMode("month")
-                    }}
-                    className={`p-3 rounded-lg text-xs font-medium transition-all duration-200 relative overflow-hidden ${
-                      isSelected
-                        ? "bg-blue-500 text-white shadow-lg transform scale-105"
-                        : "bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 hover:border-slate-300"
-                    }`}
-                    title={`${month}: ${monthStats.completed}/${monthStats.total} days (${monthStats.percentage}%)`}
-                  >
-                    <div className="relative z-10">
-                      <div className="font-semibold">{month.slice(0, 3)}</div>
-                      <div className="text-xs opacity-80">{monthStats.completed}/{monthStats.total}</div>
-                      <div className="text-xs font-bold">{monthStats.percentage}%</div>
-                    </div>
-                    {/* Progress bar background */}
-                    <div 
-                      className={`absolute bottom-0 left-0 h-1 transition-all duration-300 ${
-                        isSelected ? "bg-white/30" : "bg-blue-200"
-                      }`}
-                      style={{ width: `${monthStats.percentage}%` }}
-                    ></div>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-        
-        {/* Filter Results Summary */}
-        <div className="border-t border-slate-200 pt-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-            <div className="text-sm font-semibold text-slate-700">Filtered Results</div>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {(() => {
-              const entries = Object.values(displayData)
-              const totalHours = entries.reduce((sum, entry) => sum + entry.totalHours, 0)
-              const avgHours = entries.length > 0 ? totalHours / entries.length : 0
-              const completedDays = entries.filter(entry => entry.completed).length
-              const streak = (() => {
-                const sortedDates = Object.keys(displayData).sort().reverse()
-                let currentStreak = 0
-                for (const dateStr of sortedDates) {
-                  if (displayData[dateStr].completed) {
-                    currentStreak++
-                  } else {
-                    break
-                  }
-                }
-                return currentStreak
-              })()
-              
-              return (
-                <>
-                  <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <span className="text-lg">📊</span>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold text-blue-600">{entries.length}</div>
-                        <div className="text-xs text-slate-600 font-medium">Total Days</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                        <span className="text-lg">✅</span>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold text-emerald-600">{completedDays}</div>
-                        <div className="text-xs text-slate-600 font-medium">Completed</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <span className="text-lg">⏰</span>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold text-purple-600">{totalHours.toFixed(1)}h</div>
-                        <div className="text-xs text-slate-600 font-medium">Total Hours</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                        <span className="text-lg">🔥</span>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold text-orange-600">{streak}</div>
-                        <div className="text-xs text-slate-600 font-medium">Current Streak</div>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )
-            })()} 
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

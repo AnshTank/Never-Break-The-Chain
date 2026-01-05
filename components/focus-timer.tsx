@@ -6,20 +6,23 @@ import { Button } from "./ui/button";
 
 interface FocusTimerProps {
   onTimeUpdate: (minutes: number) => void;
+  onSessionComplete?: (minutes: number) => void;
   taskName?: string;
   initialMinutes?: number;
 }
 
-export default function FocusTimer({ onTimeUpdate, taskName = "Focus Session", initialMinutes = 25 }: FocusTimerProps) {
+export default function FocusTimer({ onTimeUpdate, onSessionComplete, taskName = "Focus Session", initialMinutes = 25 }: FocusTimerProps) {
   const [timeLeft, setTimeLeft] = useState(initialMinutes * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [totalTime, setTotalTime] = useState(initialMinutes * 60);
   const [sessionTime, setSessionTime] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [presetMinutes, setPresetMinutes] = useState(initialMinutes);
+  const [scrollValue, setScrollValue] = useState<number | null>(null);
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (isRunning) {
@@ -28,10 +31,15 @@ export default function FocusTimer({ onTimeUpdate, taskName = "Focus Session", i
         setTimeLeft(prev => {
           if (prev <= 1) {
             setIsRunning(false);
-            // Timer completed
             const completedMinutes = Math.ceil(totalTime / 60);
-            setSessionTime(prev => prev + completedMinutes);
-            onTimeUpdate(Math.ceil((sessionTime + completedMinutes) / 60 * 100) / 100);
+            const newSessionTime = sessionTime + completedMinutes;
+            setSessionTime(newSessionTime);
+            try {
+              onTimeUpdate(newSessionTime);
+              onSessionComplete?.(completedMinutes);
+            } catch (error) {
+              console.error('Timer callback error:', error);
+            }
             return 0;
           }
           return prev - 1;
@@ -49,7 +57,7 @@ export default function FocusTimer({ onTimeUpdate, taskName = "Focus Session", i
         clearInterval(intervalRef.current);
       }
     };
-  }, [isRunning, totalTime, sessionTime, onTimeUpdate]);
+  }, [isRunning, totalTime, sessionTime, onTimeUpdate, onSessionComplete]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -67,12 +75,16 @@ export default function FocusTimer({ onTimeUpdate, taskName = "Focus Session", i
 
   const handlePause = () => {
     setIsRunning(false);
-    // Add elapsed time to session
     if (startTimeRef.current) {
       const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
       const elapsedMinutes = elapsed / 60;
-      setSessionTime(prev => prev + elapsedMinutes);
-      onTimeUpdate(Math.ceil((sessionTime + elapsedMinutes) / 60 * 100) / 100);
+      const newSessionTime = sessionTime + elapsedMinutes;
+      setSessionTime(newSessionTime);
+      try {
+        onTimeUpdate(newSessionTime);
+      } catch (error) {
+        console.error('Timer update error:', error);
+      }
     }
   };
 
@@ -81,8 +93,13 @@ export default function FocusTimer({ onTimeUpdate, taskName = "Focus Session", i
     if (startTimeRef.current) {
       const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
       const elapsedMinutes = elapsed / 60;
-      setSessionTime(prev => prev + elapsedMinutes);
-      onTimeUpdate(Math.ceil((sessionTime + elapsedMinutes) / 60 * 100) / 100);
+      const newSessionTime = sessionTime + elapsedMinutes;
+      setSessionTime(newSessionTime);
+      try {
+        onTimeUpdate(newSessionTime);
+      } catch (error) {
+        console.error('Timer update error:', error);
+      }
     }
     setTimeLeft(totalTime);
   };
@@ -91,7 +108,11 @@ export default function FocusTimer({ onTimeUpdate, taskName = "Focus Session", i
     setIsRunning(false);
     setTimeLeft(totalTime);
     setSessionTime(0);
-    onTimeUpdate(0);
+    try {
+      onTimeUpdate(0);
+    } catch (error) {
+      console.error('Timer reset error:', error);
+    }
   };
 
   const setPreset = (minutes: number) => {
@@ -106,45 +127,66 @@ export default function FocusTimer({ onTimeUpdate, taskName = "Focus Session", i
     setPreset(newMinutes);
   };
 
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -1 : 1;
+    const newValue = Math.max(1, Math.min(120, presetMinutes + delta));
+    setScrollValue(newValue);
+    
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+    
+    scrollTimeoutRef.current = setTimeout(() => {
+      setPreset(newValue);
+      setScrollValue(null);
+    }, 150);
+  };
+
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950 dark:to-indigo-950 rounded-xl p-6 border border-blue-200 dark:border-blue-800">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Timer className="w-5 h-5 text-blue-600" />
-          <h3 className="font-semibold text-blue-900 dark:text-blue-100">{taskName}</h3>
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950 dark:to-indigo-950 rounded-xl p-3 border border-blue-200 dark:border-blue-800 w-full max-w-xs mx-auto">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-1">
+          <Timer className="w-3 h-3 text-blue-600" />
+          <h3 className="font-semibold text-xs text-blue-900 dark:text-blue-100 truncate max-w-[100px]">{taskName}</h3>
         </div>
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setShowSettings(!showSettings)}
-          className="text-blue-600 hover:text-blue-700"
+          className="text-blue-600 hover:text-blue-700 p-1 h-6 w-6"
         >
-          <Settings className="w-4 h-4" />
+          <Settings className="w-3 h-3" />
         </Button>
       </div>
 
       {showSettings && (
-        <div className="mb-4 p-3 bg-white dark:bg-gray-800 rounded-lg border">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium">Timer Duration</span>
+        <div className="mb-3 p-2 bg-white dark:bg-gray-800 rounded-lg border">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium">Duration</span>
             <div className="flex items-center gap-2">
               <Button size="sm" variant="outline" onClick={() => adjustTime(-5)}>
                 <Minus className="w-3 h-3" />
               </Button>
-              <span className="w-12 text-center text-sm font-mono">{presetMinutes}m</span>
+              <span 
+                className="w-8 text-center text-xs font-mono cursor-pointer select-none"
+                onWheel={handleWheel}
+              >
+                {scrollValue !== null ? `${scrollValue}m` : `${presetMinutes}m`}
+              </span>
               <Button size="sm" variant="outline" onClick={() => adjustTime(5)}>
                 <Plus className="w-3 h-3" />
               </Button>
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-4 gap-1">
             {[15, 25, 45, 60].map(minutes => (
               <Button
                 key={minutes}
                 size="sm"
                 variant={presetMinutes === minutes ? "default" : "outline"}
                 onClick={() => setPreset(minutes)}
-                className="text-xs"
+                className="text-xs min-w-0 px-1 py-1 h-6"
               >
                 {minutes}m
               </Button>
@@ -153,8 +195,8 @@ export default function FocusTimer({ onTimeUpdate, taskName = "Focus Session", i
         </div>
       )}
 
-      <div className="relative mb-6">
-        <div className="w-32 h-32 mx-auto relative">
+      <div className="relative mb-3">
+        <div className="w-20 h-20 mx-auto relative">
           <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
             <circle
               cx="50"
@@ -180,7 +222,7 @@ export default function FocusTimer({ onTimeUpdate, taskName = "Focus Session", i
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
-              <div className="text-2xl font-mono font-bold text-blue-900 dark:text-blue-100">
+              <div className="text-base font-mono font-bold text-blue-900 dark:text-blue-100">
                 {formatTime(timeLeft)}
               </div>
               <div className="text-xs text-blue-600 dark:text-blue-400">
@@ -191,30 +233,30 @@ export default function FocusTimer({ onTimeUpdate, taskName = "Focus Session", i
         </div>
       </div>
 
-      <div className="flex justify-center gap-2 mb-4">
+      <div className="flex justify-center gap-1 mb-3 flex-wrap">
         {!isRunning ? (
-          <Button onClick={handleStart} className="bg-green-600 hover:bg-green-700">
-            <Play className="w-4 h-4 mr-1" />
+          <Button onClick={handleStart} className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1 h-7">
+            <Play className="w-3 h-3 mr-1" />
             Start
           </Button>
         ) : (
-          <Button onClick={handlePause} className="bg-yellow-600 hover:bg-yellow-700">
-            <Pause className="w-4 h-4 mr-1" />
+          <Button onClick={handlePause} className="bg-yellow-600 hover:bg-yellow-700 text-xs px-2 py-1 h-7">
+            <Pause className="w-3 h-3 mr-1" />
             Pause
           </Button>
         )}
-        <Button onClick={handleStop} variant="outline">
-          <Square className="w-4 h-4 mr-1" />
+        <Button onClick={handleStop} variant="outline" className="text-xs px-2 py-1 h-7">
+          <Square className="w-3 h-3 mr-1" />
           Stop
         </Button>
-        <Button onClick={handleReset} variant="outline">
-          <RotateCcw className="w-4 h-4 mr-1" />
+        <Button onClick={handleReset} variant="outline" className="text-xs px-2 py-1 h-7">
+          <RotateCcw className="w-3 h-3 mr-1" />
           Reset
         </Button>
       </div>
 
       <div className="text-center">
-        <div className="text-sm text-blue-700 dark:text-blue-300">
+        <div className="text-xs text-blue-700 dark:text-blue-300">
           Session Time: <span className="font-mono font-semibold">{Math.floor(sessionTime)}m</span>
         </div>
         <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">

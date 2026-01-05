@@ -22,7 +22,7 @@ export default function CompactMonthView({ month, journeyData }: CompactMonthVie
   const weekDayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
   const getColorForDay = (date: Date) => {
-    const dateStr = date.toISOString().split("T")[0]
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
     const today = new Date()
     const entry = journeyData[dateStr]
     const isToday = date.getDate() === today.getDate() && 
@@ -30,7 +30,7 @@ export default function CompactMonthView({ month, journeyData }: CompactMonthVie
                    date.getFullYear() === today.getFullYear()
 
     if (isToday) return "bg-gradient-to-br from-blue-400 to-blue-600 text-white shadow-lg"
-    if (!entry || entry.totalHours === 0) return "bg-gradient-to-br from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-800"
+    if (!entry || entry.totalHours <= 0) return "bg-gradient-to-br from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-800"
     
     const hours = entry.totalHours
     // Color based purely on hours invested
@@ -69,8 +69,16 @@ export default function CompactMonthView({ month, journeyData }: CompactMonthVie
                 }
                 
                 const date = new Date(month.getFullYear(), month.getMonth(), dayNumber)
-                const dateStr = date.toISOString().split("T")[0]
+                const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
                 const entry = journeyData[dateStr]
+                
+                if (dayNumber === 1) {
+                  console.log(`DEBUG Day 1 - Generated dateStr: '${dateStr}'`)
+                  console.log(`DEBUG Day 1 - Available keys in journeyData:`, Object.keys(journeyData))
+                  console.log(`DEBUG Day 1 - Entry found:`, entry)
+                }
+                
+                console.log(`CompactMonthView - Date ${dateStr}, Entry:`, entry)
                 const today = new Date()
                 const isToday = date.getDate() === today.getDate() && 
                                date.getMonth() === today.getMonth() && 
@@ -93,10 +101,21 @@ export default function CompactMonthView({ month, journeyData }: CompactMonthVie
                     <div className="text-lg font-medium mb-1">
                       {dayNumber}
                     </div>
-                    {entry && (
+                    {entry ? (
                       <div className="text-xs font-normal opacity-80">
-                        {entry.tasks?.filter(t => t.completed).length || 0}/4 • {entry.totalHours.toFixed(1)}h
+                        {(() => {
+                          console.log(`Day ${dayNumber} - Entry exists:`, !!entry, 'Tasks:', entry.tasks)
+                          if (!entry.tasks || !Array.isArray(entry.tasks)) {
+                            console.log(`Day ${dayNumber} - Invalid tasks array`)
+                            return "No tasks"
+                          }
+                          const completedTasks = entry.tasks.filter(t => t && t.completed).length
+                          console.log(`Day ${dayNumber} - Completed tasks: ${completedTasks}, Total hours: ${entry.totalHours}`)
+                          return `${completedTasks}/4 • ${entry.totalHours.toFixed(1)}h`
+                        })()} 
                       </div>
+                    ) : (
+                      <div className="text-xs font-normal opacity-80">No data</div>
                     )}
                     {isToday && (
                       <div className="text-xs font-medium opacity-90 mt-1">TODAY</div>
@@ -157,7 +176,6 @@ export default function CompactMonthView({ month, journeyData }: CompactMonthVie
         isOpen={selectedDay !== null}
         onClose={() => setSelectedDay(null)}
         date={selectedDay?.date || new Date()}
-        entry={selectedDay?.entry}
       />
     </>
   )
