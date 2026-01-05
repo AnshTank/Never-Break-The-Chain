@@ -3,7 +3,7 @@
 import { useAnalytics } from "@/hooks/use-data"
 import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useEffect } from "react"
+import { useEffect, useMemo, useCallback, useRef } from "react"
 
 interface ProgressSummaryProps {
   currentMonth?: Date
@@ -11,28 +11,41 @@ interface ProgressSummaryProps {
 
 export default function ProgressSummary({ currentMonth }: ProgressSummaryProps) {
   const { analytics, loading, refetch } = useAnalytics()
+  const lastMonthRef = useRef<string | null>(null)
+  const isInitialMount = useRef(true)
 
-  // Refresh analytics when month changes
-  useEffect(() => {
-    if (currentMonth) {
-      const monthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`
-      refetch(currentMonth)
-    }
+  // Memoize month key to prevent unnecessary recalculations
+  const monthKey = useMemo(() => {
+    if (!currentMonth) return null
+    return `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`
   }, [currentMonth?.getFullYear(), currentMonth?.getMonth()])
+  
+  // Memoize month name to prevent recalculation
+  const monthName = useMemo(() => {
+    return currentMonth ? currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Current Month'
+  }, [currentMonth])
+  
+  // Optimize refresh handler with useCallback
+  const handleRefresh = useCallback(async () => {
+    if (currentMonth) {
+      await refetch(currentMonth)
+    }
+  }, [refetch, currentMonth])
 
-  // Listen for analytics refresh events
+  // Only fetch on mount and when month actually changes
   useEffect(() => {
-    const handleAnalyticsRefresh = () => {
-      refetch(currentMonth)
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
     }
     
-    window.addEventListener('analyticsRefresh', handleAnalyticsRefresh)
-    return () => window.removeEventListener('analyticsRefresh', handleAnalyticsRefresh)
-  }, [currentMonth, refetch])
-
-  const handleRefresh = async () => {
-    await refetch(currentMonth)
-  }
+    if (monthKey && monthKey !== lastMonthRef.current) {
+      lastMonthRef.current = monthKey
+      if (currentMonth) {
+        refetch(currentMonth)
+      }
+    }
+  }, [monthKey])
 
   if (loading || !analytics) {
     return (
@@ -55,8 +68,6 @@ export default function ProgressSummary({ currentMonth }: ProgressSummaryProps) 
       </div>
     )
   }
-
-  const monthName = currentMonth ? currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Current Month'
 
   return (
     <div className="space-y-4">

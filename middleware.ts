@@ -7,7 +7,7 @@ import { ObjectId } from 'mongodb'
 export const runtime = 'nodejs'
 
 const publicPaths = ['/login', '/signup', '/api/auth/login', '/api/auth/signup', '/api/auth/setup-password']
-const apiAuthPaths = ['/api/auth/refresh', '/api/auth/logout', '/api/auth/cleanup']
+const apiAuthPaths = ['/api/auth/refresh', '/api/auth/logout', '/api/auth/cleanup', '/api/progress', '/api/user', '/api/analytics', '/api/timer-data', '/api/settings']
 const welcomeRequiredPaths = ['/welcome']
 
 export async function middleware(request: NextRequest) {
@@ -18,9 +18,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
   
-  // Handle auth API endpoints
+  // Handle auth API endpoints that need authentication
   if (apiAuthPaths.some(path => pathname.startsWith(path))) {
-    return NextResponse.next()
+    // These endpoints need authentication, so continue with token verification
   }
   
   // Check for authentication token

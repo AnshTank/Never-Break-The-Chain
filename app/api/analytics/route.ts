@@ -44,7 +44,8 @@ export async function GET(request: NextRequest) {
 
     // Calculate metrics from database data
     const totalHours = monthlyData.reduce((sum, day) => sum + (day.totalHours || 0), 0)
-    const totalDays = monthlyData.length
+    // Count only days with actual progress (totalHours > 0)
+    const totalDays = monthlyData.filter(day => (day.totalHours || 0) > 0).length
     
     // Calculate MNZD streaks
     const completedDays = allData.filter(day => {

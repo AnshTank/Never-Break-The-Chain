@@ -49,10 +49,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }
 
-    // Check password
-    const isValidPassword = await bcrypt.compare(sanitizedInputs.password, user.password)
-    if (!isValidPassword) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+    // Check if user has password set (skip for OAuth users)
+    if (!user.password || user.needsPasswordSetup) {
+      // Allow OAuth users to login without password if they have oauthProvider
+      if (!user.oauthProvider) {
+        return NextResponse.json({ 
+          error: 'Please complete your account setup by setting a password first.',
+          needsPasswordSetup: true 
+        }, { status: 400 })
+      }
+    }
+
+    // Check password (skip for OAuth users)
+    if (user.password && !user.oauthProvider) {
+      const isValidPassword = await bcrypt.compare(sanitizedInputs.password, user.password)
+      if (!isValidPassword) {
+        return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+      }
     }
 
     // Generate secure JWT tokens with Remember Me consideration

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useCallback } from "react";
 import { getDaysInMonth, getFirstDayOfMonth } from "@/lib/date-utils";
 import { useProgressRange } from "@/hooks/use-data";
 import type { DayEntry } from "@/lib/types";
@@ -12,54 +12,62 @@ interface MonthlyCalendarProps {
 }
 
 export default function MonthlyCalendar({ month }: MonthlyCalendarProps) {
-  const year = month.getFullYear()
-  const monthNum = month.getMonth()
-  const startDate = `${year}-${String(monthNum + 1).padStart(2, '0')}-01`
-  const lastDay = new Date(year, monthNum + 1, 0).getDate()
-  const endDate = `${year}-${String(monthNum + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+  // Memoize date calculations to prevent recalculation on every render
+  const { year, monthNum, startDate, endDate } = useMemo(() => {
+    const year = month.getFullYear()
+    const monthNum = month.getMonth()
+    const startDate = `${year}-${String(monthNum + 1).padStart(2, '0')}-01`
+    const lastDay = new Date(year, monthNum + 1, 0).getDate()
+    const endDate = `${year}-${String(monthNum + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+    return { year, monthNum, startDate, endDate }
+  }, [month])
   
   const { progressData, loading, refetch } = useProgressRange(startDate, endDate);
   
-  // Listen for progress updates
-  useEffect(() => {
-    const handleProgressUpdate = () => {
-      refetch();
-    };
-    
-    // Listen for both custom events and MNZD events
-    window.addEventListener('progressUpdated', handleProgressUpdate);
-    
-    const unsubscribe = mnzdEvents.onProgressUpdate(() => {
-      refetch();
-    });
-    
-    return () => {
-      window.removeEventListener('progressUpdated', handleProgressUpdate);
-      unsubscribe();
-    };
+  // Memoize progress map to avoid recalculation
+  const progressMap = useMemo(() => {
+    return progressData.reduce((acc, entry) => {
+      acc[entry.date] = entry;
+      return acc;
+    }, {} as Record<string, DayEntry>);
+  }, [progressData])
+  
+  // Memoize calendar structure
+  const { daysInMonth, firstDay, days, emptyDays, weekDayLabels } = useMemo(() => {
+    const daysInMonth = getDaysInMonth(month);
+    const firstDay = getFirstDayOfMonth(month);
+    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+    const emptyDays = Array.from({ length: firstDay }, () => null);
+    const weekDayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    return { daysInMonth, firstDay, days, emptyDays, weekDayLabels }
+  }, [month])
+  
+  // Optimize event handlers with useCallback
+  const handleProgressUpdate = useCallback(() => {
+    refetch();
   }, [refetch]);
   
-  const daysInMonth = getDaysInMonth(month);
-  const firstDay = getFirstDayOfMonth(month);
-  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-  const emptyDays = Array.from({ length: firstDay }, () => null);
-
-  // Convert progress data array to object for easy lookup
-  const progressMap = progressData.reduce((acc, entry) => {
-    acc[entry.date] = entry;
-    return acc;
-  }, {} as Record<string, DayEntry>);
-
-  const weekDayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-  const handleEntryChange = async (date: Date, newEntry: DayEntry) => {
+  const handleEntryChange = useCallback(async (date: Date, newEntry: DayEntry) => {
     // Update local progress map immediately
     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
     progressMap[dateStr] = newEntry
     
     // Force re-render by refreshing data
     await refetch()
-  };
+  }, [progressMap, refetch]);
+  
+  // Listen for progress updates with optimized dependencies
+  useEffect(() => {
+    // Listen for both custom events and MNZD events
+    window.addEventListener('progressUpdated', handleProgressUpdate);
+    
+    const unsubscribe = mnzdEvents.onProgressUpdate(handleProgressUpdate);
+    
+    return () => {
+      window.removeEventListener('progressUpdated', handleProgressUpdate);
+      unsubscribe();
+    };
+  }, [handleProgressUpdate]);
 
   if (loading) {
     return (

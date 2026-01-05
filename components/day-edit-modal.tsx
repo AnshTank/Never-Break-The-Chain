@@ -123,7 +123,7 @@ export default function DayEditModal({
         })
       }
     }
-  }, [settings, date, dateStr, isOpen, loadProgressForDate, getTodayProgress]);
+  }, [settings, dateStr, isOpen]);
 
   if (!settings) {
     return null;
@@ -133,6 +133,9 @@ export default function DayEditModal({
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Loading...</DialogTitle>
+          </DialogHeader>
           <div className="flex items-center justify-center p-8">
             <div className="flex items-center gap-3">
               <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>

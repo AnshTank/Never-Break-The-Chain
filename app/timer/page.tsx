@@ -266,6 +266,17 @@ export default function TimerPage() {
   useEffect(() => {
     if (!mountRef.current || isMobile) return;
 
+    // Clean up previous scene
+    if (rendererRef.current) {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      if (mountRef.current && rendererRef.current.domElement) {
+        mountRef.current.removeChild(rendererRef.current.domElement);
+      }
+      rendererRef.current.dispose();
+    }
+
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(
       75,
@@ -540,7 +551,7 @@ export default function TimerPage() {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
-      if (mountRef.current && renderer.domElement) {
+      if (mountRef.current && renderer.domElement && mountRef.current.contains(renderer.domElement)) {
         mountRef.current.removeChild(renderer.domElement);
       }
       renderer.dispose();

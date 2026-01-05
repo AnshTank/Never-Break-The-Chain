@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, useRef, ReactNode, useCallback } from 'react'
 import { MNZDConfig } from '@/lib/models-new'
 import { mnzdEvents } from '@/lib/mnzd-events'
 
@@ -62,10 +62,13 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
     try {
       setState(prev => ({ ...prev, settingsLoading: true }))
       fetchedRef.current.settings = true
-      const response = await fetch('/api/settings')
+      const response = await fetch('/api/settings', {
+        method: 'GET',
+        cache: 'force-cache',
+        next: { revalidate: 300 } // Cache for 5 minutes
+      })
       if (!response.ok) {
         if (response.status === 401) {
-          // User not authenticated, skip settings fetch
           setState(prev => ({ ...prev, settingsLoading: false }))
           return
         }
@@ -89,7 +92,11 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
       fetchedRef.current.analytics = monthKey
       
       const url = month ? `/api/analytics?month=${month.toISOString()}` : '/api/analytics'
-      const response = await fetch(url)
+      const response = await fetch(url, {
+        method: 'GET',
+        cache: 'force-cache',
+        next: { revalidate: 180 } // Cache for 3 minutes
+      })
       if (!response.ok) {
         if (response.status === 401) {
           setState(prev => ({ ...prev, analyticsLoading: false }))
@@ -167,7 +174,6 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
   }
 
   const refetchAnalytics = async (month?: Date) => {
-    const monthKey = month ? month.toISOString().split('T')[0].substring(0, 7) : 'current'
     fetchedRef.current.analytics = null
     await fetchAnalytics(month)
   }
@@ -178,31 +184,31 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
   }
 
   const loadProgressForDate = async (date: string) => {
+    // Check cache first
+    if (state.dailyProgressCache[date]) {
+      return state.dailyProgressCache[date]
+    }
+    
     try {
-      console.log('Loading progress for date:', date)
-      const response = await fetch(`/api/progress?date=${date}`)
-      console.log('Progress API response:', response.status, response.statusText)
+      const response = await fetch(`/api/progress?date=${date}`, {
+        method: 'GET',
+        cache: 'force-cache',
+        next: { revalidate: 60 } // Cache for 1 minute
+      })
       
       if (!response.ok) {
-        const errorText = await response.text()
-        console.error('Progress API error:', errorText)
-        
-        // Check if user is authenticated
         const authResponse = await fetch('/api/user/profile')
         if (!authResponse.ok) {
-          // User not authenticated, clear all caches
           localStorage.removeItem('progressCache')
           localStorage.removeItem('trackedDays')
           return null
         }
-        
-        throw new Error(`Failed to fetch progress: ${response.status} ${errorText}`)
+        throw new Error(`Failed to fetch progress: ${response.status}`)
       }
       
       const data = await response.json()
-      console.log('Progress data loaded:', data)
       
-      // Cache the data only after successful server response
+      // Cache the data
       setState(prev => ({
         ...prev,
         dailyProgressCache: {
@@ -220,8 +226,6 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
 
   const updateProgressForDate = async (date: string, updates: any) => {
     try {
-      console.log('Updating progress for date:', date, updates)
-      
       const response = await fetch('/api/progress', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -229,7 +233,6 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
       })
       
       if (!response.ok) {
-        // Silent fail - UI already updated, just return
         return
       }
       
@@ -254,7 +257,8 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
       })
       
       // Emit real-time update events
-      mnzdEvents.emitProgressUpdate(date, { ...state.dailyProgressCache[date], ...updates })
+      const updatedData = { ...state.dailyProgressCache[date], ...updates }
+      mnzdEvents.emitProgressUpdate(date, updatedData)
     } catch (err) {
       console.error('Error updating progress:', err)
       throw err
@@ -280,44 +284,64 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    // Initialize global state on mount
+    let mounted = true
+    
+    // Initialize global state on mount with debouncing
     const timer = setTimeout(async () => {
+      if (!mounted) return
+      
       try {
-        await fetchUser() // Fetch user status first
-        await fetchSettings()
-        await fetchAnalytics()
+        // Parallel loading for better performance
+        const [userResult, settingsResult, analyticsResult] = await Promise.allSettled([
+          fetchUser(),
+          fetchSettings(),
+          fetchAnalytics()
+        ])
         
-        // Load today's progress on app start
-        const today = new Date()
-        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-        console.log('Global state - Loading progress for today:', todayStr);
-        try {
-          const data = await loadProgressForDate(todayStr)
-          setState(prev => ({
-            ...prev,
-            todayProgress: data,
-            todayLoading: false
-          }))
-        } catch (progressError) {
-          console.error('Error loading today progress:', progressError)
-          setState(prev => ({
-            ...prev,
-            todayLoading: false
-          }))
+        if (!mounted) return
+        
+        // Load today's progress only if user is authenticated
+        if (userResult.status === 'fulfilled') {
+          const today = new Date()
+          const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+          
+          try {
+            const data = await loadProgressForDate(todayStr)
+            if (mounted) {
+              setState(prev => ({
+                ...prev,
+                todayProgress: data,
+                todayLoading: false
+              }))
+            }
+          } catch (progressError) {
+            console.error('Error loading today progress:', progressError)
+            if (mounted) {
+              setState(prev => ({
+                ...prev,
+                todayLoading: false
+              }))
+            }
+          }
         }
       } catch (error) {
         console.error('Error initializing global state:', error)
-        setState(prev => ({
-          ...prev,
-          settingsLoading: false,
-          analyticsLoading: false,
-          userLoading: false,
-          todayLoading: false
-        }))
+        if (mounted) {
+          setState(prev => ({
+            ...prev,
+            settingsLoading: false,
+            analyticsLoading: false,
+            userLoading: false,
+            todayLoading: false
+          }))
+        }
       }
     }, 100)
     
-    return () => clearTimeout(timer)
+    return () => {
+      mounted = false
+      clearTimeout(timer)
+    }
   }, [])
 
   return (
@@ -359,10 +383,20 @@ export function useUserSettings() {
 
 export function useAnalytics() {
   const { analytics, analyticsLoading, refetchAnalytics } = useGlobalState()
+  const lastRefetchRef = useRef<string | null>(null)
+  
+  const refetch = useCallback((month?: Date) => {
+    const monthKey = month ? month.toISOString().split('T')[0].substring(0, 7) : 'current'
+    if (lastRefetchRef.current === monthKey) return Promise.resolve()
+    
+    lastRefetchRef.current = monthKey
+    return refetchAnalytics(month)
+  }, [refetchAnalytics])
+  
   return { 
     analytics, 
     loading: analyticsLoading, 
-    refetch: (month?: Date) => refetchAnalytics(month)
+    refetch
   }
 }
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import type { JourneyData, DayEntry } from "@/lib/types"
 import DayDetailsModal from "./day-details-modal"
 
@@ -13,36 +13,42 @@ interface CompactMonthViewProps {
 export default function CompactMonthView({ month, journeyData }: CompactMonthViewProps) {
   const [selectedDay, setSelectedDay] = useState<{ date: Date; entry: DayEntry | undefined } | null>(null)
   
-  const getDaysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
-  const getFirstDayOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay()
-  
-  const daysInMonth = getDaysInMonth(month)
-  const firstDay = getFirstDayOfMonth(month)
-
-  const weekDayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-
-  const getColorForDay = (date: Date) => {
-    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-    const today = new Date()
-    const entry = journeyData[dateStr]
-    const isToday = date.getDate() === today.getDate() && 
-                   date.getMonth() === today.getMonth() && 
-                   date.getFullYear() === today.getFullYear()
-
-    if (isToday) return "bg-gradient-to-br from-blue-400 to-blue-600 text-white shadow-lg"
-    if (!entry || entry.totalHours <= 0) return "bg-gradient-to-br from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-800"
+  // Memoize calendar calculations to prevent recalculation on every render
+  const { daysInMonth, firstDay, weekDayLabels, today } = useMemo(() => {
+    const getDaysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+    const getFirstDayOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay()
     
-    const hours = entry.totalHours
-    // Color based purely on hours invested
-    if (hours < 0.5) return "bg-gradient-to-br from-red-100 to-red-200 text-red-800"
-    if (hours < 1) return "bg-gradient-to-br from-orange-100 to-orange-200 text-orange-800"
-    if (hours < 2) return "bg-gradient-to-br from-yellow-100 to-yellow-200 text-yellow-800"
-    if (hours < 3) return "bg-gradient-to-br from-lime-100 to-lime-200 text-lime-800"
-    if (hours < 4) return "bg-gradient-to-br from-green-200 to-green-300 text-green-800"
-    if (hours < 6) return "bg-gradient-to-br from-emerald-300 to-emerald-400 text-emerald-900"
-    if (hours < 8) return "bg-gradient-to-br from-teal-400 to-teal-500 text-white"
-    return "bg-gradient-to-br from-cyan-500 to-blue-600 text-white"
-  }
+    return {
+      daysInMonth: getDaysInMonth(month),
+      firstDay: getFirstDayOfMonth(month),
+      weekDayLabels: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+      today: new Date()
+    }
+  }, [month])
+
+  // Memoize color calculation function
+  const getColorForDay = useMemo(() => {
+    return (date: Date) => {
+      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+      const entry = journeyData[dateStr]
+      const isToday = date.getDate() === today.getDate() && 
+                     date.getMonth() === today.getMonth() && 
+                     date.getFullYear() === today.getFullYear()
+
+      if (isToday) return "bg-gradient-to-br from-blue-400 to-blue-600 text-white shadow-lg"
+      if (!entry || entry.totalHours <= 0) return "bg-gradient-to-br from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-800"
+      
+      const hours = entry.totalHours
+      if (hours < 0.5) return "bg-gradient-to-br from-red-100 to-red-200 text-red-800"
+      if (hours < 1) return "bg-gradient-to-br from-orange-100 to-orange-200 text-orange-800"
+      if (hours < 2) return "bg-gradient-to-br from-yellow-100 to-yellow-200 text-yellow-800"
+      if (hours < 3) return "bg-gradient-to-br from-lime-100 to-lime-200 text-lime-800"
+      if (hours < 4) return "bg-gradient-to-br from-green-200 to-green-300 text-green-800"
+      if (hours < 6) return "bg-gradient-to-br from-emerald-300 to-emerald-400 text-emerald-900"
+      if (hours < 8) return "bg-gradient-to-br from-teal-400 to-teal-500 text-white"
+      return "bg-gradient-to-br from-cyan-500 to-blue-600 text-white"
+    }
+  }, [journeyData, today])
 
   return (
     <>
@@ -72,14 +78,6 @@ export default function CompactMonthView({ month, journeyData }: CompactMonthVie
                 const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
                 const entry = journeyData[dateStr]
                 
-                if (dayNumber === 1) {
-                  console.log(`DEBUG Day 1 - Generated dateStr: '${dateStr}'`)
-                  console.log(`DEBUG Day 1 - Available keys in journeyData:`, Object.keys(journeyData))
-                  console.log(`DEBUG Day 1 - Entry found:`, entry)
-                }
-                
-                console.log(`CompactMonthView - Date ${dateStr}, Entry:`, entry)
-                const today = new Date()
                 const isToday = date.getDate() === today.getDate() && 
                                date.getMonth() === today.getMonth() && 
                                date.getFullYear() === today.getFullYear()
@@ -104,13 +102,10 @@ export default function CompactMonthView({ month, journeyData }: CompactMonthVie
                     {entry ? (
                       <div className="text-xs font-normal opacity-80">
                         {(() => {
-                          console.log(`Day ${dayNumber} - Entry exists:`, !!entry, 'Tasks:', entry.tasks)
                           if (!entry.tasks || !Array.isArray(entry.tasks)) {
-                            console.log(`Day ${dayNumber} - Invalid tasks array`)
                             return "No tasks"
                           }
                           const completedTasks = entry.tasks.filter(t => t && t.completed).length
-                          console.log(`Day ${dayNumber} - Completed tasks: ${completedTasks}, Total hours: ${entry.totalHours}`)
                           return `${completedTasks}/4 • ${entry.totalHours.toFixed(1)}h`
                         })()} 
                       </div>
@@ -166,17 +161,20 @@ export default function CompactMonthView({ month, journeyData }: CompactMonthVie
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded bg-gradient-to-br from-cyan-500 to-blue-600"></div>
-              <span className="text-gray-700 dark:text-gray-300">8+ hours: Exceptional</span>
+              <span className="text-gray-700 dark:text-gray-300">8h+: Exceptional</span>
             </div>
           </div>
         </div>
       </div>
 
-      <DayDetailsModal
-        isOpen={selectedDay !== null}
-        onClose={() => setSelectedDay(null)}
-        date={selectedDay?.date || new Date()}
-      />
+      {selectedDay && (
+        <DayDetailsModal
+          isOpen={!!selectedDay}
+          onClose={() => setSelectedDay(null)}
+          date={selectedDay.date}
+          entry={selectedDay.entry}
+        />
+      )}
     </>
   )
 }

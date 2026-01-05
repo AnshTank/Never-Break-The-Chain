@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useUserSettings, useGlobalDailyProgress } from "@/hooks/use-data";
 import { mnzdEvents } from "@/lib/mnzd-events";
 import MNZDCustomizeModal from "./mnzd-customize-modal";
@@ -10,19 +10,20 @@ export default function DailyCheckIn() {
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [localProgress, setLocalProgress] = useState<any>(null);
   
-  const handleCustomizeComplete = () => {
+  // Memoize today's date string to prevent recalculation
+  const todayStr = useMemo(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  }, []);
+  
+  const handleCustomizeComplete = useCallback(() => {
     setShowMNZDModal(false)
     setIsCustomizing(false)
-  }
+  }, [])
   
-  const handleCustomizeStart = () => {
+  const handleCustomizeStart = useCallback(() => {
     setIsCustomizing(true)
-  }
-  
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  
-  console.log('Daily check-in - Today date:', todayStr);
+  }, [])
 
   const { settings, loading: settingsLoading } = useUserSettings();
   const { todayProgress, todayLoading } = useGlobalDailyProgress();
@@ -30,35 +31,57 @@ export default function DailyCheckIn() {
   // Use local progress if available, otherwise use global today's progress
   const currentProgress = localProgress || todayProgress;
   
-  // Listen for real-time updates
+  // Memoize task calculations to prevent recalculation
+  const { taskConfigs, completedTasks, todayCompleted, todayAllCompleted } = useMemo(() => {
+    if (!settings || !currentProgress) {
+      return { taskConfigs: [], completedTasks: [], todayCompleted: 0, todayAllCompleted: false }
+    }
+    
+    const taskConfigs = settings.mnzdConfigs;
+    const completedTasks = currentProgress?.tasks?.filter((task) => {
+      const config = taskConfigs.find((c) => c.id === task.id);
+      const taskMinutes = task?.minutes || 0;
+      return taskMinutes >= (config?.minMinutes || 0);
+    }) || [];
+    
+    const todayCompleted = completedTasks.length;
+    const todayAllCompleted = todayCompleted === 4;
+    
+    return { taskConfigs, completedTasks, todayCompleted, todayAllCompleted }
+  }, [settings, currentProgress])
+  
+  // Optimize event handlers with useCallback
+  const handleProgressUpdate = useCallback(() => {
+    setLocalProgress(null); // Clear local state to use fresh global data
+  }, []);
+  
+  const handleMNZDProgressUpdate = useCallback(({ date, progress: updatedProgress }) => {
+    if (date === todayStr) {
+      setLocalProgress(updatedProgress);
+    }
+  }, [todayStr]);
+  
+  const handleTaskComplete = useCallback(({ date, taskId, completed }) => {
+    if (date === todayStr && currentProgress) {
+      const updatedTasks = currentProgress.tasks?.map((task: any) => 
+        task.id === taskId ? { ...task, completed } : task
+      ) || [];
+      
+      setLocalProgress({
+        ...currentProgress,
+        tasks: updatedTasks
+      });
+    }
+  }, [todayStr, currentProgress]);
+  
+  // Listen for real-time updates with optimized dependencies
   useEffect(() => {
     const unsubscribeSettings = mnzdEvents.onSettingsUpdate(() => {
       // Settings updated, component will re-render automatically
     });
 
-    const unsubscribeProgress = mnzdEvents.onProgressUpdate(({ date, progress: updatedProgress }) => {
-      if (date === todayStr) {
-        setLocalProgress(updatedProgress);
-      }
-    });
-
-    const unsubscribeTask = mnzdEvents.onTaskComplete(({ date, taskId, completed }) => {
-      if (date === todayStr && currentProgress) {
-        const updatedTasks = currentProgress.tasks?.map((task: any) => 
-          task.id === taskId ? { ...task, completed } : task
-        ) || [];
-        
-        setLocalProgress({
-          ...currentProgress,
-          tasks: updatedTasks
-        });
-      }
-    });
-
-    // Listen for progress updates from other components
-    const handleProgressUpdate = () => {
-      setLocalProgress(null); // Clear local state to use fresh global data
-    };
+    const unsubscribeProgress = mnzdEvents.onProgressUpdate(handleMNZDProgressUpdate);
+    const unsubscribeTask = mnzdEvents.onTaskComplete(handleTaskComplete);
     
     window.addEventListener('progressUpdated', handleProgressUpdate);
 
@@ -68,7 +91,7 @@ export default function DailyCheckIn() {
       unsubscribeTask();
       window.removeEventListener('progressUpdated', handleProgressUpdate);
     };
-  }, [todayStr, currentProgress]);
+  }, [handleMNZDProgressUpdate, handleTaskComplete, handleProgressUpdate]);
 
   // Reset local progress when today's progress changes
   useEffect(() => {
@@ -77,6 +100,7 @@ export default function DailyCheckIn() {
     }
   }, [todayProgress, localProgress]);
   
+  // Early return for loading states
   if (settingsLoading || todayLoading || !settings) {
     return (
       <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
@@ -94,17 +118,6 @@ export default function DailyCheckIn() {
       </div>
     );
   }
-
-  const taskConfigs = settings.mnzdConfigs;
-  const completedTasks =
-    currentProgress?.tasks?.filter((task) => {
-      const config = taskConfigs.find((c) => c.id === task.id);
-      const taskMinutes = task?.minutes || 0;
-      return taskMinutes >= (config?.minMinutes || 0);
-    }) || [];
-
-  const todayCompleted = completedTasks.length;
-  const todayAllCompleted = todayCompleted === 4;
 
   return (
     <>
@@ -132,7 +145,7 @@ export default function DailyCheckIn() {
                 </button>
               </div>
               <div className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                {today.toLocaleDateString("en-US", {
+                {new Date().toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
                 })}

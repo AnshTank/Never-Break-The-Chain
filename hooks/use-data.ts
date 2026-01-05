@@ -10,18 +10,31 @@ export function useDailyProgress(date: string) {
   const [loading, setLoading] = useState(true)
   const fetchedRef = useRef<string | null>(null)
   const isMountedRef = useRef(true)
+  const cacheRef = useRef<Record<string, any>>({})
 
   const fetchProgress = useCallback(async () => {
     if (fetchedRef.current === date || !isMountedRef.current) return
+    
+    // Check cache first
+    if (cacheRef.current[date]) {
+      if (isMountedRef.current) {
+        setProgress(cacheRef.current[date])
+        setLoading(false)
+      }
+      return
+    }
+    
     try {
       setLoading(true)
       fetchedRef.current = date
-      const response = await fetch(`/api/progress?date=${date}`)
+      const response = await fetch(`/api/progress?date=${date}`, {
+        method: 'GET',
+        cache: 'force-cache',
+        next: { revalidate: 60 }
+      })
       if (!response.ok) {
-        // Check if user is authenticated
         const authResponse = await fetch('/api/user/profile')
         if (!authResponse.ok) {
-          // User not authenticated, clear cache
           localStorage.removeItem('progressCache')
           if (isMountedRef.current) {
             setProgress(null)
@@ -32,6 +45,7 @@ export function useDailyProgress(date: string) {
       }
       const data = await response.json()
       if (isMountedRef.current) {
+        cacheRef.current[date] = data
         setProgress(data)
       }
     } catch (err) {
@@ -49,15 +63,11 @@ export function useDailyProgress(date: string) {
 
   const updateProgress = useCallback(async (updates: any) => {
     try {
-      console.log('updateProgress called with:', { date, updates })
-      
       const response = await fetch('/api/progress', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ date, updates })
       })
-      
-      console.log('updateProgress response:', { status: response.status, ok: response.ok })
       
       if (!response.ok) {
         const errorData = await response.text()
@@ -65,23 +75,20 @@ export function useDailyProgress(date: string) {
       }
       
       const responseData = await response.json()
-      console.log('updateProgress success:', responseData)
       
-      // Force refetch by clearing cache
-      fetchedRef.current = null
-      await fetchProgress()
+      // Update cache and state
+      const updatedProgress = { ...progress, ...updates }
+      cacheRef.current[date] = updatedProgress
+      setProgress(updatedProgress)
       
       // Emit real-time update events
-      const updatedProgress = { ...progress, ...updates }
       mnzdEvents.emitProgressUpdate(date, updatedProgress)
-      
-      // Trigger global refresh event for other components
       window.dispatchEvent(new CustomEvent('progressUpdated', { detail: { date } }))
     } catch (err) {
       console.error('Error updating progress:', err)
       throw err
     }
-  }, [date, fetchProgress, progress])
+  }, [date, progress])
 
   useEffect(() => {
     isMountedRef.current = true
