@@ -8,6 +8,22 @@ interface JourneyGraphProps {
   journeyData: JourneyData
 }
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload
+    const value = payload[0].value || 0
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
+        <p className="text-sm font-medium">{`${data.weekday}, Day ${label}`}</p>
+        <p className="text-sm text-blue-600">
+          {`${value.toFixed(1)}h (${data.tasksCompleted}/4 tasks)`}
+        </p>
+      </div>
+    )
+  }
+  return null
+}
+
 export default function JourneyGraph({ journeyData }: JourneyGraphProps) {
   const [viewMode, setViewMode] = useState<"month">("month")
   const [chartType, setChartType] = useState<"area" | "bar" | "line" | "scatter" | "composed">("area")
@@ -273,28 +289,7 @@ export default function JourneyGraph({ journeyData }: JourneyGraphProps) {
                 tick={{ fontSize: 12, fill: "#6b7280" }}
                 width={50}
               />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "white",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "0.5rem",
-                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
-                }}
-                formatter={(value: number, name: string, props: any) => {
-                  const payload = props.payload
-                  if (name === "hours") {
-                    return [
-                      `${value.toFixed(1)}h (${payload.tasksCompleted}/4 tasks)`,
-                      "Hours Invested"
-                    ]
-                  }
-                  return [value, name]
-                }}
-                labelFormatter={(label) => {
-                  const item = data.find(d => d.date === label)
-                  return item ? `${item.weekday}, ${viewMode === "month" ? `Day ${label}` : label}` : label
-                }}
-              />
+              <Tooltip content={<CustomTooltip />} />
               <Area
                 type="monotone"
                 dataKey="hours"

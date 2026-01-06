@@ -271,10 +271,15 @@ export default function TimerPage() {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
-      if (mountRef.current && rendererRef.current.domElement) {
-        mountRef.current.removeChild(rendererRef.current.domElement);
+      try {
+        if (mountRef.current && rendererRef.current.domElement && mountRef.current.contains(rendererRef.current.domElement)) {
+          mountRef.current.removeChild(rendererRef.current.domElement);
+        }
+      } catch (error) {
+        console.warn('DOM element already removed:', error);
       }
       rendererRef.current.dispose();
+      rendererRef.current = null;
     }
 
     const scene = new THREE.Scene();
@@ -288,7 +293,10 @@ export default function TimerPage() {
 
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    mountRef.current.appendChild(renderer.domElement);
+    if (mountRef.current) {
+      mountRef.current.appendChild(renderer.domElement);
+      rendererRef.current = renderer;
+    }
 
     // Environment-specific setup
     const setupEnvironment = () => {

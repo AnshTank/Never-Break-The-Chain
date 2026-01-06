@@ -272,6 +272,7 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
     setState(prev => ({
       ...prev,
       todayProgress: newData,
+      todayLoading: false,
       dailyProgressCache: {
         ...prev.dailyProgressCache,
         [todayStr]: newData
@@ -305,6 +306,8 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
           const today = new Date()
           const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
           
+          setState(prev => ({ ...prev, todayLoading: true }))
+          
           try {
             const data = await loadProgressForDate(todayStr)
             if (mounted) {
@@ -319,9 +322,17 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
             if (mounted) {
               setState(prev => ({
                 ...prev,
+                todayProgress: null,
                 todayLoading: false
               }))
             }
+          }
+        } else {
+          if (mounted) {
+            setState(prev => ({
+              ...prev,
+              todayLoading: false
+            }))
           }
         }
       } catch (error) {
@@ -336,7 +347,7 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
           }))
         }
       }
-    }, 100)
+    }, 50)
     
     return () => {
       mounted = false
