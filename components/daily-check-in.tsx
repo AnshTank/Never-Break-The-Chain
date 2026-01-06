@@ -12,11 +12,13 @@ interface DailyCheckInProps {
 }
 
 export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
+  console.log('DailyCheckIn received preloadedData:', preloadedData);
+  
   const [showMNZDModal, setShowMNZDModal] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [localProgress, setLocalProgress] = useState<any>(preloadedData?.todayProgress || null);
   const [settings, setSettings] = useState<any>(preloadedData?.settings || null);
-  const [loading, setLoading] = useState(!preloadedData?.settings || !preloadedData?.todayProgress);
+  const [loading, setLoading] = useState(!preloadedData?.settings);
   
   // Memoize today's date string to prevent recalculation
   const todayStr = useMemo(() => {
@@ -38,15 +40,9 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
   
   // Memoize task calculations to prevent recalculation
   const { taskConfigs, completedTasks, todayCompleted, todayAllCompleted } = useMemo(() => {
-    if (!settings?.mnzdConfigs || !currentProgress) {
-      // Return default MNZD tasks if no settings
-      const defaultTasks = [
-        { id: 'meditation', name: 'Meditation', minMinutes: 10, color: '#3b82f6', description: 'Mindfulness practice' },
-        { id: 'nutrition', name: 'Nutrition', minMinutes: 30, color: '#10b981', description: 'Healthy eating' },
-        { id: 'zone', name: 'Zone (Exercise)', minMinutes: 20, color: '#f59e0b', description: 'Physical activity' },
-        { id: 'discipline', name: 'Discipline', minMinutes: 15, color: '#8b5cf6', description: 'Personal growth' }
-      ];
-      return { taskConfigs: defaultTasks, completedTasks: [], todayCompleted: 0, todayAllCompleted: false }
+    // Always use preloaded settings if available, otherwise show loading
+    if (!settings?.mnzdConfigs) {
+      return { taskConfigs: [], completedTasks: [], todayCompleted: 0, todayAllCompleted: false }
     }
     
     const taskConfigs = settings.mnzdConfigs;
@@ -57,7 +53,7 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
     }) || [];
     
     const todayCompleted = completedTasks.length;
-    const todayAllCompleted = todayCompleted === 4;
+    const todayAllCompleted = todayCompleted === taskConfigs.length;
     
     return { taskConfigs, completedTasks, todayCompleted, todayAllCompleted }
   }, [settings, currentProgress])
@@ -105,23 +101,19 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
     };
   }, [handleMNZDProgressUpdate, handleTaskComplete, handleProgressUpdate]);
 
-  // Initialize with preloaded data
+  // Initialize with preloaded data immediately
   useEffect(() => {
-    if (preloadedData?.settings && preloadedData?.todayProgress) {
+    if (preloadedData?.settings) {
       setSettings(preloadedData.settings);
+      setLoading(false);
+    }
+    if (preloadedData?.todayProgress) {
       setLocalProgress(preloadedData.todayProgress);
-      setLoading(false);
-    } else if (preloadedData?.settings) {
-      setSettings(preloadedData.settings);
-      setLoading(false);
-    } else {
-      // Force loading to false after a short delay to prevent infinite skeleton
-      setTimeout(() => setLoading(false), 1000);
     }
   }, [preloadedData]);
   
   // Early return for loading states
-  if (loading) {
+  if (loading || !settings?.mnzdConfigs) {
     return (
       <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent dark:via-gray-800/50 animate-shimmer"></div>

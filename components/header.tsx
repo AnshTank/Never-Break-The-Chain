@@ -37,10 +37,10 @@ export default function Header() {
           <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent tracking-tight">
             🔗 NEVER BREAK THE CHAIN
           </h1>
-          <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 max-w-xl mt-2">
+          <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 max-w-xl mt-2 text-center sm:text-left">
             Minimum Non-Zero Day (MNZD) — Showing up daily, even on bad days.
           </p>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-500 max-w-2xl leading-relaxed mt-2">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-500 max-w-2xl leading-relaxed mt-2 text-center sm:text-left">
             Code. Think. Express. Move. All four must happen for a complete day. No exceptions. No substitutions.
           </p>
           <div className="mt-3">

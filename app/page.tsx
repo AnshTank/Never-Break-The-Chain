@@ -36,6 +36,7 @@ export default function Home() {
   }, [])
 
   const handleLoadingComplete = useCallback((data: any) => {
+    console.log('Homepage received data:', data);
     setLoadedData(data)
     setIsLoading(false)
   }, [])
