@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { AlertTriangle, ArrowLeft, Heart } from "lucide-react"
+import { useGlobalState } from "@/lib/global-state"
 
 export default function DeleteAccount() {
   const [step, setStep] = useState<"reason" | "confirm" | "verify">("reason")
@@ -21,6 +22,7 @@ export default function DeleteAccount() {
   const [feedback, setFeedback] = useState("")
   const [confirmed, setConfirmed] = useState(false)
   const router = useRouter()
+  const { clearAllCache } = useGlobalState()
 
   const reasons = [
     "I don't use the app anymore",
@@ -63,6 +65,15 @@ export default function DeleteAccount() {
       const data = await response.json()
 
       if (response.ok) {
+        // Clear all cached data immediately
+        clearAllCache()
+        
+        // Clear localStorage if any
+        if (typeof window !== 'undefined') {
+          localStorage.clear()
+          sessionStorage.clear()
+        }
+        
         router.push("/login?message=Account deleted successfully")
       } else {
         setError(data.error || "Failed to delete account")

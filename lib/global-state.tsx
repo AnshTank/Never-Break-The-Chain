@@ -30,6 +30,7 @@ interface GlobalStateContextType extends GlobalState {
   loadProgressForDate: (date: string) => Promise<any>
   updateProgressForDate: (date: string, updates: any) => Promise<void>
   getTodayProgress: () => any
+  clearAllCache: () => void
 }
 
 const GlobalStateContext = createContext<GlobalStateContextType | null>(null)
@@ -272,6 +273,25 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
     return state.todayProgress
   }
 
+  const clearAllCache = () => {
+    setState({
+      settings: null,
+      settingsLoading: false,
+      analytics: null,
+      analyticsLoading: false,
+      isNewUser: null,
+      userLoading: false,
+      dailyProgressCache: {},
+      todayProgress: null,
+      todayLoading: false,
+    })
+    fetchedRef.current = {
+      settings: false,
+      analytics: null,
+      user: false,
+    }
+  }
+
   useEffect(() => {
     let mounted = true
     
@@ -355,6 +375,7 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
       updateProgressForDate,
       getTodayProgress,
       updateTodayProgressImmediate,
+      clearAllCache,
     }}>
       {children}
     </GlobalStateContext.Provider>

@@ -338,7 +338,7 @@ export default function CoolLoading({
         setAllData((prev) => ({ ...prev, user: userData }));
 
         if (userData.isNewUser) {
-          window.location.href = "/welcome";
+          window.location.replace("/welcome");
           return;
         }
 
@@ -353,19 +353,19 @@ export default function CoolLoading({
           settingsData = await settingsResponse.json();
         }
         updateStep(1, 100, true);
-        
+
         await new Promise((resolve) => setTimeout(resolve, 200));
 
         updateStep(2, 40);
         const analyticsResponse = await fetch("/api/analytics");
         updateStep(2, 80);
-        
+
         let analyticsData = null;
         if (analyticsResponse.ok) {
           analyticsData = await analyticsResponse.json();
         }
         updateStep(2, 100, true);
-        
+
         await new Promise((resolve) => setTimeout(resolve, 200));
 
         updateStep(3, 50);
@@ -392,9 +392,9 @@ export default function CoolLoading({
             user: userData,
             settings: settingsData,
             analytics: analyticsData,
-            todayProgress: progressData
+            todayProgress: progressData,
           };
-          console.log('Loading complete, passing data:', finalData);
+          console.log("Loading complete, passing data:", finalData);
           onLoadingComplete(finalData);
         }
       } catch (error) {
@@ -460,7 +460,9 @@ export default function CoolLoading({
             <div className="relative">
               {/* Percentage Display */}
               <div className="text-center mb-3">
-                <span className="text-base font-bold text-purple-600 dark:text-purple-400">{progress}%</span>
+                <span className="text-base font-bold text-purple-600 dark:text-purple-400">
+                  {progress}%
+                </span>
               </div>
 
               {/* Main Progress Track - Smaller */}
@@ -565,7 +567,8 @@ export default function CoolLoading({
 
           {/* Footer - Smaller */}
           <div className="text-center text-xs text-gray-500 dark:text-gray-400 italic pt-2">
-            Loading... 🌟
+            "Some people spend their entire lives waiting for the time to be
+            right to make an improvement"🌟
           </div>
         </div>
       </div>

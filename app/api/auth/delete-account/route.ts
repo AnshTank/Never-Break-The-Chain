@@ -113,6 +113,9 @@ export async function DELETE(request: NextRequest) {
       path: "/",
     });
 
+    // Add cache clearing header
+    response.headers.set('X-Clear-Cache', 'true');
+
     return response;
   } catch (error) {
     console.error("Delete account error:", error);

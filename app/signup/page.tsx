@@ -43,7 +43,7 @@ function SignupForm() {
       }
 
       localStorage.setItem('userEmail', email);
-      router.push(data.redirect || '/welcome');
+      window.location.replace(data.redirect || '/welcome');
     } catch (err: any) {
       setError(err.message || "Failed to create account");
     } finally {

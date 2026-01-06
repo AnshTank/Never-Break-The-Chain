@@ -89,11 +89,28 @@ export async function middleware(request: NextRequest) {
       const users = db.collection('users')
       const user = await users.findOne({ _id: new ObjectId(payload.userId) })
       
-      if (user && (user.isNewUser || user.needsPasswordSetup)) {
+      // If user doesn't exist (deleted account), redirect to login
+      if (!user) {
+        if (pathname.startsWith('/api/')) {
+          return NextResponse.json({ error: 'User not found' }, { status: 401 })
+        }
+        const response = NextResponse.redirect(new URL('/login', request.url))
+        // Clear cookies for deleted user
+        response.cookies.set('auth-token', '', { maxAge: 0, path: '/' })
+        response.cookies.set('refresh-token', '', { maxAge: 0, path: '/' })
+        return response
+      }
+      
+      if (user.isNewUser || user.needsPasswordSetup || !user.password) {
         return NextResponse.redirect(new URL('/welcome', request.url))
       }
     } catch (error) {
       console.error('Error checking user welcome status:', error)
+      // On database error, redirect to login to be safe
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Database error' }, { status: 500 })
+      }
+      return NextResponse.redirect(new URL('/login', request.url))
     }
   }
   

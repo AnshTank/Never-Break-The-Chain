@@ -17,8 +17,13 @@ export async function GET(request: NextRequest) {
     const users = db.collection('users')
     const userData = await users.findOne({ _id: new ObjectId(user.userId) })
     
+    // If user doesn't exist (deleted account), return 401
+    if (!userData) {
+      return NextResponse.json({ error: 'User not found' }, { status: 401 })
+    }
+    
     return NextResponse.json({
-      isNewUser: userData?.isNewUser || false
+      isNewUser: userData.isNewUser || false
     })
     
   } catch (error) {
