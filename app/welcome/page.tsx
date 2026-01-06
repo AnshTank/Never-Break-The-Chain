@@ -503,18 +503,18 @@ export default function WelcomePage() {
               </div>
             )}
 
-            {/* Step 4: MNZD Setup - Individual Cards with Tips */}
+            {/* Step 4: MNZD Setup - Mobile Responsive */}
             {step === 4 && (
-              <div className="space-y-8">
+              <div className="space-y-6 sm:space-y-8">
                 {cardIndex < 4 ? (
                   <>
-                    <div className="text-center mb-8">
-                      <h1 className="text-4xl font-bold text-white mb-4">Setup Your {mnzdConfigs[cardIndex]?.name}</h1>
-                      <p className="text-lg text-slate-300">Pillar {cardIndex + 1} of 4 • Customize your daily target</p>
+                    <div className="text-center mb-6 sm:mb-8">
+                      <h1 className="text-2xl sm:text-4xl font-bold text-white mb-3 sm:mb-4">Setup Your {mnzdConfigs[cardIndex]?.name}</h1>
+                      <p className="text-sm sm:text-lg text-slate-300">Pillar {cardIndex + 1} of 4 • Customize your daily target</p>
                     </div>
 
-                    <div className="max-w-2xl mx-auto">
-                      <div className="relative h-[600px]">
+                    <div className="max-w-2xl mx-auto px-2 sm:px-0">
+                      <div className="relative h-[500px] sm:h-[600px]">
                         {mnzdConfigs.map((config, index) => (
                           <div
                             key={config.id}
@@ -523,28 +523,28 @@ export default function WelcomePage() {
                               index < cardIndex ? 'opacity-0 -translate-x-full' : 'opacity-0 translate-x-full'
                             }`}
                           >
-                            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700 h-full flex flex-col">
-                              <div className="flex-1 space-y-4">
+                            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-slate-700 h-full flex flex-col">
+                              <div className="flex-1 space-y-3 sm:space-y-4">
                                 {/* Header with Theme Color */}
-                                <div className="text-center mb-4">
-                                  <div className={`w-20 h-20 rounded-2xl flex items-center justify-center text-white font-bold text-3xl mx-auto mb-4 shadow-lg`} style={{ backgroundColor: config.color }}>
+                                <div className="text-center mb-3 sm:mb-4">
+                                  <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-white font-bold text-2xl sm:text-3xl mx-auto mb-3 sm:mb-4 shadow-lg`} style={{ backgroundColor: config.color }}>
                                     {config.id.charAt(0).toUpperCase()}
                                   </div>
-                                  <h3 className="text-2xl font-bold text-white mb-2">{config.name}</h3>
-                                  <p className="text-slate-400 text-sm max-w-md mx-auto">{config.description}</p>
+                                  <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">{config.name}</h3>
+                                  <p className="text-slate-400 text-xs sm:text-sm max-w-md mx-auto px-2">{config.description}</p>
                                 </div>
                                 
                                 {/* Configuration */}
-                                <div className="space-y-4">
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
+                                <div className="space-y-3 sm:space-y-4">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                    <div className="sm:col-span-2">
                                       <Label className="text-slate-300 text-sm font-medium">Daily Minutes</Label>
                                       <div className="relative mt-2">
                                         <div className="flex items-center bg-slate-700/50 border border-slate-600 rounded-lg overflow-hidden">
                                           <button
                                             type="button"
                                             onClick={() => updateConfig(config.id, "minMinutes", Math.max(5, config.minMinutes - 5))}
-                                            className="px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-600/50 transition-all"
+                                            className="px-2 sm:px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-600/50 transition-all text-lg sm:text-xl"
                                           >
                                             −
                                           </button>
@@ -555,12 +555,12 @@ export default function WelcomePage() {
                                               const val = parseInt(e.target.value) || 0;
                                               if (val >= 5 && val <= 480) updateConfig(config.id, "minMinutes", val);
                                             }}
-                                            className="flex-1 bg-transparent text-white text-center text-lg font-semibold focus:outline-none py-2"
+                                            className="flex-1 bg-transparent text-white text-center text-xl sm:text-2xl font-bold focus:outline-none py-2"
                                           />
                                           <button
                                             type="button"
                                             onClick={() => updateConfig(config.id, "minMinutes", Math.min(480, config.minMinutes + 5))}
-                                            className="px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-600/50 transition-all"
+                                            className="px-2 sm:px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-600/50 transition-all text-lg sm:text-xl"
                                           >
                                             +
                                           </button>
@@ -580,43 +580,42 @@ export default function WelcomePage() {
                                           type="color"
                                           value={config.color}
                                           onChange={(e) => updateConfig(config.id, "color", e.target.value)}
-                                          className="w-12 h-10 bg-slate-700/50 border-slate-600 rounded cursor-pointer"
+                                          className="w-10 h-8 sm:w-12 sm:h-10 bg-slate-700/50 border-slate-600 rounded cursor-pointer"
                                         />
-                                        <div className="flex-1 h-10 rounded border border-slate-600 shadow-inner" style={{ backgroundColor: config.color }} />
+                                        <div className="flex-1 h-8 sm:h-10 rounded border border-slate-600 shadow-inner" style={{ backgroundColor: config.color }} />
                                       </div>
+                                    </div>
+                                    <div>
+                                      <Label className="text-slate-300 text-sm font-medium">Custom Name</Label>
+                                      <Input
+                                        type="text"
+                                        maxLength={12}
+                                        value={config.name}
+                                        onChange={(e) => updateConfig(config.id, "name", e.target.value)}
+                                        className="mt-2 bg-slate-700/50 border-slate-600 text-white focus:border-blue-500 text-sm"
+                                        placeholder="e.g., Code"
+                                      />
+                                      <p className="text-xs text-slate-500 mt-1">{config.name.length}/12</p>
                                     </div>
                                   </div>
                                   
                                   <div>
-                                    <Label className="text-slate-300 text-sm font-medium">Custom Name (max 12 chars)</Label>
-                                    <Input
-                                      type="text"
-                                      maxLength={12}
-                                      value={config.name}
-                                      onChange={(e) => updateConfig(config.id, "name", e.target.value)}
-                                      className="mt-2 bg-slate-700/50 border-slate-600 text-white focus:border-blue-500"
-                                      placeholder="e.g., Code, Learn, Write"
-                                    />
-                                    <p className="text-xs text-slate-500 mt-1">{config.name.length}/12 characters</p>
-                                  </div>
-                                  
-                                  <div>
-                                    <Label className="text-slate-300 text-sm font-medium">Description (max 50 chars)</Label>
+                                    <Label className="text-slate-300 text-sm font-medium">Description</Label>
                                     <Input
                                       type="text"
                                       maxLength={50}
                                       value={config.description}
                                       onChange={(e) => updateConfig(config.id, "description", e.target.value)}
-                                      className="mt-2 bg-slate-700/50 border-slate-600 text-white focus:border-blue-500"
-                                      placeholder="Brief description of this pillar"
+                                      className="mt-2 bg-slate-700/50 border-slate-600 text-white focus:border-blue-500 text-sm"
+                                      placeholder="Brief description"
                                     />
-                                    <p className="text-xs text-slate-500 mt-1">{config.description.length}/50 characters</p>
+                                    <p className="text-xs text-slate-500 mt-1">{config.description.length}/50</p>
                                   </div>
                                 </div>
                               </div>
 
                               {/* Tips - Fixed at bottom */}
-                              <div className="bg-slate-700/30 rounded-xl p-4 border border-slate-600/50 mt-4">
+                              <div className="bg-slate-700/30 rounded-xl p-3 sm:p-4 border border-slate-600/50 mt-3 sm:mt-4">
                                 <h4 className="text-sm font-semibold text-slate-300 mb-2 flex items-center">
                                   💡 Pro Tip
                                 </h4>
@@ -632,22 +631,22 @@ export default function WelcomePage() {
                         ))}
                       </div>
                       
-                      <div className="flex justify-center items-center space-x-6 mt-8">
+                      <div className="flex justify-center items-center space-x-4 sm:space-x-6 mt-6 sm:mt-8">
                         <button
                           onClick={handlePrev}
                           disabled={cardIndex === 0}
-                          className="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-1.5 sm:p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                         >
                           ←
                         </button>
                         
-                        <div className="flex space-x-2">
+                        <div className="flex space-x-1.5 sm:space-x-2">
                           {[0, 1, 2, 3].map((i) => (
                             <button
                               key={i}
                               onClick={() => i < cardIndex ? setCardIndex(i) : undefined}
                               disabled={i > cardIndex}
-                              className={`w-2 h-2 rounded-full transition-all ${
+                              className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all ${
                                 i === cardIndex ? 'bg-blue-400' : 
                                 i < cardIndex ? 'bg-slate-500 hover:bg-slate-400 cursor-pointer' : 
                                 'bg-slate-600 cursor-not-allowed'
@@ -658,74 +657,74 @@ export default function WelcomePage() {
                         
                         <button
                           onClick={cardIndex === 3 ? () => setCardIndex(4) : () => setCardIndex(cardIndex + 1)}
-                          className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all"
+                          className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all text-sm sm:text-base"
                         >
-                          {cardIndex === 3 ? 'Review Setup' : 'Next'}
+                          {cardIndex === 3 ? 'Review' : 'Next'}
                         </button>
                       </div>
                     </div>
                   </>
                 ) : (
-                  /* Summary & Edit Option */
+                  /* Summary & Edit Option - Mobile Responsive */
                   <>
-                    <div className="text-center mb-8">
-                      <h1 className="text-4xl font-bold text-white mb-4">Your Daily Commitment</h1>
-                      <p className="text-lg text-slate-300">Review your MNZD system • Edit if needed</p>
+                    <div className="text-center mb-6 sm:mb-8">
+                      <h1 className="text-2xl sm:text-4xl font-bold text-white mb-3 sm:mb-4">Your Daily Commitment</h1>
+                      <p className="text-sm sm:text-lg text-slate-300">Review your MNZD system • Edit if needed</p>
                     </div>
 
-                    <div className="max-w-4xl mx-auto space-y-8">
-                      {/* Summary Cards */}
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 px-2 sm:px-0">
+                      {/* Summary Cards - Mobile Responsive */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                         {mnzdConfigs.map((config, index) => (
-                          <div key={config.id} className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
+                          <div key={config.id} className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-3 sm:p-4 border border-slate-700/50">
                             <div className="text-center">
-                              <div className={`w-12 h-12 mx-auto rounded-xl flex items-center justify-center text-white text-lg font-bold mb-2`} style={{ backgroundColor: config.color }}>
+                              <div className={`w-10 h-10 sm:w-12 sm:h-12 mx-auto rounded-xl flex items-center justify-center text-white text-sm sm:text-lg font-bold mb-2`} style={{ backgroundColor: config.color }}>
                                 {config.id.charAt(0).toUpperCase()}
                               </div>
-                              <h3 className="text-sm font-bold text-white">{config.name}</h3>
-                              <div className="text-xl font-bold text-white mt-2">{config.minMinutes}m</div>
+                              <h3 className="text-xs sm:text-sm font-bold text-white truncate">{config.name}</h3>
+                              <div className="text-lg sm:text-xl font-bold text-white mt-1 sm:mt-2">{config.minMinutes}m</div>
                             </div>
                           </div>
                         ))}
                       </div>
 
-                      {/* Total Summary */}
-                      <div className="bg-gradient-to-r from-slate-800/30 to-slate-700/30 backdrop-blur-sm rounded-2xl p-6 border border-slate-600/30">
+                      {/* Total Summary - Mobile Responsive */}
+                      <div className="bg-gradient-to-r from-slate-800/30 to-slate-700/30 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-slate-600/30">
                         <div className="text-center">
-                          <h3 className="text-xl font-semibold text-white mb-4">Daily Overview</h3>
-                          <div className="flex items-center justify-center space-x-8">
+                          <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">Daily Overview</h3>
+                          <div className="flex items-center justify-center space-x-4 sm:space-x-8">
                             <div className="text-center">
-                              <div className="text-3xl font-bold text-blue-400">
+                              <div className="text-2xl sm:text-3xl font-bold text-blue-400">
                                 {mnzdConfigs.reduce((sum, config) => sum + config.minMinutes, 0)}m
                               </div>
-                              <div className="text-sm text-slate-400">total daily</div>
+                              <div className="text-xs sm:text-sm text-slate-400">total daily</div>
                             </div>
                             <div className="text-center">
-                              <div className="text-3xl font-bold text-emerald-400">4</div>
-                              <div className="text-sm text-slate-400">life pillars</div>
+                              <div className="text-2xl sm:text-3xl font-bold text-emerald-400">4</div>
+                              <div className="text-xs sm:text-sm text-slate-400">life pillars</div>
                             </div>
                             <div className="text-center">
-                              <div className="text-3xl font-bold text-purple-400">∞</div>
-                              <div className="text-sm text-slate-400">potential</div>
+                              <div className="text-2xl sm:text-3xl font-bold text-purple-400">∞</div>
+                              <div className="text-xs sm:text-sm text-slate-400">potential</div>
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* Action Buttons */}
-                      <div className="flex justify-center space-x-4">
+                      {/* Action Buttons - Mobile Responsive */}
+                      <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
                         <Button
                           onClick={() => setCardIndex(0)}
                           variant="outline"
                           size="lg"
-                          className="px-6 py-3 bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white"
+                          className="w-full sm:w-auto px-6 py-3 bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white"
                         >
                           Edit Setup
                         </Button>
                         <Button
                           onClick={handleFinish}
                           size="lg"
-                          className="px-8 py-3 text-lg font-semibold bg-blue-600 hover:bg-blue-700 text-white"
+                          className="w-full sm:w-auto px-8 py-3 text-lg font-semibold bg-blue-600 hover:bg-blue-700 text-white"
                         >
                           Complete Setup
                         </Button>
