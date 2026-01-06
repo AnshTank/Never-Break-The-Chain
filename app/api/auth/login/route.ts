@@ -30,21 +30,22 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { email, password, rememberMe } = body
 
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
+    if (!email) {
+      return NextResponse.json({ error: 'Email is required' }, { status: 400 })
     }
 
     // Validate and sanitize inputs to prevent NoSQL injection
-    const sanitizedInputs = validateAndSanitizeInput(email, password)
-    if (!sanitizedInputs) {
-      return NextResponse.json({ error: 'Invalid email or password format' }, { status: 400 })
+    const sanitizedEmail = email.trim().toLowerCase()
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(sanitizedEmail)) {
+      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 })
     }
 
     const { db } = await connectToDatabase()
     const users = db.collection('users')
 
     // Find user with sanitized email
-    const user = await users.findOne({ email: sanitizedInputs.email })
+    const user = await users.findOne({ email: sanitizedEmail })
     if (!user) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }
@@ -54,15 +55,16 @@ export async function POST(request: NextRequest) {
       // Allow OAuth users to login without password if they have oauthProvider
       if (!user.oauthProvider) {
         return NextResponse.json({ 
-          error: 'Please complete your account setup by setting a password first.',
-          needsPasswordSetup: true 
+          error: 'Account setup incomplete. Please check your email for setup instructions.',
+          needsPasswordSetup: true,
+          email: user.email
         }, { status: 400 })
       }
     }
 
-    // Check password (skip for OAuth users)
-    if (user.password && !user.oauthProvider) {
-      const isValidPassword = await bcrypt.compare(sanitizedInputs.password, user.password)
+    // Only validate password if user has one and it's provided
+    if (user.password && password && !user.oauthProvider) {
+      const isValidPassword = await bcrypt.compare(password, user.password)
       if (!isValidPassword) {
         return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
       }

@@ -43,6 +43,7 @@ const defaultMNZDConfigs: MNZDConfig[] = [
 
 export default function WelcomePage() {
   const [step, setStep] = useState(1);
+  const [cardIndex, setCardIndex] = useState(0);
   const [mnzdConfigs, setMnzdConfigs] =
     useState<MNZDConfig[]>(defaultMNZDConfigs);
   const [mounted, setMounted] = useState(false);
@@ -59,7 +60,22 @@ export default function WelcomePage() {
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // Prevent accidental navigation away from welcome flow
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isNewUser === true) {
+        e.preventDefault();
+        e.returnValue = 'Your account setup is not complete. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isNewUser]);
 
   // Fetch user email when component mounts
   useEffect(() => {
@@ -80,7 +96,7 @@ export default function WelcomePage() {
     }
   }, [mounted, userEmail]);
 
-  // Redirect if not a new user
+  // Redirect if not a new user and not already redirecting
   useEffect(() => {
     if (userStatusLoading) return;
 
@@ -91,12 +107,22 @@ export default function WelcomePage() {
   }, [isNewUser, userStatusLoading, router]);
 
   const handleNext = () => {
-    if (step < 4) {
+    if (step === 2 && cardIndex < 2) {
+      setCardIndex(cardIndex + 1);
+    } else if (step === 3 && cardIndex < 3) {
+      setCardIndex(cardIndex + 1);
+    } else if (step < 4) {
       setStep(step + 1);
-      const container = document.querySelector(".welcome-container");
-      if (container) {
-        container.scrollTo({ top: 0, behavior: "smooth" });
-      }
+      setCardIndex(0);
+    }
+  };
+
+  const handlePrev = () => {
+    if (cardIndex > 0) {
+      setCardIndex(cardIndex - 1);
+    } else if (step > 1) {
+      setStep(step - 1);
+      setCardIndex(step === 2 ? 2 : step === 3 ? 3 : 0);
     }
   };
 
@@ -161,75 +187,80 @@ export default function WelcomePage() {
   }
 
   return (
-    <div
-      className="h-screen relative overflow-hidden"
-      style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-    >
+    <div className="h-screen relative overflow-hidden">
       <style jsx global>{`
-        .welcome-container::-webkit-scrollbar {
-          display: none;
+        .card-stack {
+          perspective: 1000px;
         }
-        .welcome-container {
-          scrollbar-width: none;
-          -ms-overflow-style: none;
+        .card-3d {
+          transform-style: preserve-3d;
+          transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-enter {
+          transform: translateX(100%) rotateY(-15deg) scale(0.9);
+          opacity: 0;
+        }
+        .card-active {
+          transform: translateX(0) rotateY(0deg) scale(1);
+          opacity: 1;
+          z-index: 10;
+        }
+        .card-exit {
+          transform: translateX(-100%) rotateY(15deg) scale(0.9);
+          opacity: 0;
+        }
+        .floating {
+          animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-20px) rotate(2deg); }
+        }
+        .pulse-ring {
+          animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-ring {
+          0% { transform: scale(0.8); opacity: 1; }
+          100% { transform: scale(2.4); opacity: 0; }
+        }
+        .morph {
+          animation: morph 8s ease-in-out infinite;
+        }
+        @keyframes morph {
+          0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+          50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
         }
       `}</style>
 
-      {/* Animated Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.3),transparent_50%)]" />
+      {/* Minimal Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 to-slate-800">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(59,130,246,0.1),transparent_50%)]" />
         {mounted && (
-          <div className="absolute inset-0">
-            {[...Array(20)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute animate-pulse"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 3}s`,
-                  animationDuration: `${2 + Math.random() * 3}s`,
-                }}
-              >
-                <div className="w-1 h-1 bg-white/20 rounded-full" />
-              </div>
-            ))}
-          </div>
+          <>
+            <div className="absolute top-32 right-32 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl" />
+            <div className="absolute bottom-32 left-32 w-48 h-48 bg-slate-500/5 rounded-full blur-2xl" />
+          </>
         )}
-        <div
-          className="absolute top-10 left-10 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "0s", animationDuration: "4s" }}
-        />
-        <div
-          className="absolute bottom-10 right-10 w-96 h-96 bg-blue-500/10 rounded-full blur-xl animate-pulse"
-          style={{ animationDelay: "2s", animationDuration: "6s" }}
-        />
-        <div
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-cyan-500/5 rounded-full blur-xl animate-pulse"
-          style={{ animationDelay: "1s", animationDuration: "5s" }}
-        />
       </div>
 
-      <div className="welcome-container relative z-10 h-full overflow-y-auto px-4 py-6">
-        <div className="max-w-5xl mx-auto">
-          {/* Progress indicator */}
-          <div className="flex justify-center mb-6">
-            <div className="flex space-x-3">
+      <div className="relative z-10 h-full flex flex-col">
+        {/* Progress Indicator - Mobile Responsive */}
+        <div className="absolute top-4 sm:top-8 left-1/2 transform -translate-x-1/2 z-20">
+          <div className="bg-slate-800/80 backdrop-blur-sm rounded-full px-3 sm:px-4 py-1.5 sm:py-2 border border-slate-700">
+            <div className="flex items-center space-x-1.5 sm:space-x-2">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="flex items-center">
-                  <div
-                    className={`w-4 h-4 rounded-full transition-all duration-500 transform ${
-                      i <= step
-                        ? "bg-gradient-to-r from-blue-400 to-purple-400 shadow-lg shadow-blue-500/25 scale-110"
-                        : "bg-white/20 backdrop-blur-sm scale-100"
-                    }`}
+                  <button
+                    onClick={() => i < step ? setStep(i) : undefined}
+                    disabled={i > step}
+                    className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all duration-300 ${
+                      i <= step ? "bg-blue-400" : "bg-slate-600"
+                    } ${i < step ? 'cursor-pointer hover:scale-125' : i === step ? '' : 'cursor-not-allowed'}`}
                   />
                   {i < 4 && (
                     <div
-                      className={`w-16 h-0.5 mx-2 transition-all duration-500 ${
-                        i < step
-                          ? "bg-gradient-to-r from-blue-400 to-purple-400"
-                          : "bg-white/20"
+                      className={`w-4 sm:w-6 h-px mx-1.5 sm:mx-2 transition-all duration-300 ${
+                        i < step ? "bg-blue-400" : "bg-slate-600"
                       }`}
                     />
                   )}
@@ -237,659 +268,494 @@ export default function WelcomePage() {
               ))}
             </div>
           </div>
+        </div>
 
-          {/* Step 1: Hero Welcome */}
-          {step === 1 && (
-            <div className="text-center space-y-8 animate-in fade-in duration-1000">
-              <div className="space-y-8">
+        {/* Main Content Area - Mobile Responsive */}
+        <div className="flex-1 flex items-center justify-center px-4 sm:px-4">
+          <div className="max-w-5xl w-full">
+            
+            {/* Step 1: Hero Welcome - Mobile Responsive */}
+            {step === 1 && (
+              <div className="text-center space-y-6 sm:space-y-8 animate-in fade-in duration-1000">
                 <div className="relative">
-                  <h1 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent leading-tight">
+                  <div className="absolute -top-6 -right-6 sm:-top-8 sm:-right-8 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-r from-yellow-400/30 to-orange-400/30 rounded-full blur-2xl floating" />
+                  <div className="absolute -bottom-6 -left-6 sm:-bottom-8 sm:-left-8 w-32 h-32 sm:w-40 sm:h-40 bg-gradient-to-r from-blue-400/30 to-purple-400/30 rounded-full blur-2xl floating" style={{ animationDelay: '2s' }} />
+                  
+                  <h1 className="text-4xl sm:text-6xl md:text-8xl font-black bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent leading-tight mb-3 sm:mb-4">
                     NEVER BREAK
                   </h1>
-                  <h1 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent leading-tight">
+                  <h1 className="text-4xl sm:text-6xl md:text-8xl font-black bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent leading-tight">
                     THE CHAIN
                   </h1>
-                  <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full blur-xl opacity-60 animate-pulse" />
-                  <div
-                    className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full blur-xl opacity-40 animate-pulse"
-                    style={{ animationDelay: "1s" }}
-                  />
                 </div>
 
-                <div className="max-w-4xl mx-auto space-y-6">
-                  <p className="text-xl md:text-2xl text-white/90 font-light leading-relaxed">
+                <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
+                  <p className="text-lg sm:text-2xl md:text-3xl text-white/90 font-light leading-relaxed px-2">
                     Transform your life through the power of{" "}
                     <span className="font-semibold text-transparent bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text">
                       consistent daily action
                     </span>
                   </p>
-                  <p className="text-lg text-white/70 max-w-2xl mx-auto">
-                    Join thousands who have built unstoppable momentum using
-                    Jerry Seinfeld's legendary productivity method. Every chain
-                    starts with a single link. Every journey begins with a
-                    single step.
-                  </p>
-                </div>
-              </div>
-
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-3xl blur-xl" />
-                <div className="relative bg-white/10 backdrop-blur-lg rounded-3xl p-6 border border-white/20 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:border-white/30">
-                  <div className="space-y-8">
-                    <div className="grid md:grid-cols-3 gap-6 text-center">
-                      <div className="space-y-3">
-                        <div className="text-4xl font-bold text-white">∞</div>
-                        <div className="text-white/80">Unlimited Potential</div>
-                      </div>
-                      <div className="space-y-3">
-                        <div className="text-4xl font-bold text-transparent bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text">
-                          1%
-                        </div>
-                        <div className="text-white/80">Daily Improvement</div>
-                      </div>
-                      <div className="space-y-3">
-                        <div className="text-4xl font-bold text-white">365</div>
-                        <div className="text-white/80">Days of Growth</div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 mt-8 sm:mt-12">
+                    <div className="relative group">
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300" />
+                      <div className="relative bg-white/10 backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-white/20 hover:border-white/40 transition-all duration-300">
+                        <div className="text-3xl sm:text-4xl font-bold text-white mb-2">∞</div>
+                        <div className="text-white/80 font-medium text-sm sm:text-base">Unlimited Potential</div>
                       </div>
                     </div>
-
-                    <div className="border-t border-white/20 pt-6">
-                      <h3 className="text-xl font-semibold text-white mb-3">
-                        The Science of Success
-                      </h3>
-                      <p className="text-white/80 text-base leading-relaxed mb-6">
-                        Research shows that it takes an average of 66 days to
-                        form a habit. But here's the secret:
-                        <span className="font-semibold text-white">
-                          {" "}
-                          consistency beats perfection
-                        </span>
-                        . Small daily actions compound into extraordinary
-                        results over time.
-                      </p>
-
-                      <Button
-                        onClick={handleNext}
-                        size="lg"
-                        className="px-6 py-3 text-base font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 border-0 shadow-lg hover:shadow-xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-1"
-                      >
-                        Begin Your Transformation
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 2: The Philosophy */}
-          {step === 2 && (
-            <div className="space-y-6 animate-in fade-in duration-1000">
-              <div className="text-center space-y-4">
-                <h1 className="text-4xl md:text-5xl font-bold text-white">
-                  The Philosophy
-                </h1>
-                <p className="text-xl text-white/80 max-w-3xl mx-auto leading-relaxed">
-                  Understanding the deeper principles behind lasting change
-                </p>
-              </div>
-
-              <div className="grid lg:grid-cols-2 gap-8 items-start">
-                <div className="space-y-6">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 to-orange-500/20 rounded-xl blur-xl" />
-                    <div className="relative bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-                      <h3 className="text-xl font-bold text-white mb-3">
-                        The Chain Reaction
-                      </h3>
-                      <p className="text-white/80 leading-relaxed">
-                        Jerry Seinfeld's method is deceptively simple: Do one
-                        important thing every day. Mark it on a calendar. After
-                        a few days, you'll have a chain.
-                        <span className="font-semibold text-white">
-                          Your only job is to not break the chain.
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-xl blur-xl" />
-                    <div className="relative bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-                      <h3 className="text-xl font-bold text-white mb-3">
-                        Compound Growth
-                      </h3>
-                      <p className="text-white/80 leading-relaxed">
-                        If you improve by just 1% each day, you'll be 37 times
-                        better by the end of the year. This isn't just math—it's
-                        the fundamental law of personal transformation.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl blur-xl" />
-                    <div className="relative bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-                      <h3 className="text-xl font-bold text-white mb-3">
-                        Identity Shift
-                      </h3>
-                      <p className="text-white/80 leading-relaxed">
-                        You don't just build habits—you become the type of
-                        person who does these things naturally. Every action is
-                        a vote for the person you want to become.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-orange-400/20 rounded-2xl blur-xl" />
-                  <div className="relative bg-white/5 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
-                    <div className="text-center space-y-6">
-                      <div className="text-7xl font-black text-transparent bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text">
-                        🔗
+                    
+                    <div className="relative group">
+                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300" />
+                      <div className="relative bg-white/10 backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-white/20 hover:border-white/40 transition-all duration-300">
+                        <div className="text-3xl sm:text-4xl font-bold text-transparent bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text mb-2">1%</div>
+                        <div className="text-white/80 font-medium text-sm sm:text-base">Daily Improvement</div>
                       </div>
-                      <div className="space-y-3">
-                        <h3 className="text-2xl font-bold text-white">
-                          Your Chain Awaits
-                        </h3>
-                        <p className="text-white/80">
-                          Every master was once a beginner. Every expert was
-                          once a disaster. The difference? They never broke
-                          their chain.
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4 text-center">
-                        <div className="bg-white/10 rounded-lg p-4">
-                          <div className="text-2xl font-bold text-white">
-                            Day 1
-                          </div>
-                          <div className="text-white/60">Motivation</div>
-                        </div>
-                        <div className="bg-white/10 rounded-lg p-4">
-                          <div className="text-2xl font-bold text-transparent bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text">
-                            Day 365
-                          </div>
-                          <div className="text-white/60">Transformation</div>
-                        </div>
-                      </div>
-
-                      <div className="pt-4">
-                        <div className="text-sm text-white/70 mb-4 italic">
-                          "Success is the sum of small efforts repeated day in
-                          and day out." - Robert Collier
-                        </div>
-                        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                          <div className="text-xs text-white/60 mb-2">
-                            The Math of Transformation
-                          </div>
-                          <div className="text-white/80 font-mono text-center">
-                            <div className="text-green-400">
-                              1.01³⁶⁵ = 37.78x better
-                            </div>
-                            <div className="text-red-400">
-                              0.99³⁶⁵ = 0.03x worse
-                            </div>
-                          </div>
-                        </div>
+                    </div>
+                    
+                    <div className="relative group">
+                      <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300" />
+                      <div className="relative bg-white/10 backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-white/20 hover:border-white/40 transition-all duration-300">
+                        <div className="text-3xl sm:text-4xl font-bold text-white mb-2">365</div>
+                        <div className="text-white/80 font-medium text-sm sm:text-base">Days of Growth</div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
+            )}
 
-              <div className="text-center pt-4">
-                <Button
-                  onClick={handleNext}
-                  size="lg"
-                  className="px-10 py-4 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-                >
-                  Discover the MNZD System
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: MNZD Deep Dive */}
-          {step === 3 && (
-            <div className="space-y-12 animate-in fade-in duration-1000">
-              <div className="text-center space-y-6">
-                <h1 className="text-5xl md:text-6xl font-bold text-white">
-                  The MNZD Framework
-                </h1>
-                <p className="text-xl text-white/80 max-w-4xl mx-auto leading-relaxed">
-                  Four interconnected pillars that create a foundation for
-                  extraordinary personal growth
-                </p>
-              </div>
-
-              <div className="grid gap-8">
-                {[
-                  {
-                    letter: "M",
-                    title: "MOVE",
-                    subtitle: "Physical Mastery",
-                    fullForm: "Movement • Momentum • Muscle",
-                    philosophy:
-                      "Your body is the vehicle for all your dreams. When you move your body, you move your life.",
-                    description:
-                      "Physical activity isn't just about fitness—it's about building the discipline, energy, and mental clarity needed for peak performance in all areas of life.",
-                    benefits: [
-                      "Increased energy and vitality throughout the day",
-                      "Enhanced mood through endorphin release",
-                      "Improved cognitive function and memory",
-                      "Greater self-confidence and body awareness",
-                      "Better sleep quality and recovery",
-                      "Stress reduction and emotional regulation",
-                    ],
-                    science:
-                      "Exercise increases BDNF (brain-derived neurotrophic factor), literally growing new brain cells and improving neuroplasticity.",
-                    color: "from-green-400 to-emerald-600",
-                    bgColor: "from-green-500/20 to-emerald-500/20",
-                  },
-                  {
-                    letter: "N",
-                    title: "NOURISH",
-                    subtitle: "Mental Expansion",
-                    fullForm: "Nurture • Navigate • Neurons",
-                    philosophy:
-                      "The mind that opens to a new idea never returns to its original size.",
-                    description:
-                      "Continuous learning and mental stimulation create new neural pathways, expanding your capacity for creativity, problem-solving, and innovation.",
-                    benefits: [
-                      "Expanded knowledge base and expertise",
-                      "Enhanced critical thinking abilities",
-                      "Improved creativity and innovation",
-                      "Greater adaptability to change",
-                      "Increased intellectual confidence",
-                      "Better decision-making skills",
-                    ],
-                    science:
-                      "Neuroplasticity research shows that learning new skills literally rewires your brain, creating stronger neural networks.",
-                    color: "from-purple-400 to-violet-600",
-                    bgColor: "from-purple-500/20 to-violet-500/20",
-                  },
-                  {
-                    letter: "Z",
-                    title: "ZONE",
-                    subtitle: "Flow State Mastery",
-                    fullForm:
-                      "Zero Distractions • Zenith Performance • Zone of Genius",
-                    philosophy:
-                      "In the zone, time disappears, self-consciousness fades, and peak performance emerges naturally.",
-                    description:
-                      "Deep, focused work on your most important skills and projects. This is where mastery is built and breakthroughs happen.",
-                    benefits: [
-                      "Accelerated skill development and mastery",
-                      "Increased productivity and output quality",
-                      "Enhanced creative breakthroughs",
-                      "Greater professional recognition",
-                      "Improved problem-solving abilities",
-                      "Deeper sense of purpose and fulfillment",
-                    ],
-                    science:
-                      "Flow states increase performance by up to 500% and trigger the release of norepinephrine, dopamine, and anandamide.",
-                    color: "from-blue-400 to-cyan-600",
-                    bgColor: "from-blue-500/20 to-cyan-500/20",
-                  },
-                  {
-                    letter: "D",
-                    title: "DOCUMENT",
-                    subtitle: "Wisdom Capture",
-                    fullForm: "Document • Develop • Discover",
-                    philosophy:
-                      "Writing is thinking on paper. When you write, you don't just record thoughts—you create them.",
-                    description:
-                      "Capture insights, reflect on experiences, and express ideas through writing. This practice clarifies thinking and preserves wisdom.",
-                    benefits: [
-                      "Improved communication and articulation",
-                      "Enhanced self-awareness and reflection",
-                      "Better emotional processing and regulation",
-                      "Preserved insights and learning",
-                      "Increased creativity through expression",
-                      "Stronger personal and professional relationships",
-                    ],
-                    science:
-                      "Writing activates the reticular activating system, helping you notice and remember important information.",
-                    color: "from-cyan-400 to-teal-600",
-                    bgColor: "from-cyan-500/20 to-teal-500/20",
-                  },
-                ].map((pillar, index) => (
-                  <div key={index} className="relative group">
+            {/* Step 2: Philosophy - Mobile Responsive */}
+            {step === 2 && (
+              <div className="space-y-6 sm:space-y-8">
+                <div className="text-center mb-6 sm:mb-8">
+                  <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3 sm:mb-4">The Philosophy</h1>
+                  <p className="text-base sm:text-lg text-slate-300">Core principles behind lasting change</p>
+                </div>
+                
+                <div className="relative h-[350px] sm:h-[450px]">
+                  {[
+                    {
+                      title: "The Chain Reaction",
+                      icon: "🔗",
+                      subtitle: "Jerry Seinfeld's Method",
+                      content: "Do one important thing daily. Mark it on a calendar. After a few days, you'll have a chain. Your only job is to not break it.",
+                      highlight: "The fear of breaking the chain becomes your greatest motivator."
+                    },
+                    {
+                      title: "Compound Growth", 
+                      icon: "📈",
+                      subtitle: "Mathematics of Success",
+                      content: "1% daily improvement equals 37x better in a year. Small daily actions compound into extraordinary results over time.",
+                      highlight: "What starts small accumulates into something extraordinary."
+                    },
+                    {
+                      title: "Identity Shift",
+                      icon: "🎯",
+                      subtitle: "Become Who You Want",
+                      content: "Every action is a vote for the type of person you wish to become. You don't rise to your goals, you fall to your systems.",
+                      highlight: "Change who you are, not just what you do."
+                    }
+                  ].map((card, index) => (
                     <div
-                      className={`absolute inset-0 bg-gradient-to-r ${pillar.bgColor} rounded-3xl blur-xl opacity-50 group-hover:opacity-70 transition-opacity duration-300`}
-                    />
-                    <div className="relative bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20 hover:border-white/30 transition-all duration-300">
-                      <div className="grid lg:grid-cols-3 gap-8">
-                        <div className="lg:col-span-1 space-y-6">
-                          <div className="flex items-center space-x-4">
-                            <div
-                              className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${pillar.color} flex items-center justify-center text-white font-black text-2xl shadow-lg`}
-                            >
-                              {pillar.letter}
+                      key={index}
+                      className={`absolute inset-0 transition-all duration-500 ease-out ${
+                        index === cardIndex ? 'opacity-100 translate-x-0' : 
+                        index < cardIndex ? 'opacity-0 -translate-x-full' : 'opacity-0 translate-x-full'
+                      }`}
+                    >
+                      <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-slate-700/50 h-full flex flex-col justify-center relative overflow-hidden">
+                        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 text-4xl sm:text-6xl opacity-10">{card.icon}</div>
+                        <div className="text-center space-y-4 sm:space-y-6">
+                          <div className="text-4xl sm:text-5xl mb-3 sm:mb-4">{card.icon}</div>
+                          <div>
+                            <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">{card.title}</h3>
+                            <p className="text-blue-400 text-sm font-medium mb-3 sm:mb-4">{card.subtitle}</p>
+                            <p className="text-slate-300 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto mb-3 sm:mb-4 px-2">{card.content}</p>
+                            <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl sm:rounded-2xl p-3 sm:p-4 max-w-xl mx-auto">
+                              <p className="text-blue-300 font-medium text-xs sm:text-sm italic">"{card.highlight}"</p>
                             </div>
-                            <div>
-                              <h3 className="text-3xl font-bold text-white">
-                                {pillar.title}
-                              </h3>
-                              <p className="text-white/60 text-lg">
-                                {pillar.subtitle}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="space-y-3">
-                            <div className="text-sm font-semibold text-white/80 uppercase tracking-wider">
-                              Full Form
-                            </div>
-                            <div
-                              className={`text-lg font-medium text-transparent bg-gradient-to-r ${pillar.color} bg-clip-text`}
-                            >
-                              {pillar.fullForm}
-                            </div>
-                          </div>
-
-                          <div className="space-y-3">
-                            <div className="text-sm font-semibold text-white/80 uppercase tracking-wider">
-                              Philosophy
-                            </div>
-                            <p className="text-white/90 italic leading-relaxed">
-                              "{pillar.philosophy}"
-                            </p>
                           </div>
                         </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex justify-center items-center space-x-4 sm:space-x-6 mt-6 sm:mt-8">
+                  <button
+                    onClick={handlePrev}
+                    disabled={cardIndex === 0}
+                    className="p-1.5 sm:p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                  >
+                    ←
+                  </button>
+                  
+                  <div className="flex space-x-1.5 sm:space-x-2">
+                    {[0, 1, 2].map((i) => (
+                      <button
+                        key={i}
+                        onClick={() => setCardIndex(i)}
+                        className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all ${
+                          i === cardIndex ? 'bg-blue-400' : 'bg-slate-600 hover:bg-slate-500'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  
+                  <button
+                    onClick={cardIndex === 2 ? handleNext : () => setCardIndex(cardIndex + 1)}
+                    className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all text-sm sm:text-base"
+                  >
+                    {cardIndex === 2 ? 'Next' : '→'}
+                  </button>
+                </div>
+              </div>
+            )}
 
-                        <div className="lg:col-span-2 space-y-6">
-                          <p className="text-white/80 text-lg leading-relaxed">
-                            {pillar.description}
-                          </p>
-
-                          <div className="grid md:grid-cols-2 gap-6">
-                            <div className="space-y-3">
-                              <h4 className="text-lg font-semibold text-white">
-                                Key Benefits
-                              </h4>
-                              <ul className="space-y-2">
-                                {pillar.benefits.map((benefit, i) => (
-                                  <li
-                                    key={i}
-                                    className="text-white/70 flex items-start"
-                                  >
-                                    <div
-                                      className={`w-2 h-2 rounded-full bg-gradient-to-r ${pillar.color} mt-2 mr-3 flex-shrink-0`}
-                                    />
-                                    <span className="text-sm">{benefit}</span>
-                                  </li>
-                                ))}
-                              </ul>
+            {/* Step 3: MNZD Framework - Mobile Responsive */}
+            {step === 3 && (
+              <div className="space-y-6 sm:space-y-8">
+                <div className="text-center mb-6 sm:mb-8">
+                  <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3 sm:mb-4">The MNZD Framework</h1>
+                  <p className="text-base sm:text-lg text-slate-300">Four pillars of personal growth</p>
+                </div>
+                
+                <div className="relative h-[350px] sm:h-[450px]">
+                  {[
+                    {
+                      letter: "M", title: "MOVE", subtitle: "Physical Foundation", color: "from-emerald-500 to-teal-500",
+                      description: "Your body is the temple of your mind. Physical movement creates mental clarity and builds discipline.",
+                      benefit: "Exercise increases BDNF, literally growing new brain cells."
+                    },
+                    {
+                      letter: "N", title: "NOURISH", subtitle: "Mental Growth", color: "from-purple-500 to-indigo-500",
+                      description: "Feed your mind with quality input daily. Reading, podcasts, courses - your mind is like a garden.",
+                      benefit: "30 minutes daily = 180+ hours of growth per year."
+                    },
+                    {
+                      letter: "Z", title: "ZONE", subtitle: "Deep Focus", color: "from-blue-500 to-cyan-500",
+                      description: "Enter flow state through focused work. Deep work is becoming a superpower in our distracted world.",
+                      benefit: "Sustained attention creates breakthrough moments."
+                    },
+                    {
+                      letter: "D", title: "DOCUMENT", subtitle: "Capture Wisdom", color: "from-orange-500 to-red-500",
+                      description: "Writing clarifies thinking. Document insights to build your personal knowledge base and track growth.",
+                      benefit: "Written thoughts become valuable future resources."
+                    }
+                  ].map((pillar, index) => (
+                    <div
+                      key={index}
+                      className={`absolute inset-0 transition-all duration-500 ease-out ${
+                        index === cardIndex ? 'opacity-100 translate-x-0' : 
+                        index < cardIndex ? 'opacity-0 -translate-x-full' : 'opacity-0 translate-x-full'
+                      }`}
+                    >
+                      <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-slate-700/50 h-full flex flex-col justify-center relative overflow-hidden">
+                        <div className={`absolute -top-6 -right-6 sm:-top-8 sm:-right-8 w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-r ${pillar.color} opacity-10 rounded-full blur-2xl`} />
+                        <div className="text-center space-y-4 sm:space-y-6">
+                          <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl bg-gradient-to-r ${pillar.color} flex items-center justify-center text-white font-bold text-2xl sm:text-3xl mx-auto shadow-2xl`}>
+                            {pillar.letter}
+                          </div>
+                          <div>
+                            <h3 className="text-3xl sm:text-4xl font-bold text-white mb-2">{pillar.title}</h3>
+                            <p className={`bg-gradient-to-r ${pillar.color} bg-clip-text text-transparent text-base sm:text-lg font-semibold mb-3 sm:mb-4`}>{pillar.subtitle}</p>
+                            <p className="text-slate-300 text-base sm:text-lg leading-relaxed max-w-2xl mx-auto mb-3 sm:mb-4 px-2">{pillar.description}</p>
+                            <div className={`bg-gradient-to-r ${pillar.color} bg-opacity-10 border border-opacity-20 rounded-xl sm:rounded-2xl p-3 sm:p-4 max-w-xl mx-auto`} style={{ borderColor: pillar.color.includes('emerald') ? '#10b981' : pillar.color.includes('purple') ? '#8b5cf6' : pillar.color.includes('blue') ? '#3b82f6' : '#f97316' }}>
+                              <p className="text-white font-medium text-xs sm:text-sm">✨ {pillar.benefit}</p>
                             </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex justify-center items-center space-x-4 sm:space-x-6 mt-6 sm:mt-8">
+                  <button
+                    onClick={handlePrev}
+                    disabled={cardIndex === 0}
+                    className="p-1.5 sm:p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                  >
+                    ←
+                  </button>
+                  
+                  <div className="flex space-x-1.5 sm:space-x-2">
+                    {[0, 1, 2, 3].map((i) => (
+                      <button
+                        key={i}
+                        onClick={() => setCardIndex(i)}
+                        className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all ${
+                          i === cardIndex ? 'bg-blue-400' : 'bg-slate-600 hover:bg-slate-500'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  
+                  <button
+                    onClick={cardIndex === 3 ? handleNext : () => setCardIndex(cardIndex + 1)}
+                    className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all text-sm sm:text-base"
+                  >
+                    {cardIndex === 3 ? 'Customize' : '→'}
+                  </button>
+                </div>
+              </div>
+            )}
 
-                            <div className="space-y-3">
-                              <h4 className="text-lg font-semibold text-white">
-                                The Science
-                              </h4>
-                              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                                <p className="text-white/80 text-sm leading-relaxed">
-                                  {pillar.science}
+            {/* Step 4: MNZD Setup - Individual Cards with Tips */}
+            {step === 4 && (
+              <div className="space-y-8">
+                {cardIndex < 4 ? (
+                  <>
+                    <div className="text-center mb-8">
+                      <h1 className="text-4xl font-bold text-white mb-4">Setup Your {mnzdConfigs[cardIndex]?.name}</h1>
+                      <p className="text-lg text-slate-300">Pillar {cardIndex + 1} of 4 • Customize your daily target</p>
+                    </div>
+
+                    <div className="max-w-2xl mx-auto">
+                      <div className="relative h-[600px]">
+                        {mnzdConfigs.map((config, index) => (
+                          <div
+                            key={config.id}
+                            className={`absolute inset-0 transition-all duration-500 ease-out ${
+                              index === cardIndex ? 'opacity-100 translate-x-0' : 
+                              index < cardIndex ? 'opacity-0 -translate-x-full' : 'opacity-0 translate-x-full'
+                            }`}
+                          >
+                            <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700 h-full flex flex-col">
+                              <div className="flex-1 space-y-4">
+                                {/* Header with Theme Color */}
+                                <div className="text-center mb-4">
+                                  <div className={`w-20 h-20 rounded-2xl flex items-center justify-center text-white font-bold text-3xl mx-auto mb-4 shadow-lg`} style={{ backgroundColor: config.color }}>
+                                    {config.id.charAt(0).toUpperCase()}
+                                  </div>
+                                  <h3 className="text-2xl font-bold text-white mb-2">{config.name}</h3>
+                                  <p className="text-slate-400 text-sm max-w-md mx-auto">{config.description}</p>
+                                </div>
+                                
+                                {/* Configuration */}
+                                <div className="space-y-4">
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <Label className="text-slate-300 text-sm font-medium">Daily Minutes</Label>
+                                      <div className="relative mt-2">
+                                        <div className="flex items-center bg-slate-700/50 border border-slate-600 rounded-lg overflow-hidden">
+                                          <button
+                                            type="button"
+                                            onClick={() => updateConfig(config.id, "minMinutes", Math.max(5, config.minMinutes - 5))}
+                                            className="px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-600/50 transition-all"
+                                          >
+                                            −
+                                          </button>
+                                          <input
+                                            type="text"
+                                            value={config.minMinutes}
+                                            onChange={(e) => {
+                                              const val = parseInt(e.target.value) || 0;
+                                              if (val >= 5 && val <= 480) updateConfig(config.id, "minMinutes", val);
+                                            }}
+                                            className="flex-1 bg-transparent text-white text-center text-lg font-semibold focus:outline-none py-2"
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() => updateConfig(config.id, "minMinutes", Math.min(480, config.minMinutes + 5))}
+                                            className="px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-600/50 transition-all"
+                                          >
+                                            +
+                                          </button>
+                                        </div>
+                                        <div className="absolute inset-0 pointer-events-none">
+                                          <div 
+                                            className="h-full bg-gradient-to-r from-transparent via-blue-500/10 to-transparent transition-all duration-300"
+                                            style={{ width: `${Math.min((config.minMinutes / 120) * 100, 100)}%` }}
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <Label className="text-slate-300 text-sm font-medium">Theme Color</Label>
+                                      <div className="flex items-center space-x-2 mt-2">
+                                        <Input
+                                          type="color"
+                                          value={config.color}
+                                          onChange={(e) => updateConfig(config.id, "color", e.target.value)}
+                                          className="w-12 h-10 bg-slate-700/50 border-slate-600 rounded cursor-pointer"
+                                        />
+                                        <div className="flex-1 h-10 rounded border border-slate-600 shadow-inner" style={{ backgroundColor: config.color }} />
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div>
+                                    <Label className="text-slate-300 text-sm font-medium">Custom Name (max 12 chars)</Label>
+                                    <Input
+                                      type="text"
+                                      maxLength={12}
+                                      value={config.name}
+                                      onChange={(e) => updateConfig(config.id, "name", e.target.value)}
+                                      className="mt-2 bg-slate-700/50 border-slate-600 text-white focus:border-blue-500"
+                                      placeholder="e.g., Code, Learn, Write"
+                                    />
+                                    <p className="text-xs text-slate-500 mt-1">{config.name.length}/12 characters</p>
+                                  </div>
+                                  
+                                  <div>
+                                    <Label className="text-slate-300 text-sm font-medium">Description (max 50 chars)</Label>
+                                    <Input
+                                      type="text"
+                                      maxLength={50}
+                                      value={config.description}
+                                      onChange={(e) => updateConfig(config.id, "description", e.target.value)}
+                                      className="mt-2 bg-slate-700/50 border-slate-600 text-white focus:border-blue-500"
+                                      placeholder="Brief description of this pillar"
+                                    />
+                                    <p className="text-xs text-slate-500 mt-1">{config.description.length}/50 characters</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Tips - Fixed at bottom */}
+                              <div className="bg-slate-700/30 rounded-xl p-4 border border-slate-600/50 mt-4">
+                                <h4 className="text-sm font-semibold text-slate-300 mb-2 flex items-center">
+                                  💡 Pro Tip
+                                </h4>
+                                <p className="text-xs text-slate-400 leading-relaxed">
+                                  {config.id === 'code' && 'Start with 30 minutes of focused coding. Use the Pomodoro technique: 25 min work, 5 min break.'}
+                                  {config.id === 'think' && 'Read for 20 minutes daily. Choose books that challenge your thinking and expand your worldview.'}
+                                  {config.id === 'express' && 'Write for 15 minutes daily. Journal, blog, or document learnings. Writing clarifies thinking.'}
+                                  {config.id === 'move' && 'Move for 25 minutes daily. Walking, gym, yoga - any movement counts. Your body fuels your mind.'}
                                 </p>
                               </div>
                             </div>
                           </div>
-                        </div>
+                        ))}
                       </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="text-center space-y-6">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-orange-400/20 rounded-2xl blur-xl" />
-                  <div className="relative bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
-                    <h3 className="text-2xl font-bold text-white mb-4">
-                      The Synergy Effect
-                    </h3>
-                    <p className="text-white/80 text-lg leading-relaxed mb-6">
-                      These four pillars don't work in isolation—they amplify
-                      each other. Physical movement enhances mental clarity.
-                      Learning fuels focused work. Deep work generates insights
-                      worth documenting. Documentation reinforces learning.
-                    </p>
-                    <div className="text-6xl font-black text-transparent bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text">
-                      M + N + Z + D = ∞
-                    </div>
-                  </div>
-                </div>
-
-                <Button
-                  onClick={handleNext}
-                  size="lg"
-                  className="px-12 py-4 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-                >
-                  Customize Your MNZD
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Customization */}
-          {step === 4 && (
-            <div className="space-y-12 animate-in fade-in duration-1000">
-              <div className="text-center space-y-6">
-                <h1 className="text-5xl md:text-6xl font-bold text-white">
-                  Make It Yours
-                </h1>
-                <p className="text-xl text-white/80 max-w-3xl mx-auto leading-relaxed">
-                  Customize each pillar to align with your unique goals,
-                  lifestyle, and aspirations
-                </p>
-              </div>
-
-              <div className="grid gap-8">
-                {mnzdConfigs.map((config, index) => {
-                  const colors = [
-                    {
-                      gradient: "from-green-400 to-emerald-600",
-                      bg: "from-green-500/20 to-emerald-500/20",
-                    },
-                    {
-                      gradient: "from-purple-400 to-violet-600",
-                      bg: "from-purple-500/20 to-violet-500/20",
-                    },
-                    {
-                      gradient: "from-blue-400 to-cyan-600",
-                      bg: "from-blue-500/20 to-cyan-500/20",
-                    },
-                    {
-                      gradient: "from-cyan-400 to-teal-600",
-                      bg: "from-cyan-500/20 to-teal-500/20",
-                    },
-                  ];
-                  const colorScheme = colors[index] || colors[0];
-
-                  return (
-                    <div key={config.id} className="relative group">
-                      <div
-                        className={`absolute inset-0 bg-gradient-to-r ${colorScheme.bg} rounded-3xl blur-xl opacity-50 group-hover:opacity-70 transition-opacity duration-300`}
-                      />
-                      <div className="relative bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20">
-                        <div className="grid lg:grid-cols-4 gap-6">
-                          <div className="lg:col-span-1 space-y-4">
-                            <div
-                              className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${colorScheme.gradient} flex items-center justify-center text-white font-black text-2xl shadow-lg`}
-                            >
-                              {config.id.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <h3 className="text-2xl font-bold text-white">
-                                {config.name}
-                              </h3>
-                              <p className="text-white/60">
-                                Pillar {index + 1}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="lg:col-span-3 grid md:grid-cols-3 gap-6">
-                            <div className="space-y-2">
-                              <Label
-                                htmlFor={`${config.id}-name`}
-                                className="text-white font-medium"
-                              >
-                                Task Name
-                              </Label>
-                              <Input
-                                id={`${config.id}-name`}
-                                value={config.name}
-                                onChange={(e) =>
-                                  updateConfig(
-                                    config.id,
-                                    "name",
-                                    e.target.value
-                                  )
-                                }
-                                className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40"
-                                placeholder="Enter task name"
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label
-                                htmlFor={`${config.id}-minutes`}
-                                className="text-white font-medium"
-                              >
-                                Daily Minutes
-                              </Label>
-                              <Input
-                                id={`${config.id}-minutes`}
-                                type="number"
-                                value={config.minMinutes}
-                                onChange={(e) =>
-                                  updateConfig(
-                                    config.id,
-                                    "minMinutes",
-                                    parseInt(e.target.value) || 0
-                                  )
-                                }
-                                className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40"
-                                placeholder="30"
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label
-                                htmlFor={`${config.id}-color`}
-                                className="text-white font-medium"
-                              >
-                                Theme Color
-                              </Label>
-                              <div className="flex items-center space-x-3">
-                                <Input
-                                  id={`${config.id}-color`}
-                                  type="color"
-                                  value={config.color}
-                                  onChange={(e) =>
-                                    updateConfig(
-                                      config.id,
-                                      "color",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="w-16 h-10 bg-white/10 border-white/20 rounded-lg cursor-pointer"
-                                />
-                                <div
-                                  className="flex-1 h-10 rounded-lg"
-                                  style={{ backgroundColor: config.color }}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-6">
-                          <Label
-                            htmlFor={`${config.id}-description`}
-                            className="text-white font-medium"
-                          >
-                            Personal Description
-                          </Label>
-                          <Textarea
-                            id={`${config.id}-description`}
-                            value={config.description}
-                            onChange={(e) =>
-                              updateConfig(
-                                config.id,
-                                "description",
-                                e.target.value
-                              )
-                            }
-                            className="mt-2 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 min-h-[80px]"
-                            placeholder="Describe what this pillar means to you and your goals..."
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="text-center space-y-8">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-orange-400/20 rounded-3xl blur-2xl" />
-                  <div className="relative bg-white/10 backdrop-blur-lg rounded-3xl p-12 border border-white/20">
-                    <div className="space-y-6">
-                      <h3 className="text-3xl font-bold text-white">
-                        Your Journey Begins Now
-                      </h3>
-                      <p className="text-white/80 text-lg leading-relaxed max-w-2xl mx-auto">
-                        You've designed your personal MNZD system. Every day you
-                        complete these four pillars, you're not just building
-                        habits—you're becoming the person you've always wanted
-                        to be.
-                      </p>
-
-                      <div className="grid md:grid-cols-4 gap-4 mt-8">
-                        {mnzdConfigs.map((config, index) => (
-                          <div
-                            key={config.id}
-                            className="bg-white/5 rounded-xl p-4 border border-white/10"
-                          >
-                            <div
-                              className="w-8 h-8 rounded-lg mb-2 mx-auto"
-                              style={{ backgroundColor: config.color }}
+                      
+                      <div className="flex justify-center items-center space-x-6 mt-8">
+                        <button
+                          onClick={handlePrev}
+                          disabled={cardIndex === 0}
+                          className="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ←
+                        </button>
+                        
+                        <div className="flex space-x-2">
+                          {[0, 1, 2, 3].map((i) => (
+                            <button
+                              key={i}
+                              onClick={() => i < cardIndex ? setCardIndex(i) : undefined}
+                              disabled={i > cardIndex}
+                              className={`w-2 h-2 rounded-full transition-all ${
+                                i === cardIndex ? 'bg-blue-400' : 
+                                i < cardIndex ? 'bg-slate-500 hover:bg-slate-400 cursor-pointer' : 
+                                'bg-slate-600 cursor-not-allowed'
+                              }`}
                             />
-                            <div className="text-white font-semibold">
-                              {config.name}
-                            </div>
-                            <div className="text-white/60 text-sm">
-                              {config.minMinutes} min/day
+                          ))}
+                        </div>
+                        
+                        <button
+                          onClick={cardIndex === 3 ? () => setCardIndex(4) : () => setCardIndex(cardIndex + 1)}
+                          className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all"
+                        >
+                          {cardIndex === 3 ? 'Review Setup' : 'Next'}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  /* Summary & Edit Option */
+                  <>
+                    <div className="text-center mb-8">
+                      <h1 className="text-4xl font-bold text-white mb-4">Your Daily Commitment</h1>
+                      <p className="text-lg text-slate-300">Review your MNZD system • Edit if needed</p>
+                    </div>
+
+                    <div className="max-w-4xl mx-auto space-y-8">
+                      {/* Summary Cards */}
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        {mnzdConfigs.map((config, index) => (
+                          <div key={config.id} className="bg-slate-800/40 backdrop-blur-sm rounded-xl p-4 border border-slate-700/50">
+                            <div className="text-center">
+                              <div className={`w-12 h-12 mx-auto rounded-xl flex items-center justify-center text-white text-lg font-bold mb-2`} style={{ backgroundColor: config.color }}>
+                                {config.id.charAt(0).toUpperCase()}
+                              </div>
+                              <h3 className="text-sm font-bold text-white">{config.name}</h3>
+                              <div className="text-xl font-bold text-white mt-2">{config.minMinutes}m</div>
                             </div>
                           </div>
                         ))}
                       </div>
 
-                      <div className="pt-6">
+                      {/* Total Summary */}
+                      <div className="bg-gradient-to-r from-slate-800/30 to-slate-700/30 backdrop-blur-sm rounded-2xl p-6 border border-slate-600/30">
+                        <div className="text-center">
+                          <h3 className="text-xl font-semibold text-white mb-4">Daily Overview</h3>
+                          <div className="flex items-center justify-center space-x-8">
+                            <div className="text-center">
+                              <div className="text-3xl font-bold text-blue-400">
+                                {mnzdConfigs.reduce((sum, config) => sum + config.minMinutes, 0)}m
+                              </div>
+                              <div className="text-sm text-slate-400">total daily</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-3xl font-bold text-emerald-400">4</div>
+                              <div className="text-sm text-slate-400">life pillars</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-3xl font-bold text-purple-400">∞</div>
+                              <div className="text-sm text-slate-400">potential</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex justify-center space-x-4">
+                        <Button
+                          onClick={() => setCardIndex(0)}
+                          variant="outline"
+                          size="lg"
+                          className="px-6 py-3 bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white"
+                        >
+                          Edit Setup
+                        </Button>
                         <Button
                           onClick={handleFinish}
                           size="lg"
-                          className="px-16 py-6 text-xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black border-0 shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105"
+                          className="px-8 py-3 text-lg font-semibold bg-blue-600 hover:bg-blue-700 text-white"
                         >
-                          Start My Chain Today
+                          Complete Setup
                         </Button>
                       </div>
                     </div>
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
+        
+        {/* Navigation - Mobile Responsive */}
+        {step === 1 && (
+          <div className="absolute bottom-4 sm:bottom-8 left-1/2 transform -translate-x-1/2">
+            <Button
+              onClick={handleNext}
+              size="lg"
+              className="px-6 py-2.5 sm:px-8 sm:py-3 text-base sm:text-lg font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-all duration-300"
+            >
+              Begin Journey
+            </Button>
+          </div>
+        )}
       </div>
 
       <PasswordSetupModal
         isOpen={showPasswordSetup}
         onComplete={handlePasswordSetupComplete}
+        onClose={() => setShowPasswordSetup(false)}
         userEmail={userEmail}
       />
 

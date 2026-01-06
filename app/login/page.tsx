@@ -14,6 +14,8 @@ function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
+  const [showIncompleteSetup, setShowIncompleteSetup] = useState(false)
+  const [incompleteEmail, setIncompleteEmail] = useState("")
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -23,7 +25,6 @@ function LoginForm() {
     if (oauthError) {
       setError('Login failed. Please try again.')
     } else if (message) {
-      // Show success message for password reset
       setError('')
     }
   }, [searchParams])
@@ -41,7 +42,7 @@ function LoginForm() {
         },
         body: JSON.stringify({
           email,
-          password,
+          password: password || "",
           rememberMe
         }),
       })
@@ -51,10 +52,44 @@ function LoginForm() {
       if (response.ok) {
         router.push("/")
       } else {
-        setError(data.error || "Invalid email or password")
+        if (data.needsPasswordSetup && data.email) {
+          setIncompleteEmail(data.email)
+          setShowIncompleteSetup(true)
+          setError("")
+        } else {
+          setError(data.error || "Invalid email or password")
+        }
       }
     } catch (err) {
       setError("Failed to sign in")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleContinueSetup = async () => {
+    setIsLoading(true)
+    try {
+      const emailToUse = incompleteEmail || email
+      const response = await fetch('/api/auth/resend-setup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: emailToUse }),
+      })
+      
+      const data = await response.json()
+      
+      if (response.ok) {
+        router.push('/welcome')
+      } else {
+        setError(data.error || "Failed to continue setup")
+        setShowIncompleteSetup(false)
+      }
+    } catch (err) {
+      setError("Failed to continue setup")
+      setShowIncompleteSetup(false)
     } finally {
       setIsLoading(false)
     }
@@ -71,56 +106,102 @@ function LoginForm() {
             <p className="text-slate-600 dark:text-slate-400 mt-2">Sign in to continue your journey</p>
           </div>
 
-          <form onSubmit={handleCredentialsSignIn} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                required
-                disabled={isLoading}
-              />
+          {showIncompleteSetup ? (
+            <div className="text-center space-y-4">
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                <h3 className="font-semibold text-amber-800 dark:text-amber-200 mb-2">Account Setup Incomplete</h3>
+                <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
+                  Your account <strong>{incompleteEmail}</strong> was created but setup wasn't completed.
+                </p>
+                <Button
+                  type="button"
+                  onClick={handleContinueSetup}
+                  disabled={isLoading}
+                  className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                >
+                  {isLoading ? "Continuing..." : "Continue Setup"}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => setShowIncompleteSetup(false)}
+                  variant="ghost"
+                  className="w-full mt-2 text-slate-600 dark:text-slate-400"
+                >
+                  Back to Login
+                </Button>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                required
-                disabled={isLoading}
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="rememberMe"
-                checked={rememberMe}
-                onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                disabled={isLoading}
-              />
-              <Label htmlFor="rememberMe" className="text-sm text-slate-600 dark:text-slate-400 cursor-pointer">
-                Remember me
-              </Label>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
-              {rememberMe 
-                ? "You'll stay logged in for 7 days, even after closing your browser" 
-                : "You'll be logged out after 24 hours of inactivity"
-              }
-            </p>
-            <Button
-              type="submit"
-              className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
-              disabled={isLoading}
-            >
-              {isLoading ? "Signing in..." : "Sign In"}
-            </Button>
-          </form>
+          ) : (
+            <>
+              <form onSubmit={handleCredentialsSignIn} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="rememberMe"
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                    disabled={isLoading}
+                  />
+                  <Label htmlFor="rememberMe" className="text-sm text-slate-600 dark:text-slate-400 cursor-pointer">
+                    Remember me
+                  </Label>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+                  {rememberMe 
+                    ? "You'll stay logged in for 7 days, even after closing your browser" 
+                    : "You'll be logged out after 24 hours of inactivity"
+                  }
+                </p>
+                <Button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Signing in..." : "Sign In"}
+                </Button>
+              </form>
+              
+              <div className="mt-4 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!email) {
+                      setError("Please enter your email first")
+                      return
+                    }
+                    handleContinueSetup()
+                  }}
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                  disabled={isLoading}
+                >
+                  Can't remember your password? Try account recovery
+                </button>
+              </div>
+            </>
+          )}
 
           {error && (
             <div className="mt-4 text-red-600 dark:text-red-400 text-sm text-center">{error}</div>
@@ -132,9 +213,13 @@ function LoginForm() {
             </div>
           )}
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 flex justify-center gap-4 text-center">
             <Link href="/forgot-password" className="text-blue-600 dark:text-blue-400 text-sm hover:underline">
               Forgot your password?
+            </Link>
+            <span className="text-slate-300 dark:text-slate-600">•</span>
+            <Link href="/delete-account" className="text-red-500 dark:text-red-400 text-sm hover:underline">
+              Delete account
             </Link>
           </div>
 

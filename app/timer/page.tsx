@@ -1229,25 +1229,25 @@ export default function TimerPage() {
 
       {/* Main Timer */}
       <div
-        className={`flex items-center justify-center min-h-screen ${isMobile ? 'p-4' : 'p-8'} transition-all duration-500 ${
+        className={`flex items-center justify-center min-h-screen ${isMobile ? 'p-4' : 'p-4 lg:p-8'} transition-all duration-500 ${
           showModeTransition ? "opacity-0 scale-95" : "opacity-100 scale-100"
         }`}
       >
-        <div className="text-center">
+        <div className="text-center max-w-4xl mx-auto">
           <div
-            className={`${isMobile ? 'mb-6' : 'mb-12'} transition-all duration-500 ${
+            className={`${isMobile ? 'mb-4' : 'mb-6 lg:mb-12'} transition-all duration-500 ${
               showModeTransition
                 ? "opacity-0 translate-y-4"
                 : "opacity-100 translate-y-0"
             }`}
           >
             <h1
-              className={`${isMobile ? 'text-4xl' : 'text-8xl'} font-extralight ${theme.text} ${isMobile ? 'mb-3' : 'mb-6'} transition-all duration-700 tracking-wide`}
+              className={`${isMobile ? 'text-3xl' : 'text-5xl lg:text-8xl'} font-extralight ${theme.text} ${isMobile ? 'mb-2' : 'mb-3 lg:mb-6'} transition-all duration-700 tracking-wide`}
             >
               {mode === "focus" ? "Focus Time" : "Break Time"}
             </h1>
             <p
-              className={`${theme.text} opacity-90 ${isMobile ? 'text-base px-4' : 'text-2xl'} font-light max-w-4xl mx-auto leading-relaxed transition-all duration-700`}
+              className={`${theme.text} opacity-90 ${isMobile ? 'text-sm px-4' : 'text-base lg:text-2xl px-8'} font-light max-w-4xl mx-auto leading-relaxed transition-all duration-700`}
             >
               {currentQuote}
             </p>
@@ -1276,7 +1276,7 @@ export default function TimerPage() {
 
           {/* Timer Circle */}
           <div
-            className={`relative ${isMobile ? 'mb-8' : 'mb-16'} transition-all duration-700 ${
+            className={`relative ${isMobile ? 'mb-6' : 'mb-12'} transition-all duration-700 ${
               showModeTransition
                 ? "opacity-0 scale-90"
                 : "opacity-100 scale-100"
@@ -1285,7 +1285,7 @@ export default function TimerPage() {
             {!isMobile && (
               <div className="absolute inset-0 animate-pulse">
                 <div
-                  className="w-96 h-96 mx-auto rounded-full opacity-20 blur-3xl"
+                  className="w-72 h-72 lg:w-96 lg:h-96 mx-auto rounded-full opacity-20 blur-3xl"
                   style={{
                     background: `radial-gradient(circle, ${theme.accent}40 0%, transparent 70%)`,
                   }}
@@ -1293,7 +1293,7 @@ export default function TimerPage() {
               </div>
             )}
             <svg
-              className={`${isMobile ? 'w-64 h-64' : 'w-96 h-96'} mx-auto transform -rotate-90 relative z-10`}
+              className={`${isMobile ? 'w-56 h-56' : 'w-72 h-72 lg:w-96 lg:h-96'} mx-auto transform -rotate-90 relative z-10`}
               viewBox="0 0 100 100"
             >
               <circle
@@ -1323,12 +1323,12 @@ export default function TimerPage() {
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
                 <div
-                  className={`${isMobile ? 'text-5xl' : 'text-7xl'} font-extralight ${theme.text} ${isMobile ? 'mb-2' : 'mb-4'} tabular-nums transition-all duration-700 tracking-wider`}
+                  className={`${isMobile ? 'text-4xl' : 'text-5xl lg:text-7xl'} font-extralight ${theme.text} ${isMobile ? 'mb-2' : 'mb-4'} tabular-nums transition-all duration-700 tracking-wider`}
                 >
                   {formatTime(timeLeft)}
                 </div>
                 <div
-                  className={`${theme.text} opacity-70 ${isMobile ? 'text-base' : 'text-xl'} font-light transition-all duration-700`}
+                  className={`${theme.text} opacity-70 ${isMobile ? 'text-sm' : 'text-base lg:text-xl'} font-light transition-all duration-700`}
                 >
                   {isRunning
                     ? mode === "focus"
@@ -1338,7 +1338,7 @@ export default function TimerPage() {
                 </div>
                 {isRunning && mode === "focus" && (
                   <div
-                    className={`${isMobile ? 'mt-1 text-sm' : 'mt-3 text-lg'} ${theme.text} opacity-50 transition-all duration-700`}
+                    className={`${isMobile ? 'mt-1 text-xs' : 'mt-2 text-sm lg:text-lg'} ${theme.text} opacity-50 transition-all duration-700`}
                   >
                     Session {pomodoroCount + 1}
                   </div>
@@ -1349,7 +1349,7 @@ export default function TimerPage() {
 
           {/* Controls */}
           <div
-            className={`flex justify-center ${isMobile ? 'gap-4 mb-6' : 'gap-8 mb-12'} transition-all duration-600 ${
+            className={`flex justify-center ${isMobile ? 'gap-3 mb-4' : 'gap-4 lg:gap-8 mb-6 lg:mb-12'} transition-all duration-600 ${
               showModeTransition
                 ? "opacity-0 translate-y-4"
                 : "opacity-100 translate-y-0"
@@ -1358,10 +1358,10 @@ export default function TimerPage() {
             {!isRunning ? (
               <button
                 onClick={start}
-                className={`${isMobile ? 'px-12 py-4' : 'px-16 py-5'} rounded-full ${theme.panel} backdrop-blur-xl transition-all duration-500 shadow-2xl hover:shadow-3xl hover:scale-110 ${theme.border} border group`}
+                className={`${isMobile ? 'px-8 py-3' : 'px-12 py-4 lg:px-16 lg:py-5'} rounded-full ${theme.panel} backdrop-blur-xl transition-all duration-500 shadow-2xl hover:shadow-3xl hover:scale-110 ${theme.border} border group`}
               >
                 <span
-                  className={`${isMobile ? 'text-xl' : 'text-2xl'} font-medium ${theme.text} group-hover:scale-105 transition-transform duration-300`}
+                  className={`${isMobile ? 'text-lg' : 'text-xl lg:text-2xl'} font-medium ${theme.text} group-hover:scale-105 transition-transform duration-300`}
                 >
                   Start
                 </span>
@@ -1369,10 +1369,10 @@ export default function TimerPage() {
             ) : (
               <button
                 onClick={pause}
-                className={`${isMobile ? 'px-12 py-4' : 'px-16 py-5'} rounded-full ${theme.panel} backdrop-blur-xl transition-all duration-500 shadow-2xl hover:shadow-3xl hover:scale-110 ${theme.border} border group`}
+                className={`${isMobile ? 'px-8 py-3' : 'px-12 py-4 lg:px-16 lg:py-5'} rounded-full ${theme.panel} backdrop-blur-xl transition-all duration-500 shadow-2xl hover:shadow-3xl hover:scale-110 ${theme.border} border group`}
               >
                 <span
-                  className={`${isMobile ? 'text-xl' : 'text-2xl'} font-medium ${theme.text} group-hover:scale-105 transition-transform duration-300`}
+                  className={`${isMobile ? 'text-lg' : 'text-xl lg:text-2xl'} font-medium ${theme.text} group-hover:scale-105 transition-transform duration-300`}
                 >
                   Pause
                 </span>
@@ -1380,10 +1380,10 @@ export default function TimerPage() {
             )}
             <button
               onClick={reset}
-              className={`${isMobile ? 'px-10 py-4' : 'px-12 py-5'} rounded-full ${theme.panel} opacity-80 backdrop-blur-xl transition-all duration-500 hover:scale-110 ${theme.border} border group`}
+              className={`${isMobile ? 'px-6 py-3' : 'px-8 py-4 lg:px-12 lg:py-5'} rounded-full ${theme.panel} opacity-80 backdrop-blur-xl transition-all duration-500 hover:scale-110 ${theme.border} border group`}
             >
               <span
-                className={`${isMobile ? 'text-lg' : 'text-xl'} font-medium ${theme.text} group-hover:scale-105 transition-transform duration-300`}
+                className={`${isMobile ? 'text-base' : 'text-lg lg:text-xl'} font-medium ${theme.text} group-hover:scale-105 transition-transform duration-300`}
               >
                 Reset
               </span>
