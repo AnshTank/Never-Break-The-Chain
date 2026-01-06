@@ -1,13 +1,21 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import Footer from '../components/footer'
 
 export default function ConditionalFooter() {
   const pathname = usePathname()
+  const [isLoading, setIsLoading] = useState(false)
   const authPages = ['/welcome', '/login', '/signup', '/forgot-password']
   const isAuthPage = authPages.includes(pathname)
 
-  if (isAuthPage) return null
+  useEffect(() => {
+    if (pathname === '/') {
+      setIsLoading(!!document.querySelector('[data-loading="true"]'))
+    }
+  }, [pathname])
+
+  if (isAuthPage || isLoading) return null
   return <Footer />
 }

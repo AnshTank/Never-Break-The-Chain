@@ -25,13 +25,22 @@ export function useProgressData(month?: Date) {
         fetch('/api/settings')
       ])
       
-      if (!progressResponse.ok || !settingsResponse.ok) {
-        throw new Error('Failed to fetch data')
+      // Handle individual response errors gracefully
+      let progressData = []
+      let mnzdConfigs: MNZDConfig[] = []
+      
+      if (progressResponse.ok) {
+        progressData = await progressResponse.json()
+      } else {
+        console.warn('Failed to fetch progress data:', progressResponse.status)
       }
       
-      const progressData = await progressResponse.json()
-      const settingsData = await settingsResponse.json()
-      const mnzdConfigs: MNZDConfig[] = settingsData.mnzdConfigs || []
+      if (settingsResponse.ok) {
+        const settingsData = await settingsResponse.json()
+        mnzdConfigs = settingsData.mnzdConfigs || []
+      } else {
+        console.warn('Failed to fetch settings:', settingsResponse.status)
+      }
       
       console.log('useProgressData - Raw progress data:', progressData)
       console.log('useProgressData - MNZD configs:', mnzdConfigs)

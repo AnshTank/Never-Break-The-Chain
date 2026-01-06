@@ -51,20 +51,37 @@ export default function ProgressSummary({ currentMonth }: ProgressSummaryProps) 
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Progress Summary</h3>
-          <Button variant="outline" size="sm" disabled>
-            <RefreshCw className="h-4 w-4" />
-          </Button>
+          <div className="h-6 w-48 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse"></div>
+          <div className="h-8 w-8 bg-gradient-to-r from-blue-200 to-blue-300 dark:from-blue-800 dark:to-blue-700 rounded animate-pulse"></div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-card rounded-lg border border-border p-6 animate-pulse">
-              <div className="h-4 bg-muted rounded mb-4"></div>
-              <div className="h-8 bg-muted rounded mb-2"></div>
-              <div className="h-3 bg-muted rounded"></div>
+          {[1, 2].map((i) => (
+            <div key={i} className="bg-card rounded-lg border border-border p-6 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent dark:via-gray-800/50 animate-shimmer"></div>
+              <div className="space-y-4 relative">
+                <div>
+                  <div className="h-3 w-32 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse mb-2"></div>
+                  <div className="h-10 w-16 bg-gradient-to-r from-blue-200 to-purple-200 dark:from-blue-800 dark:to-purple-800 rounded animate-pulse mb-2"></div>
+                  <div className="h-3 w-24 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse"></div>
+                </div>
+                <div className="border-t border-border pt-4">
+                  <div className="h-3 w-28 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse mb-2"></div>
+                  <div className="h-8 w-12 bg-gradient-to-r from-green-200 to-green-300 dark:from-green-800 dark:to-green-700 rounded animate-pulse mb-2"></div>
+                  <div className="h-3 w-20 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse"></div>
+                </div>
+              </div>
             </div>
           ))}
         </div>
+        <style jsx>{`
+          @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+          }
+          .animate-shimmer {
+            animation: shimmer 2s infinite;
+          }
+        `}</style>
       </div>
     )
   }

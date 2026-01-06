@@ -120,9 +120,31 @@ export default function JourneyGraph({ journeyData }: JourneyGraphProps) {
 
   if (loading) {
     return (
-      <div className="bg-card rounded-lg border border-border p-8 text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-muted-foreground">Loading analytics...</p>
+      <div className="bg-card rounded-lg border border-border p-8 text-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent dark:via-gray-800/50 animate-shimmer"></div>
+        <div className="relative space-y-4">
+          <div className="w-16 h-16 mx-auto bg-gradient-to-r from-blue-200 via-purple-200 to-green-200 dark:from-blue-800 dark:via-purple-800 dark:to-green-800 rounded-full animate-pulse"></div>
+          <div className="space-y-2">
+            <div className="h-4 w-32 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded mx-auto animate-pulse"></div>
+            <div className="h-3 w-48 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded mx-auto animate-pulse"></div>
+          </div>
+          <div className="flex justify-center space-x-2 mt-4">
+            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce animation-delay-200"></div>
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce animation-delay-400"></div>
+          </div>
+        </div>
+        <style jsx>{`
+          @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+          }
+          .animate-shimmer {
+            animation: shimmer 2s infinite;
+          }
+          .animation-delay-200 { animation-delay: 200ms; }
+          .animation-delay-400 { animation-delay: 400ms; }
+        `}</style>
       </div>
     )
   }

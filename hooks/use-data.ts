@@ -15,7 +15,6 @@ export function useDailyProgress(date: string) {
   const fetchProgress = useCallback(async () => {
     if (fetchedRef.current === date || !isMountedRef.current) return
     
-    // Check cache first
     if (cacheRef.current[date]) {
       if (isMountedRef.current) {
         setProgress(cacheRef.current[date])
@@ -27,21 +26,12 @@ export function useDailyProgress(date: string) {
     try {
       setLoading(true)
       fetchedRef.current = date
-      const response = await fetch(`/api/progress?date=${date}`, {
-        method: 'GET',
-        cache: 'force-cache',
-        next: { revalidate: 60 }
-      })
+      const response = await fetch(`/api/progress?date=${date}`)
       if (!response.ok) {
-        const authResponse = await fetch('/api/user/profile')
-        if (!authResponse.ok) {
-          localStorage.removeItem('progressCache')
-          if (isMountedRef.current) {
-            setProgress(null)
-          }
-          return
+        if (isMountedRef.current) {
+          setProgress(null)
         }
-        throw new Error('Failed to fetch progress')
+        return
       }
       const data = await response.json()
       if (isMountedRef.current) {
@@ -118,7 +108,6 @@ export function useProgressRange(startDate: string, endDate: string) {
       setLoading(true)
       fetchedRef.current = cacheKey
       
-      // Always prioritize server data
       const response = await fetch(`/api/progress?startDate=${startDate}&endDate=${endDate}`)
       
       if (response.ok) {
@@ -127,24 +116,8 @@ export function useProgressRange(startDate: string, endDate: string) {
           setProgressData(serverData)
         }
       } else {
-        // Only use cache if server fails AND user is authenticated
-        const authResponse = await fetch('/api/user/profile')
-        if (!authResponse.ok) {
-          // User not authenticated, clear cache and show empty
-          localStorage.removeItem('progressCache')
-          if (isMountedRef.current) {
-            setProgressData([])
-          }
-        } else {
-          // User authenticated but server failed, use cache as fallback
-          const progressCache = JSON.parse(localStorage.getItem('progressCache') || '{}')
-          const cachedData = Object.keys(progressCache)
-            .filter(dateStr => dateStr >= startDate && dateStr <= endDate)
-            .map(dateStr => ({ date: dateStr, ...progressCache[dateStr] }))
-          
-          if (isMountedRef.current) {
-            setProgressData(cachedData)
-          }
+        if (isMountedRef.current) {
+          setProgressData([])
         }
       }
     } catch (err) {
@@ -169,7 +142,7 @@ export function useProgressRange(startDate: string, endDate: string) {
     return () => {
       isMountedRef.current = false
     }
-  }, [fetchProgressRange, startDate, endDate])
+  }, [startDate, endDate])
 
   return { progressData, loading, refetch: fetchProgressRange }
 }

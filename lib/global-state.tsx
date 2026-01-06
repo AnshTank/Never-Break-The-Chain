@@ -184,31 +184,19 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
   }
 
   const loadProgressForDate = async (date: string) => {
-    // Check cache first
     if (state.dailyProgressCache[date]) {
       return state.dailyProgressCache[date]
     }
     
     try {
-      const response = await fetch(`/api/progress?date=${date}`, {
-        method: 'GET',
-        cache: 'force-cache',
-        next: { revalidate: 60 } // Cache for 1 minute
-      })
+      const response = await fetch(`/api/progress?date=${date}`)
       
       if (!response.ok) {
-        const authResponse = await fetch('/api/user/profile')
-        if (!authResponse.ok) {
-          localStorage.removeItem('progressCache')
-          localStorage.removeItem('trackedDays')
-          return null
-        }
-        throw new Error(`Failed to fetch progress: ${response.status}`)
+        return null
       }
       
       const data = await response.json()
       
-      // Cache the data
       setState(prev => ({
         ...prev,
         dailyProgressCache: {

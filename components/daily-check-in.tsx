@@ -1,14 +1,22 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useUserSettings, useGlobalDailyProgress } from "@/hooks/use-data";
 import { mnzdEvents } from "@/lib/mnzd-events";
 import MNZDCustomizeModal from "./mnzd-customize-modal";
 
-export default function DailyCheckIn() {
+interface DailyCheckInProps {
+  preloadedData?: {
+    settings?: any;
+    todayProgress?: any;
+  };
+}
+
+export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
   const [showMNZDModal, setShowMNZDModal] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
-  const [localProgress, setLocalProgress] = useState<any>(null);
+  const [localProgress, setLocalProgress] = useState<any>(preloadedData?.todayProgress || null);
+  const [settings, setSettings] = useState<any>(preloadedData?.settings || null);
+  const [loading, setLoading] = useState(!preloadedData?.settings || !preloadedData?.todayProgress);
   
   // Memoize today's date string to prevent recalculation
   const todayStr = useMemo(() => {
@@ -25,16 +33,20 @@ export default function DailyCheckIn() {
     setIsCustomizing(true)
   }, [])
 
-  const { settings, loading: settingsLoading } = useUserSettings();
-  const { todayProgress, todayLoading } = useGlobalDailyProgress();
-
-  // Use local progress if available, otherwise use global today's progress
-  const currentProgress = localProgress || todayProgress;
+  // Use local progress if available, otherwise use preloaded data
+  const currentProgress = localProgress || preloadedData?.todayProgress;
   
   // Memoize task calculations to prevent recalculation
   const { taskConfigs, completedTasks, todayCompleted, todayAllCompleted } = useMemo(() => {
-    if (!settings || !currentProgress) {
-      return { taskConfigs: [], completedTasks: [], todayCompleted: 0, todayAllCompleted: false }
+    if (!settings?.mnzdConfigs || !currentProgress) {
+      // Return default MNZD tasks if no settings
+      const defaultTasks = [
+        { id: 'meditation', name: 'Meditation', minMinutes: 10, color: '#3b82f6', description: 'Mindfulness practice' },
+        { id: 'nutrition', name: 'Nutrition', minMinutes: 30, color: '#10b981', description: 'Healthy eating' },
+        { id: 'zone', name: 'Zone (Exercise)', minMinutes: 20, color: '#f59e0b', description: 'Physical activity' },
+        { id: 'discipline', name: 'Discipline', minMinutes: 15, color: '#8b5cf6', description: 'Personal growth' }
+      ];
+      return { taskConfigs: defaultTasks, completedTasks: [], todayCompleted: 0, todayAllCompleted: false }
     }
     
     const taskConfigs = settings.mnzdConfigs;
@@ -52,7 +64,7 @@ export default function DailyCheckIn() {
   
   // Optimize event handlers with useCallback
   const handleProgressUpdate = useCallback(() => {
-    setLocalProgress(null); // Clear local state to use fresh global data
+    setLocalProgress(null); // Clear local state to use fresh data
   }, []);
   
   const handleMNZDProgressUpdate = useCallback(({ date, progress: updatedProgress }) => {
@@ -76,8 +88,8 @@ export default function DailyCheckIn() {
   
   // Listen for real-time updates with optimized dependencies
   useEffect(() => {
-    const unsubscribeSettings = mnzdEvents.onSettingsUpdate(() => {
-      // Settings updated, component will re-render automatically
+    const unsubscribeSettings = mnzdEvents.onSettingsUpdate((newSettings) => {
+      setSettings(newSettings);
     });
 
     const unsubscribeProgress = mnzdEvents.onProgressUpdate(handleMNZDProgressUpdate);
@@ -93,28 +105,57 @@ export default function DailyCheckIn() {
     };
   }, [handleMNZDProgressUpdate, handleTaskComplete, handleProgressUpdate]);
 
-  // Reset local progress when today's progress changes
+  // Initialize with preloaded data
   useEffect(() => {
-    if (todayProgress && !localProgress) {
-      setLocalProgress(todayProgress);
+    if (preloadedData?.settings && preloadedData?.todayProgress) {
+      setSettings(preloadedData.settings);
+      setLocalProgress(preloadedData.todayProgress);
+      setLoading(false);
+    } else if (preloadedData?.settings) {
+      setSettings(preloadedData.settings);
+      setLoading(false);
+    } else {
+      // Force loading to false after a short delay to prevent infinite skeleton
+      setTimeout(() => setLoading(false), 1000);
     }
-  }, [todayProgress, localProgress]);
+  }, [preloadedData]);
   
   // Early return for loading states
-  if (settingsLoading || todayLoading || !settings) {
+  if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-        <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+      <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent dark:via-gray-800/50 animate-shimmer"></div>
+        <div className="space-y-4 relative">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <div className="h-4 bg-gradient-to-r from-blue-200 to-purple-200 dark:from-blue-800 dark:to-purple-800 rounded animate-pulse"></div>
+              <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded animate-pulse"></div>
+            </div>
+            <div className="text-right space-y-2">
+              <div className="h-6 w-12 bg-gradient-to-r from-green-200 to-green-300 dark:from-green-800 dark:to-green-700 rounded animate-pulse"></div>
+              <div className="h-4 w-16 bg-gradient-to-r from-blue-200 to-blue-300 dark:from-blue-800 dark:to-blue-700 rounded animate-pulse"></div>
+            </div>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="h-24 bg-gray-200 dark:bg-gray-700 rounded"
-              ></div>
+                className="h-24 bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 rounded-xl animate-pulse relative overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent dark:via-gray-600/30 animate-shimmer"></div>
+              </div>
             ))}
           </div>
         </div>
+        <style jsx>{`
+          @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+          }
+          .animate-shimmer {
+            animation: shimmer 2s infinite;
+          }
+        `}</style>
       </div>
     );
   }
