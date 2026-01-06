@@ -132,9 +132,22 @@ export default function DeleteAccount() {
                   <p className="text-xs text-slate-500">{feedback.length}/500 characters</p>
                 </div>
 
+                {error && (
+                  <div className="text-red-600 dark:text-red-400 text-sm text-center bg-red-50 dark:bg-red-900/20 p-2 rounded">
+                    {error}
+                  </div>
+                )}
+
                 <div className="flex gap-3 pt-4">
                   <Button
-                    onClick={() => setStep("confirm")}
+                    onClick={() => {
+                      if (!reason) {
+                        setError("Please select at least one reason before continuing")
+                        return
+                      }
+                      setError("")
+                      setStep("confirm")
+                    }}
                     className="w-full bg-red-500 hover:bg-red-600 text-white"
                   >
                     Continue
