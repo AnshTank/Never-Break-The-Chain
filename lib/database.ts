@@ -5,36 +5,88 @@ export class DatabaseService {
   
   static async getUserSettings(userId: string): Promise<UserSettings | null> {
     const { db } = await connectToDatabase()
-    const settings = await db.collection<UserSettings>('userSettings').findOne({ userId })
+    
+    console.log('getUserSettings called for userId:', userId)
+    
+    // Ensure unique index exists
+    try {
+      await db.collection('userSettings').createIndex(
+        { userId: 1 }, 
+        { unique: true, background: true }
+      )
+    } catch (err) {
+      // Index might already exist, ignore error
+    }
+    
+    let settings = await db.collection<UserSettings>('userSettings').findOne({ userId })
+    console.log('Found existing settings:', !!settings)
     
     if (!settings) {
+      console.log('Creating new user settings for:', userId)
       const defaultSettings: UserSettings = {
         userId,
         mnzdConfigs: DEFAULT_MNZD_CONFIGS,
-        theme: 'system',
+        newUser: true,
         createdAt: new Date(),
         updatedAt: new Date()
       }
       
-      await db.collection<UserSettings>('userSettings').insertOne(defaultSettings)
-      return defaultSettings
+      try {
+        await db.collection<UserSettings>('userSettings').insertOne(defaultSettings)
+        console.log('Successfully created new user settings')
+        return defaultSettings
+      } catch (err: any) {
+        console.log('Error creating user settings:', err.code, err.message)
+        // If duplicate key error, fetch the existing document
+        if (err.code === 11000) {
+          settings = await db.collection<UserSettings>('userSettings').findOne({ userId })
+          console.log('Retrieved existing settings after duplicate error')
+          return settings
+        } else {
+          throw err
+        }
+      }
     }
     
     return settings
   }
 
-  static async updateUserSettings(userId: string, updates: Partial<Pick<UserSettings, 'mnzdConfigs' | 'theme' | 'welcomeCompleted' | 'timerTheme' | 'timerCustomAccentColor' | 'timerSettings' | 'timerData'>>): Promise<void> {
+  static async updateUserSettings(userId: string, updates: Partial<UserSettings>): Promise<void> {
     const { db } = await connectToDatabase()
-    await db.collection<UserSettings>('userSettings').updateOne(
-      { userId },
-      { 
-        $set: { 
-          ...updates,
-          updatedAt: new Date() 
-        } 
-      },
-      { upsert: true }
-    )
+    
+    console.log('updateUserSettings called for userId:', userId, 'with updates:', Object.keys(updates))
+    
+    // Use findOneAndUpdate to ensure atomic operation
+    try {
+      const result = await db.collection<UserSettings>('userSettings').findOneAndUpdate(
+        { userId },
+        [
+          {
+            $set: {
+              userId: userId,
+              mnzdConfigs: { $ifNull: ['$mnzdConfigs', DEFAULT_MNZD_CONFIGS] },
+              newUser: { $ifNull: ['$newUser', true] },
+              createdAt: { $ifNull: ['$createdAt', new Date()] },
+              updatedAt: new Date(),
+              ...Object.fromEntries(
+                Object.entries(updates).map(([key, value]) => [
+                  key,
+                  value
+                ])
+              )
+            }
+          }
+        ],
+        { 
+          upsert: true, 
+          returnDocument: 'after'
+        }
+      )
+      console.log('updateUserSettings completed successfully')
+    } catch (err: any) {
+      console.log('updateUserSettings error:', err.code, err.message)
+      throw err
+    }
   }
 
   static async getDailyProgress(userId: string, date: string): Promise<DailyProgress | null> {

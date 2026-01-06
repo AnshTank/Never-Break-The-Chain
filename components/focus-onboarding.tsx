@@ -10,9 +10,11 @@ interface FocusOnboardingProps {
     dailySessionGoal: number;
   }) => void;
   onClose: () => void;
+  isNewUser?: boolean;
+  onInitializeSettings?: () => void;
 }
 
-export default function FocusOnboarding({ onComplete, onClose }: FocusOnboardingProps) {
+export default function FocusOnboarding({ onComplete, onClose, isNewUser, onInitializeSettings }: FocusOnboardingProps) {
   const [step, setStep] = useState(0);
   const [focusTime, setFocusTime] = useState(25);
   const [breakTime, setBreakTime] = useState(5);
@@ -178,8 +180,13 @@ export default function FocusOnboarding({ onComplete, onClose }: FocusOnboarding
             </div>
           </div>
           <p className="text-gray-600 dark:text-gray-400">
-            You can change these settings anytime from the timer sidebar.
+            {isNewUser ? "Start your journey today and never break the chain! 🔗" : "You can change these settings anytime from the timer sidebar."}
           </p>
+          {isNewUser && (
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm text-blue-800 dark:text-blue-200">
+              💡 <strong>New User Tip:</strong> Use the Pomodoro technique to boost your productivity. Select MNZD tasks to track your daily progress toward your goals.
+            </div>
+          )}
         </div>
       )
     }
@@ -189,6 +196,9 @@ export default function FocusOnboarding({ onComplete, onClose }: FocusOnboarding
     if (step < steps.length - 1) {
       setStep(step + 1);
     } else {
+      if (isNewUser && onInitializeSettings) {
+        onInitializeSettings();
+      }
       onComplete({ focusTime, breakTime, dailySessionGoal });
     }
   };

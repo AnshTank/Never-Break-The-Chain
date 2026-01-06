@@ -3,7 +3,16 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import * as THREE from "three";
-import { Play, Pause, RotateCcw, Menu, X, CheckSquare, BarChart3, Settings } from "lucide-react";
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  Menu,
+  X,
+  CheckSquare,
+  BarChart3,
+  Settings,
+} from "lucide-react";
 import FocusOnboarding from "../../components/focus-onboarding";
 import { MNZDConfig } from "../../lib/models-new";
 
@@ -178,10 +187,10 @@ const backgroundSounds = [
 ];
 
 const notificationSounds = [
-  { name: "Default", value: "default" },
-  { name: "Bell", value: "bell" },
-  { name: "Chime", value: "chime" },
-  { name: "Ding", value: "ding" },
+  { name: "Default (System)", value: "default" },
+  { name: "Bell", value: "/sounds/bell.mp3" },
+  { name: "Chime", value: "/sounds/chime.mp3" },
+  { name: "Ding", value: "/sounds/ding.mp3" },
 ];
 
 export default function TimerPage() {
@@ -208,8 +217,16 @@ export default function TimerPage() {
   const [breakDuration, setBreakDuration] = useState(5);
   const [currentTheme, setCurrentTheme] = useState(0);
   const [backgroundSound, setBackgroundSound] = useState("");
-  const [bgSoundVolume, setBgSoundVolume] = useState(0.3);
+  const [backgroundSoundName, setBackgroundSoundName] = useState("None");
+  const [bgSoundVolume, setBgSoundVolume] = useState(0.5);
   const [notificationSound, setNotificationSound] = useState("default");
+  const [notificationSoundName, setNotificationSoundName] =
+    useState("Default (System)");
+  const [isNewUser, setIsNewUser] = useState(false);
+  const [notificationPermission, setNotificationPermission] =
+    useState<NotificationPermission>("default");
+  const [beepCount, setBeepCount] = useState(0);
+  const [beepInterval, setBeepInterval] = useState<NodeJS.Timeout | null>(null);
 
   // Panel states
   const [showPanel, setShowPanel] = useState(false);
@@ -230,17 +247,73 @@ export default function TimerPage() {
   const [completedSessions, setCompletedSessions] = useState(0);
   const [showLoadingScreen, setShowLoadingScreen] = useState(true);
   const [customAccentColor, setCustomAccentColor] = useState("#3b82f6");
-  const [settingsChanged, setSettingsChanged] = useState(false)
-  const [originalSettings, setOriginalSettings] = useState<any>(null)
+  const [settingsChanged, setSettingsChanged] = useState(false);
+  const [originalSettings, setOriginalSettings] = useState<any>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [showNewUserInfo, setShowNewUserInfo] = useState(false);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const bgAudioRef = useRef<HTMLAudioElement | null>(null);
+  const bgAudioRef2 = useRef<HTMLAudioElement | null>(null); // Second audio for seamless looping
+  const notificationAudioRef = useRef<HTMLAudioElement | null>(null);
+  const isChangingVolume = useRef(false);
   const mountRef = useRef<HTMLDivElement | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const animationRef = useRef<number | null>(null);
+
+  const playNotificationSound = () => {
+    if (notificationSound === "default") {
+      // Use system default notification
+      if ("Notification" in window && notificationPermission === "granted") {
+        new Notification(
+          mode === "focus" ? "Focus time complete!" : "Break time complete!",
+          {
+            body:
+              mode === "focus" ? "Time for a break" : "Ready to focus again?",
+            icon: "/favicon.ico",
+          }
+        );
+      }
+    } else {
+      // Use custom sound
+      if (notificationAudioRef.current) {
+        notificationAudioRef.current.src = notificationSound;
+        notificationAudioRef.current.volume = soundVolume;
+        notificationAudioRef.current.play().catch(console.error);
+      }
+    }
+  };
+
+  const startBeepSequence = () => {
+    if (beepInterval) clearInterval(beepInterval);
+    setBeepCount(0);
+
+    const beep = () => {
+      playNotificationSound();
+      setBeepCount((prev) => {
+        const newCount = prev + 1;
+        if (newCount >= 3) {
+          if (beepInterval) clearInterval(beepInterval);
+          setBeepInterval(null);
+        }
+        return newCount;
+      });
+    };
+
+    beep(); // First beep immediately
+    const interval = setInterval(beep, 10000); // Then every 10 seconds
+    setBeepInterval(interval);
+  };
+
+  const stopBeepSequence = () => {
+    if (beepInterval) {
+      clearInterval(beepInterval);
+      setBeepInterval(null);
+    }
+    setBeepCount(0);
+  };
 
   const theme =
     currentTheme >= 0 && themes[currentTheme]
@@ -253,12 +326,50 @@ export default function TimerPage() {
         : themes[currentTheme]
       : themes[0];
 
+  // Timer logic
+  useEffect(() => {
+    if (isRunning && timeLeft > 0) {
+      intervalRef.current = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            setIsRunning(false);
+            startBeepSequence();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isRunning, timeLeft]);
+
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
     checkMobile();
     window.addEventListener("resize", checkMobile);
+
+    // Request notification permission on load
+    if ("Notification" in window) {
+      setNotificationPermission(Notification.permission);
+      if (Notification.permission === "default") {
+        Notification.requestPermission().then((permission) => {
+          setNotificationPermission(permission);
+        });
+      }
+    }
+
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
@@ -272,11 +383,15 @@ export default function TimerPage() {
         cancelAnimationFrame(animationRef.current);
       }
       try {
-        if (mountRef.current && rendererRef.current.domElement && mountRef.current.contains(rendererRef.current.domElement)) {
+        if (
+          mountRef.current &&
+          rendererRef.current.domElement &&
+          mountRef.current.contains(rendererRef.current.domElement)
+        ) {
           mountRef.current.removeChild(rendererRef.current.domElement);
         }
       } catch (error) {
-        console.warn('DOM element already removed:', error);
+        console.warn("DOM element already removed:", error);
       }
       rendererRef.current.dispose();
       rendererRef.current = null;
@@ -559,7 +674,11 @@ export default function TimerPage() {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
-      if (mountRef.current && renderer.domElement && mountRef.current.contains(renderer.domElement)) {
+      if (
+        mountRef.current &&
+        renderer.domElement &&
+        mountRef.current.contains(renderer.domElement)
+      ) {
         mountRef.current.removeChild(renderer.domElement);
       }
       renderer.dispose();
@@ -583,82 +702,117 @@ export default function TimerPage() {
   useEffect(() => {
     const loadUserSettings = async () => {
       try {
-        const response = await fetch('/api/settings')
+        const response = await fetch("/api/settings");
         if (response.ok) {
-          const settings = await response.json()
-          
+          const settings = await response.json();
+
           // Load MNZD configs
           if (settings.mnzdConfigs) {
-            setMnzdConfigs(settings.mnzdConfigs)
+            setMnzdConfigs(settings.mnzdConfigs);
           }
-          
-          if (settings.timerTheme !== undefined) {
-            setCurrentTheme(settings.timerTheme)
+
+          // Check newUser flag and show onboarding immediately
+          if (settings.newUser) {
+            setIsNewUser(true);
+            setShowOnboarding(true);
+            setShowLoadingScreen(false); // Hide loading immediately for new users
+          } else {
+            setIsNewUser(false);
           }
-          if (settings.timerCustomAccentColor) {
-            setCustomAccentColor(settings.timerCustomAccentColor)
-          }
+
           if (settings.timerSettings) {
-            const ts = settings.timerSettings
-            setSessionSettings({
+            const ts = settings.timerSettings;
+            const newSessionSettings = {
               focusTime: ts.focusTime || 25,
               breakTime: ts.breakTime || 5,
-              dailySessionGoal: ts.dailySessionGoal || 8
-            })
-            setAutoStart(ts.autoStart || false)
-            setNotifications(ts.notifications !== undefined ? ts.notifications : true)
-            setSoundVolume(ts.soundVolume || 0.5)
+              dailySessionGoal: ts.dailySessionGoal || 8,
+            };
+            setSessionSettings(newSessionSettings);
+            setAutoStart(ts.autoStart || false);
+            setNotifications(
+              ts.notifications !== undefined ? ts.notifications : true
+            );
+            setSoundVolume(ts.soundVolume || 0.5);
+
+            // Map background sound from DB to name and file
+            const bgSound = backgroundSounds.find(s => s.file === ts.backgroundSound)
             setBackgroundSound(ts.backgroundSound || '')
-            setBgSoundVolume(ts.bgSoundVolume || 0.3)
-            setNotificationSound(ts.notificationSound || 'default')
+            setBackgroundSoundName(bgSound?.name || 'None')
+            setBgSoundVolume(ts.bgSoundVolume || 0.5)
             
-            // Apply session settings to timer
-            setSelectedDuration(ts.focusTime || 25)
-            setTimeLeft((ts.focusTime || 25) * 60)
-            setBreakDuration(ts.breakTime || 5)
+            // Map notification sound from DB to name
+            const notifSound = notificationSounds.find(s => s.value === ts.notificationSound)
+            setNotificationSound(ts.notificationSound || 'default')
+            setNotificationSoundName(notifSound?.name || 'Default (System)')
+
+            // Load theme settings from timerSettings
+            if (ts.timerTheme !== undefined) {
+              const themeIndex = typeof ts.timerTheme === 'string' 
+                ? themes.findIndex(t => t.name === ts.timerTheme)
+                : ts.timerTheme;
+              setCurrentTheme(themeIndex >= 0 ? themeIndex : 0);
+            }
+            if (ts.timerCustomAccentColor) {
+              setCustomAccentColor(ts.timerCustomAccentColor);
+            }
+
+            // Apply session settings to timer with auto-scroll
+            setSelectedDuration(newSessionSettings.focusTime);
+            setTimeLeft(newSessionSettings.focusTime * 60);
+            setBreakDuration(newSessionSettings.breakTime);
+            
+            // Auto-scroll duration selector to current value
+            setTimeout(() => {
+              const selector = document.querySelector('.duration-selector');
+              const activeButton = document.querySelector(`button[data-duration="${newSessionSettings.focusTime}"]`);
+              if (selector && activeButton) {
+                activeButton.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+              }
+            }, 100);
           }
         }
       } catch (error) {
-        console.error('Error loading user settings:', error)
+        console.error("Error loading user settings:", error);
       }
-    }
+    };
 
     const loadTimerData = async () => {
       try {
-        const response = await fetch('/api/timer-data')
+        const response = await fetch("/api/timer-data");
         if (response.ok) {
-          const data = await response.json()
-          setSessions(data.sessions || [])
-          setStats(data.stats || stats)
-          setTasks(data.tasks || [])
-          setPomodoroCount(data.pomodoroCount || 0)
-          setCompletedSessions(data.completedSessions || 0)
+          const data = await response.json();
+          setSessions(data.sessions || []);
+          setStats(data.stats || stats);
+          setTasks(data.tasks || []);
+          setPomodoroCount(data.pomodoroCount || 0);
+          setCompletedSessions(data.completedSessions || 0);
         }
       } catch (error) {
-        console.error('Error loading timer data:', error)
+        console.error("Error loading timer data:", error);
       }
-    }
+    };
 
     const loadTodayProgress = async () => {
       try {
-        const today = new Date().toLocaleDateString('en-CA')
-        const response = await fetch(`/api/progress?date=${today}`)
+        const today = new Date().toLocaleDateString("en-CA");
+        const response = await fetch(`/api/progress?date=${today}`);
         if (response.ok) {
-          const progress = await response.json()
-          const mnzdProgress = { code: 0, think: 0, express: 0, move: 0 }
-          
+          const progress = await response.json();
+          const mnzdProgress = { code: 0, think: 0, express: 0, move: 0 };
+
           progress.tasks?.forEach((task: any) => {
             if (mnzdProgress.hasOwnProperty(task.taskId)) {
-              mnzdProgress[task.taskId as keyof typeof mnzdProgress] = task.minutes
+              mnzdProgress[task.taskId as keyof typeof mnzdProgress] =
+                task.minutes;
             }
-          })
-          
-          setStats(prev => ({ ...prev, mnzdProgress }))
+          });
+
+          setStats((prev) => ({ ...prev, mnzdProgress }));
         }
       } catch (error) {
-        console.error('Error loading today progress:', error)
+        console.error("Error loading today progress:", error);
       }
-    }
+    };
 
     const savedData = localStorage.getItem("focusTimerData");
     const hasSeenOnboarding = localStorage.getItem("focusOnboardingComplete");
@@ -678,13 +832,13 @@ export default function TimerPage() {
       setCompletedSessions(data.completedSessions || 0);
     }
 
-    loadUserSettings()
-    loadTimerData()
-    loadTodayProgress()
+    loadUserSettings();
+    loadTimerData();
+    loadTodayProgress();
 
     setTimeout(() => {
       setShowLoadingScreen(false);
-    }, 5000);
+    }, 1500);
 
     setCurrentQuote(quotes[Math.floor(Math.random() * quotes.length)]);
 
@@ -720,26 +874,124 @@ export default function TimerPage() {
     };
   }, [isRunning]);
 
-  // Background sound management
+  // Background sound management with seamless looping
   useEffect(() => {
-    if (bgAudioRef.current) {
-      if (backgroundSound) {
-        bgAudioRef.current.src = backgroundSound;
-        bgAudioRef.current.loop = true;
-        bgAudioRef.current.volume = bgSoundVolume;
-        bgAudioRef.current.play().catch(() => {});
-      } else {
-        bgAudioRef.current.pause();
-      }
-    }
-  }, [backgroundSound, bgSoundVolume]);
+    const setupAudio = (audioRef: React.RefObject<HTMLAudioElement>) => {
+      if (audioRef.current) {
+        audioRef.current.preload = "auto";
+        audioRef.current.volume = bgSoundVolume;
 
-  const saveTimerSettings = async () => {
+        // Handle seamless looping
+        const handleTimeUpdate = () => {
+          if (audioRef.current && audioRef.current.duration > 0) {
+            // Start crossfade 0.5 seconds before end
+            if (
+              audioRef.current.currentTime >=
+              audioRef.current.duration - 0.5
+            ) {
+              const otherRef =
+                audioRef === bgAudioRef ? bgAudioRef2 : bgAudioRef;
+              if (otherRef.current && backgroundSound) {
+                otherRef.current.currentTime = 0;
+                otherRef.current.volume = bgSoundVolume;
+                otherRef.current.play().catch(console.error);
+              }
+            }
+          }
+        };
+
+        const handleEnded = () => {
+          if (backgroundSound) {
+            audioRef.current!.currentTime = 0;
+            audioRef.current!.play().catch(console.error);
+          }
+        };
+
+        audioRef.current.addEventListener("timeupdate", handleTimeUpdate);
+        audioRef.current.addEventListener("ended", handleEnded);
+
+        return () => {
+          if (audioRef.current) {
+            audioRef.current.removeEventListener(
+              "timeupdate",
+              handleTimeUpdate
+            );
+            audioRef.current.removeEventListener("ended", handleEnded);
+          }
+        };
+      }
+    };
+
+    if (backgroundSound) {
+      // Setup both audio elements
+      if (bgAudioRef.current) {
+        bgAudioRef.current.src = backgroundSound;
+        setupAudio(bgAudioRef);
+      }
+      if (bgAudioRef2.current) {
+        bgAudioRef2.current.src = backgroundSound;
+        setupAudio(bgAudioRef2);
+      }
+
+      // Start playing the first audio
+      if (bgAudioRef.current) {
+        bgAudioRef.current.play().catch(console.error);
+      }
+    } else {
+      // Stop both audio elements
+      [bgAudioRef, bgAudioRef2].forEach((ref) => {
+        if (ref.current) {
+          ref.current.pause();
+          ref.current.currentTime = 0;
+        }
+      });
+    }
+  }, [backgroundSound]);
+
+  // Background sound volume with smooth transitions
+  useEffect(() => {
+    const smoothVolumeChange = (
+      audioRef: React.RefObject<HTMLAudioElement>,
+      targetVolume: number
+    ) => {
+      if (!audioRef.current || isChangingVolume.current) return;
+
+      isChangingVolume.current = true;
+      const currentVolume = audioRef.current.volume;
+      const volumeDiff = targetVolume - currentVolume;
+      const steps = 20;
+      const stepSize = volumeDiff / steps;
+      const stepDuration = 50; // 50ms per step = 1 second total
+
+      let step = 0;
+      const volumeInterval = setInterval(() => {
+        if (audioRef.current && step < steps) {
+          audioRef.current.volume = Math.max(
+            0,
+            Math.min(1, currentVolume + stepSize * step)
+          );
+          step++;
+        } else {
+          if (audioRef.current) {
+            audioRef.current.volume = targetVolume;
+          }
+          clearInterval(volumeInterval);
+          isChangingVolume.current = false;
+        }
+      }, stepDuration);
+    };
+
+    smoothVolumeChange(bgAudioRef, bgSoundVolume);
+    smoothVolumeChange(bgAudioRef2, bgSoundVolume);
+  }, [bgSoundVolume]);
+
+  const initializeTimerSettings = async () => {
     try {
-      await fetch('/api/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          newUser: false,
           timerSettings: {
             focusTime: sessionSettings.focusTime,
             breakTime: sessionSettings.breakTime,
@@ -749,38 +1001,75 @@ export default function TimerPage() {
             soundVolume,
             backgroundSound,
             bgSoundVolume,
-            notificationSound
-          }
-        })
-      })
-      setSettingsChanged(false)
-      setOriginalSettings(null)
+            notificationSound,
+            timerTheme: themes[currentTheme].name,
+            timerCustomAccentColor: customAccentColor,
+          },
+        }),
+      });
+      setShowNewUserInfo(false);
+      setIsNewUser(false);
     } catch (error) {
-      console.error('Error saving timer settings:', error)
+      console.error("Error initializing timer settings:", error);
     }
-  }
+  };
+
+  const saveTimerSettings = async () => {
+    try {
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          newUser: false,
+          timerSettings: {
+            focusTime: sessionSettings.focusTime,
+            breakTime: sessionSettings.breakTime,
+            dailySessionGoal: sessionSettings.dailySessionGoal,
+            autoStart,
+            notifications,
+            soundVolume,
+            backgroundSound,
+            bgSoundVolume,
+            notificationSound,
+            timerTheme: themes[currentTheme].name,
+            timerCustomAccentColor: customAccentColor,
+          },
+        }),
+      });
+      setSettingsChanged(false);
+      setOriginalSettings(null);
+      setIsNewUser(false);
+    } catch (error) {
+      console.error("Error saving timer settings:", error);
+    }
+  };
 
   const cancelSettingsChanges = () => {
     if (originalSettings) {
-      setSessionSettings(originalSettings.sessionSettings)
-      setAutoStart(originalSettings.autoStart)
-      setNotifications(originalSettings.notifications)
-      setSoundVolume(originalSettings.soundVolume)
-      setBackgroundSound(originalSettings.backgroundSound)
-      setBgSoundVolume(originalSettings.bgSoundVolume)
-      setNotificationSound(originalSettings.notificationSound)
-      
+      setSessionSettings(originalSettings.sessionSettings);
+      setAutoStart(originalSettings.autoStart);
+      setNotifications(originalSettings.notifications);
+      setSoundVolume(originalSettings.soundVolume);
+      setBackgroundSound(originalSettings.backgroundSound);
+      setBgSoundVolume(originalSettings.bgSoundVolume);
+      setNotificationSound(originalSettings.notificationSound);
+      setCurrentTheme(originalSettings.currentTheme);
+      setCustomAccentColor(originalSettings.customAccentColor);
+
       // Reset timer duration based on current mode
-      const newDuration = mode === "focus" ? originalSettings.sessionSettings.focusTime : originalSettings.sessionSettings.breakTime
-      setSelectedDuration(newDuration)
+      const newDuration =
+        mode === "focus"
+          ? originalSettings.sessionSettings.focusTime
+          : originalSettings.sessionSettings.breakTime;
+      setSelectedDuration(newDuration);
       if (!isRunning) {
-        setTimeLeft(newDuration * 60)
+        setTimeLeft(newDuration * 60);
       }
-      setBreakDuration(originalSettings.sessionSettings.breakTime)
+      setBreakDuration(originalSettings.sessionSettings.breakTime);
     }
-    setSettingsChanged(false)
-    setOriginalSettings(null)
-  }
+    setSettingsChanged(false);
+    setOriginalSettings(null);
+  };
 
   const saveData = async () => {
     const data = {
@@ -790,15 +1079,15 @@ export default function TimerPage() {
       pomodoroCount,
       completedSessions,
     };
-    
+
     try {
-      await fetch('/api/timer-data', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      })
+      await fetch("/api/timer-data", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
     } catch (error) {
-      console.error('Error saving timer data:', error)
+      console.error("Error saving timer data:", error);
     }
 
     // Keep localStorage as backup
@@ -883,27 +1172,32 @@ export default function TimerPage() {
     setSessions(updatedSessions);
 
     // Update MNZD progress in database if focus session with MNZD task
-    if (currentTask && mode === "focus" && mnzdConfigs.find((c) => c.id === currentTask)) {
+    if (
+      currentTask &&
+      mode === "focus" &&
+      mnzdConfigs.find((c) => c.id === currentTask)
+    ) {
       try {
-        const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format
-        const response = await fetch('/api/progress', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+        const today = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD format
+        const response = await fetch("/api/progress", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             date: today,
             taskId: currentTask,
-            minutes: selectedDuration
-          })
-        })
-        
+            minutes: selectedDuration,
+          }),
+        });
+
         if (response.ok) {
           // Update local MNZD progress state
           const newMnzdProgress = { ...stats.mnzdProgress };
-          newMnzdProgress[currentTask as keyof typeof newMnzdProgress] += selectedDuration;
+          newMnzdProgress[currentTask as keyof typeof newMnzdProgress] +=
+            selectedDuration;
           setStats((prev) => ({ ...prev, mnzdProgress: newMnzdProgress }));
         }
       } catch (error) {
-        console.error('Error updating MNZD progress:', error)
+        console.error("Error updating MNZD progress:", error);
       }
     }
 
@@ -997,9 +1291,9 @@ export default function TimerPage() {
   };
 
   const todaySessions = sessions.filter((s) => {
-    const today = new Date().toLocaleDateString('en-CA')
-    const sessionDate = new Date(s.timestamp).toLocaleDateString('en-CA')
-    return sessionDate === today
+    const today = new Date().toLocaleDateString("en-CA");
+    const sessionDate = new Date(s.timestamp).toLocaleDateString("en-CA");
+    return sessionDate === today;
   });
 
   const refreshTheme = () => {
@@ -1013,17 +1307,21 @@ export default function TimerPage() {
 
   const handleThemeChange = async (newTheme: number) => {
     setCurrentTheme(newTheme);
-    
+
     try {
-      await fetch('/api/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ timerTheme: newTheme })
-      })
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          timerSettings: { 
+            timerTheme: themes[newTheme].name 
+          } 
+        }),
+      });
     } catch (error) {
-      console.error('Error saving theme:', error)
+      console.error("Error saving theme:", error);
     }
-    
+
     saveData();
   };
 
@@ -1229,25 +1527,35 @@ export default function TimerPage() {
 
       {/* Main Timer */}
       <div
-        className={`flex items-center justify-center min-h-screen ${isMobile ? 'p-4' : 'p-4 lg:p-8'} transition-all duration-500 ${
+        className={`flex items-center justify-center min-h-screen ${
+          isMobile ? "p-4" : "p-4 lg:p-8"
+        } transition-all duration-500 ${
           showModeTransition ? "opacity-0 scale-95" : "opacity-100 scale-100"
         }`}
       >
         <div className="text-center max-w-4xl mx-auto">
           <div
-            className={`${isMobile ? 'mb-4' : 'mb-6 lg:mb-12'} transition-all duration-500 ${
+            className={`${
+              isMobile ? "mb-4" : "mb-4 lg:mb-8"
+            } transition-all duration-500 ${
               showModeTransition
                 ? "opacity-0 translate-y-4"
                 : "opacity-100 translate-y-0"
             }`}
           >
             <h1
-              className={`${isMobile ? 'text-3xl' : 'text-5xl lg:text-8xl'} font-extralight ${theme.text} ${isMobile ? 'mb-2' : 'mb-3 lg:mb-6'} transition-all duration-700 tracking-wide`}
+              className={`${
+                isMobile ? "text-3xl" : "text-4xl lg:text-6xl"
+              } font-extralight ${theme.text} ${
+                isMobile ? "mb-2" : "mb-3 lg:mb-4"
+              } transition-all duration-700 tracking-wide`}
             >
               {mode === "focus" ? "Focus Time" : "Break Time"}
             </h1>
             <p
-              className={`${theme.text} opacity-90 ${isMobile ? 'text-sm px-4' : 'text-base lg:text-2xl px-8'} font-light max-w-4xl mx-auto leading-relaxed transition-all duration-700`}
+              className={`${theme.text} opacity-90 ${
+                isMobile ? "text-sm px-4" : "text-base lg:text-xl px-8"
+              } font-light max-w-4xl mx-auto leading-relaxed transition-all duration-700`}
             >
               {currentQuote}
             </p>
@@ -1255,9 +1563,9 @@ export default function TimerPage() {
 
           {currentTask && mode === "focus" && (
             <div
-              className={`${isMobile ? 'mb-2' : 'mb-4'} inline-block ${isMobile ? 'px-4 py-2' : 'px-8 py-4'} rounded-full ${
-                theme.panel
-              } backdrop-blur-xl ${
+              className={`${isMobile ? "mb-2" : "mb-4"} inline-block ${
+                isMobile ? "px-4 py-2" : "px-8 py-4"
+              } rounded-full ${theme.panel} backdrop-blur-xl ${
                 theme.border
               } border transition-all duration-600 shadow-xl ${
                 showModeTransition
@@ -1265,7 +1573,9 @@ export default function TimerPage() {
                   : "opacity-100 translate-y-0"
               }`}
             >
-              <span className={`${theme.text} ${isMobile ? 'text-sm' : 'text-lg'}`}>
+              <span
+                className={`${theme.text} ${isMobile ? "text-sm" : "text-lg"}`}
+              >
                 Working on:{" "}
                 <span className="font-semibold" style={{ color: theme.accent }}>
                   {tasks.find((t) => t.id === currentTask)?.name}
@@ -1276,7 +1586,9 @@ export default function TimerPage() {
 
           {/* Timer Circle */}
           <div
-            className={`relative ${isMobile ? 'mb-6' : 'mb-12'} transition-all duration-700 ${
+            className={`relative ${
+              isMobile ? "mb-6" : "mb-12"
+            } transition-all duration-700 ${
               showModeTransition
                 ? "opacity-0 scale-90"
                 : "opacity-100 scale-100"
@@ -1293,7 +1605,9 @@ export default function TimerPage() {
               </div>
             )}
             <svg
-              className={`${isMobile ? 'w-56 h-56' : 'w-72 h-72 lg:w-96 lg:h-96'} mx-auto transform -rotate-90 relative z-10`}
+              className={`${
+                isMobile ? "w-56 h-56" : "w-64 h-64 lg:w-80 lg:h-80"
+              } mx-auto transform -rotate-90 relative z-10`}
               viewBox="0 0 100 100"
             >
               <circle
@@ -1323,12 +1637,18 @@ export default function TimerPage() {
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
                 <div
-                  className={`${isMobile ? 'text-4xl' : 'text-5xl lg:text-7xl'} font-extralight ${theme.text} ${isMobile ? 'mb-2' : 'mb-4'} tabular-nums transition-all duration-700 tracking-wider`}
+                  className={`${
+                    isMobile ? "text-4xl" : "text-4xl lg:text-6xl"
+                  } font-extralight ${theme.text} ${
+                    isMobile ? "mb-2" : "mb-3"
+                  } tabular-nums transition-all duration-700 tracking-wider`}
                 >
                   {formatTime(timeLeft)}
                 </div>
                 <div
-                  className={`${theme.text} opacity-70 ${isMobile ? 'text-sm' : 'text-base lg:text-xl'} font-light transition-all duration-700`}
+                  className={`${theme.text} opacity-70 ${
+                    isMobile ? "text-sm" : "text-base lg:text-xl"
+                  } font-light transition-all duration-700`}
                 >
                   {isRunning
                     ? mode === "focus"
@@ -1338,7 +1658,9 @@ export default function TimerPage() {
                 </div>
                 {isRunning && mode === "focus" && (
                   <div
-                    className={`${isMobile ? 'mt-1 text-xs' : 'mt-2 text-sm lg:text-lg'} ${theme.text} opacity-50 transition-all duration-700`}
+                    className={`${
+                      isMobile ? "mt-1 text-xs" : "mt-2 text-sm lg:text-lg"
+                    } ${theme.text} opacity-50 transition-all duration-700`}
                   >
                     Session {pomodoroCount + 1}
                   </div>
@@ -1349,7 +1671,9 @@ export default function TimerPage() {
 
           {/* Controls */}
           <div
-            className={`flex justify-center ${isMobile ? 'gap-3 mb-4' : 'gap-4 lg:gap-8 mb-6 lg:mb-12'} transition-all duration-600 ${
+            className={`flex justify-center ${
+              isMobile ? "gap-3 mb-4" : "gap-4 lg:gap-6 mb-4 lg:mb-8"
+            } transition-all duration-600 ${
               showModeTransition
                 ? "opacity-0 translate-y-4"
                 : "opacity-100 translate-y-0"
@@ -1358,10 +1682,20 @@ export default function TimerPage() {
             {!isRunning ? (
               <button
                 onClick={start}
-                className={`${isMobile ? 'px-8 py-3' : 'px-12 py-4 lg:px-16 lg:py-5'} rounded-full ${theme.panel} backdrop-blur-xl transition-all duration-500 shadow-2xl hover:shadow-3xl hover:scale-110 ${theme.border} border group`}
+                className={`${
+                  isMobile ? "px-8 py-3" : "px-12 py-4 lg:px-16 lg:py-5"
+                } rounded-full ${
+                  theme.panel
+                } backdrop-blur-xl transition-all duration-500 shadow-2xl hover:shadow-3xl hover:scale-110 ${
+                  theme.border
+                } border group`}
               >
                 <span
-                  className={`${isMobile ? 'text-lg' : 'text-xl lg:text-2xl'} font-medium ${theme.text} group-hover:scale-105 transition-transform duration-300`}
+                  className={`${
+                    isMobile ? "text-lg" : "text-xl lg:text-2xl"
+                  } font-medium ${
+                    theme.text
+                  } group-hover:scale-105 transition-transform duration-300`}
                 >
                   Start
                 </span>
@@ -1369,21 +1703,45 @@ export default function TimerPage() {
             ) : (
               <button
                 onClick={pause}
-                className={`${isMobile ? 'px-8 py-3' : 'px-12 py-4 lg:px-16 lg:py-5'} rounded-full ${theme.panel} backdrop-blur-xl transition-all duration-500 shadow-2xl hover:shadow-3xl hover:scale-110 ${theme.border} border group`}
+                className={`${
+                  isMobile ? "px-8 py-3" : "px-12 py-4 lg:px-16 lg:py-5"
+                } rounded-full ${
+                  theme.panel
+                } backdrop-blur-xl transition-all duration-500 shadow-2xl hover:shadow-3xl hover:scale-110 ${
+                  theme.border
+                } border group`}
               >
                 <span
-                  className={`${isMobile ? 'text-lg' : 'text-xl lg:text-2xl'} font-medium ${theme.text} group-hover:scale-105 transition-transform duration-300`}
+                  className={`${
+                    isMobile ? "text-lg" : "text-xl lg:text-2xl"
+                  } font-medium ${
+                    theme.text
+                  } group-hover:scale-105 transition-transform duration-300`}
                 >
                   Pause
                 </span>
               </button>
             )}
             <button
-              onClick={reset}
-              className={`${isMobile ? 'px-6 py-3' : 'px-8 py-4 lg:px-12 lg:py-5'} rounded-full ${theme.panel} opacity-80 backdrop-blur-xl transition-all duration-500 hover:scale-110 ${theme.border} border group`}
+              onClick={() => {
+                setIsRunning(false);
+                setTimeLeft(selectedDuration * 60);
+                stopBeepSequence();
+              }}
+              className={`${
+                isMobile ? "px-6 py-3" : "px-8 py-4 lg:px-12 lg:py-5"
+              } rounded-full ${
+                theme.panel
+              } opacity-80 backdrop-blur-xl transition-all duration-500 hover:scale-110 ${
+                theme.border
+              } border group`}
             >
               <span
-                className={`${isMobile ? 'text-base' : 'text-lg lg:text-xl'} font-medium ${theme.text} group-hover:scale-105 transition-transform duration-300`}
+                className={`${
+                  isMobile ? "text-base" : "text-lg lg:text-xl"
+                } font-medium ${
+                  theme.text
+                } group-hover:scale-105 transition-transform duration-300`}
               >
                 Reset
               </span>
@@ -1394,33 +1752,38 @@ export default function TimerPage() {
           <div
             className={`inline-flex ${
               theme.panel
-            } backdrop-blur-xl rounded-full ${isMobile ? 'p-2' : 'p-3'} shadow-2xl ${
-              theme.border
-            } border transition-all duration-700 ${
+            } backdrop-blur-xl rounded-full ${
+              isMobile ? "p-2" : "p-3"
+            } shadow-2xl ${theme.border} border transition-all duration-700 ${
               showModeTransition
                 ? "opacity-0 translate-y-4"
                 : "opacity-100 translate-y-0"
             }`}
           >
-            <div 
-              className={`flex ${isMobile ? 'gap-1 max-w-xs' : 'gap-2 max-w-2xl'} overflow-x-auto overflow-y-hidden duration-selector`}
+            <div
+              className={`flex ${
+                isMobile ? "gap-1 max-w-xs" : "gap-2 max-w-2xl"
+              } overflow-x-auto overflow-y-hidden duration-selector`}
               style={{
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none',
-                WebkitOverflowScrolling: 'touch'
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+                WebkitOverflowScrolling: "touch",
               }}
               onWheel={(e) => {
-                e.preventDefault()
-                e.currentTarget.scrollLeft += e.deltaY
+                e.preventDefault();
+                e.currentTarget.scrollLeft += e.deltaY;
               }}
             >
               {(mode === "focus" ? focusOptions : breakOptions).map(
                 (duration) => (
                   <button
                     key={duration}
+                    data-duration={duration}
                     onClick={() => setDuration(duration)}
                     disabled={isRunning}
-                    className={`${isMobile ? 'px-3 py-2 text-sm' : 'px-4 py-2'} rounded-full transition-all duration-300 whitespace-nowrap ${
+                    className={`${
+                      isMobile ? "px-3 py-2 text-sm" : "px-4 py-2"
+                    } rounded-full transition-all duration-300 whitespace-nowrap ${
                       selectedDuration === duration
                         ? "text-white shadow-lg scale-105"
                         : `${theme.text} opacity-70 hover:opacity-100 hover:scale-105`
@@ -1453,32 +1816,42 @@ export default function TimerPage() {
           {/* Panel Header */}
           <div className="flex items-center justify-between p-6">
             <h2 className={`text-2xl font-light ${theme.text}`}>
-              {activePanel === "tasks"
-                ? "Tasks"
-                : activePanel === "stats"
-                ? "Analytics"
-                : activePanel === "settings" && settingsChanged
-                ? (
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={saveTimerSettings}
-                        className="px-6 py-2 rounded-lg text-white font-medium transition-all duration-300 hover:scale-105 shadow-lg text-base"
-                        style={{ backgroundColor: theme.accent }}
-                      >
-                        Save Settings
-                      </button>
-                      <button
-                        onClick={cancelSettingsChanges}
-                        className={`p-2 rounded-lg ${theme.text} opacity-60 hover:opacity-100 transition-all duration-300 hover:scale-110`}
-                        style={{ backgroundColor: `${theme.accent}20` }}
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  )
-                : "Settings"}
+              {activePanel === "tasks" ? (
+                "Tasks"
+              ) : activePanel === "stats" ? (
+                "Analytics"
+              ) : activePanel === "settings" && settingsChanged ? (
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={saveTimerSettings}
+                    className="px-6 py-2 rounded-lg text-white font-medium transition-all duration-300 hover:scale-105 shadow-lg text-base"
+                    style={{ backgroundColor: theme.accent }}
+                  >
+                    Save Settings
+                  </button>
+                  <button
+                    onClick={cancelSettingsChanges}
+                    className={`p-2 rounded-lg ${theme.text} opacity-60 hover:opacity-100 transition-all duration-300 hover:scale-110`}
+                    style={{ backgroundColor: `${theme.accent}20` }}
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                "Settings"
+              )}
             </h2>
             <button
               onClick={() => setShowPanel(false)}
@@ -1509,13 +1882,29 @@ export default function TimerPage() {
                   <h3 className={`text-lg font-medium ${theme.text} mb-4`}>
                     MNZD Progress
                   </h3>
-                  <div className={`mb-4 p-3 rounded-lg ${theme.panel} backdrop-blur-sm ${theme.border} border`}>
+                  <div
+                    className={`mb-4 p-3 rounded-lg ${theme.panel} backdrop-blur-sm ${theme.border} border`}
+                  >
                     <div className="flex items-start gap-2">
-                      <svg className={`w-4 h-4 ${theme.text} opacity-60 mt-0.5 flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg
+                        className={`w-4 h-4 ${theme.text} opacity-60 mt-0.5 flex-shrink-0`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
                       </svg>
-                      <p className={`text-xs ${theme.text} opacity-70 leading-relaxed`}>
-                        <strong>Tip:</strong> Select one task to focus on during your session. Single-tasking improves concentration and productivity.
+                      <p
+                        className={`text-xs ${theme.text} opacity-70 leading-relaxed`}
+                      >
+                        <strong>Tip:</strong> Select one task to focus on during
+                        your session. Single-tasking improves concentration and
+                        productivity.
                       </p>
                     </div>
                   </div>
@@ -1530,7 +1919,9 @@ export default function TimerPage() {
                         (progress / config.minMinutes) * 100,
                         100
                       );
-                      const mnzdTask = mnzdTasks.find(t => t.id === config.id);
+                      const mnzdTask = mnzdTasks.find(
+                        (t) => t.id === config.id
+                      );
 
                       return (
                         <div
@@ -1543,15 +1934,15 @@ export default function TimerPage() {
                                 className="w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold transition-all duration-300"
                                 style={{
                                   backgroundColor: isComplete
-                                    ? `${mnzdTask?.color || '#3b82f6'}30`
-                                    : `${mnzdTask?.color || '#3b82f6'}10`,
-                                  color: mnzdTask?.color || '#3b82f6',
-                                  border: `2px solid ${mnzdTask?.color || '#3b82f6'}${
-                                    isComplete ? "60" : "30"
-                                  }`,
+                                    ? `${mnzdTask?.color || "#3b82f6"}30`
+                                    : `${mnzdTask?.color || "#3b82f6"}10`,
+                                  color: mnzdTask?.color || "#3b82f6",
+                                  border: `2px solid ${
+                                    mnzdTask?.color || "#3b82f6"
+                                  }${isComplete ? "60" : "30"}`,
                                 }}
                               >
-                                {mnzdTask?.symbol || '●'}
+                                {mnzdTask?.symbol || "●"}
                               </div>
                               <div>
                                 <div
@@ -1580,8 +1971,8 @@ export default function TimerPage() {
                               style={{
                                 backgroundColor:
                                   currentTask === config.id
-                                    ? mnzdTask?.color || '#3b82f6'
-                                    : `${mnzdTask?.color || '#3b82f6'}20`,
+                                    ? mnzdTask?.color || "#3b82f6"
+                                    : `${mnzdTask?.color || "#3b82f6"}20`,
                               }}
                             >
                               {currentTask === config.id ? "Active" : "Select"}
@@ -1594,7 +1985,7 @@ export default function TimerPage() {
                               className="h-2 rounded-full transition-all duration-500"
                               style={{
                                 width: `${progressPercent}%`,
-                                backgroundColor: mnzdTask?.color || '#3b82f6',
+                                backgroundColor: mnzdTask?.color || "#3b82f6",
                               }}
                             ></div>
                           </div>
@@ -1603,7 +1994,9 @@ export default function TimerPage() {
                             <span className={`${theme.text} opacity-60`}>
                               {progress}/{config.minMinutes} min
                             </span>
-                            <span style={{ color: mnzdTask?.color || '#3b82f6' }}>
+                            <span
+                              style={{ color: mnzdTask?.color || "#3b82f6" }}
+                            >
                               {Math.round(progressPercent)}%
                             </span>
                           </div>
@@ -1978,109 +2371,115 @@ export default function TimerPage() {
                   </div>
                 </div>
 
-                  <div>
-                    <h3 className={`text-lg font-medium ${theme.text} mb-4`}>
-                      MNZD Progress Today
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      {mnzdConfigs.map((config) => {
-                        const progress =
-                          stats.mnzdProgress[
-                            config.id as keyof typeof stats.mnzdProgress
-                          ];
-                        const progressPercent = Math.min(
-                          (progress / config.minMinutes) * 100,
-                          100
-                        );
-                        const isComplete = progress >= config.minMinutes;
-                        const mnzdTask = mnzdTasks.find(t => t.id === config.id);
+                <div>
+                  <h3 className={`text-lg font-medium ${theme.text} mb-4`}>
+                    MNZD Progress Today
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    {mnzdConfigs.map((config) => {
+                      const progress =
+                        stats.mnzdProgress[
+                          config.id as keyof typeof stats.mnzdProgress
+                        ];
+                      const progressPercent = Math.min(
+                        (progress / config.minMinutes) * 100,
+                        100
+                      );
+                      const isComplete = progress >= config.minMinutes;
+                      const mnzdTask = mnzdTasks.find(
+                        (t) => t.id === config.id
+                      );
 
-                        return (
-                          <div
-                            key={config.id}
-                            className={`relative p-4 rounded-xl ${theme.panel} backdrop-blur-xl ${theme.border} border hover:scale-105 transition-all duration-500 overflow-hidden`}
-                          >
-                            <div className="absolute inset-0 opacity-10">
+                      return (
+                        <div
+                          key={config.id}
+                          className={`relative p-4 rounded-xl ${theme.panel} backdrop-blur-xl ${theme.border} border hover:scale-105 transition-all duration-500 overflow-hidden`}
+                        >
+                          <div className="absolute inset-0 opacity-10">
+                            <div
+                              className="w-full h-full bg-gradient-to-br"
+                              style={{
+                                background: `linear-gradient(135deg, ${
+                                  mnzdTask?.color || "#3b82f6"
+                                }40 0%, transparent 100%)`,
+                              }}
+                            ></div>
+                          </div>
+                          <div className="relative z-10">
+                            <div className="flex items-center justify-between mb-3">
                               <div
-                                className="w-full h-full bg-gradient-to-br"
+                                className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"
                                 style={{
-                                  background: `linear-gradient(135deg, ${mnzdTask?.color || '#3b82f6'}40 0%, transparent 100%)`,
+                                  backgroundColor: `${
+                                    mnzdTask?.color || "#3b82f6"
+                                  }${isComplete ? "40" : "20"}`,
+                                  color: mnzdTask?.color || "#3b82f6",
                                 }}
-                              ></div>
+                              >
+                                {mnzdTask?.symbol || "●"}
+                              </div>
+                              <div
+                                className={`text-xs ${theme.text} opacity-60`}
+                              >
+                                {progress}/{config.minMinutes}m
+                              </div>
                             </div>
-                            <div className="relative z-10">
-                              <div className="flex items-center justify-between mb-3">
-                                <div
-                                  className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold"
+
+                            <div
+                              className={`font-medium ${theme.text} text-sm mb-2`}
+                            >
+                              {config.name}
+                            </div>
+
+                            {/* Circular Progress */}
+                            <div className="relative w-12 h-12 mx-auto">
+                              <svg
+                                className="w-12 h-12 transform -rotate-90"
+                                viewBox="0 0 36 36"
+                              >
+                                <circle
+                                  cx="18"
+                                  cy="18"
+                                  r="16"
+                                  fill="none"
+                                  stroke="rgba(255,255,255,0.1)"
+                                  strokeWidth="2"
+                                />
+                                <circle
+                                  cx="18"
+                                  cy="18"
+                                  r="16"
+                                  fill="none"
+                                  stroke={mnzdTask?.color || "#3b82f6"}
+                                  strokeWidth="2"
+                                  strokeDasharray={`${2 * Math.PI * 16}`}
+                                  strokeDashoffset={`${
+                                    2 *
+                                    Math.PI *
+                                    16 *
+                                    (1 - progressPercent / 100)
+                                  }`}
+                                  className="transition-all duration-1000 ease-out"
+                                  strokeLinecap="round"
+                                />
+                              </svg>
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <span
+                                  className="text-xs font-bold"
                                   style={{
-                                    backgroundColor: `${mnzdTask?.color || '#3b82f6'}${
-                                      isComplete ? "40" : "20"
-                                    }`,
-                                    color: mnzdTask?.color || '#3b82f6',
+                                    color: mnzdTask?.color || "#3b82f6",
                                   }}
                                 >
-                                  {mnzdTask?.symbol || '●'}
-                                </div>
-                                <div
-                                  className={`text-xs ${theme.text} opacity-60`}
-                                >
-                                  {progress}/{config.minMinutes}m
-                                </div>
-                              </div>
-
-                              <div
-                                className={`font-medium ${theme.text} text-sm mb-2`}
-                              >
-                                {config.name}
-                              </div>
-
-                              {/* Circular Progress */}
-                              <div className="relative w-12 h-12 mx-auto">
-                                <svg
-                                  className="w-12 h-12 transform -rotate-90"
-                                  viewBox="0 0 36 36"
-                                >
-                                  <circle
-                                    cx="18"
-                                    cy="18"
-                                    r="16"
-                                    fill="none"
-                                    stroke="rgba(255,255,255,0.1)"
-                                    strokeWidth="2"
-                                  />
-                                  <circle
-                                    cx="18"
-                                    cy="18"
-                                    r="16"
-                                    fill="none"
-                                    stroke={mnzdTask?.color || '#3b82f6'}
-                                    strokeWidth="2"
-                                    strokeDasharray={`${2 * Math.PI * 16}`}
-                                    strokeDashoffset={`${
-                                      2 *
-                                      Math.PI *
-                                      16 *
-                                      (1 - progressPercent / 100)
-                                    }`}
-                                    className="transition-all duration-1000 ease-out"
-                                    strokeLinecap="round"
-                                  />
-                                </svg>
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <span
-                                    className="text-xs font-bold"
-                                    style={{ color: mnzdTask?.color || '#3b82f6' }}
-                                  >
-                                    {Math.round(progressPercent)}%
-                                  </span>
-                                </div>
+                                  {Math.round(progressPercent)}%
+                                </span>
                               </div>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
+                        </div>
+                      );
+                    })}
                   </div>
+                </div>
 
                 {/* Session History */}
                 {todaySessions.length > 0 && (
@@ -2200,7 +2599,6 @@ export default function TimerPage() {
 
             {activePanel === "settings" && (
               <div className="space-y-6">
-
                 <div>
                   <h3 className={`text-lg font-medium ${theme.text} mb-4`}>
                     Session Settings
@@ -2224,8 +2622,8 @@ export default function TimerPage() {
                               notifications,
                               soundVolume,
                               backgroundSound,
-                              bgSoundVolume
-                            })
+                              bgSoundVolume,
+                            });
                           }
                           const newSettings = {
                             ...sessionSettings,
@@ -2277,8 +2675,8 @@ export default function TimerPage() {
                               notifications,
                               soundVolume,
                               backgroundSound,
-                              bgSoundVolume
-                            })
+                              bgSoundVolume,
+                            });
                           }
                           const newSettings = {
                             ...sessionSettings,
@@ -2331,8 +2729,8 @@ export default function TimerPage() {
                               notifications,
                               soundVolume,
                               backgroundSound,
-                              bgSoundVolume
-                            })
+                              bgSoundVolume,
+                            });
                           }
                           const newSettings = {
                             ...sessionSettings,
@@ -2371,7 +2769,23 @@ export default function TimerPage() {
                     {themes.map((t, index) => (
                       <button
                         key={t.name}
-                        onClick={() => handleThemeChange(index)}
+                        onClick={() => {
+                          if (!originalSettings) {
+                            setOriginalSettings({
+                              sessionSettings,
+                              autoStart,
+                              notifications,
+                              soundVolume,
+                              backgroundSoundName,
+                              bgSoundVolume,
+                              notificationSoundName,
+                              currentTheme,
+                              customAccentColor,
+                            });
+                          }
+                          setCurrentTheme(index);
+                          setSettingsChanged(true);
+                        }}
                         className={`p-3 rounded-xl transition-all duration-500 hover:scale-105 ${
                           currentTheme === index
                             ? "ring-2 shadow-xl"
@@ -2427,20 +2841,22 @@ export default function TimerPage() {
                         <input
                           type="color"
                           value={customAccentColor}
-                          onChange={async (e) => {
-                            setCustomAccentColor(e.target.value);
-                            
-                            try {
-                              await fetch('/api/settings', {
-                                method: 'PUT',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ timerCustomAccentColor: e.target.value })
-                              })
-                            } catch (error) {
-                              console.error('Error saving custom accent color:', error)
+                          onChange={(e) => {
+                            if (!originalSettings) {
+                              setOriginalSettings({
+                                sessionSettings,
+                                autoStart,
+                                notifications,
+                                soundVolume,
+                                backgroundSoundName,
+                                bgSoundVolume,
+                                notificationSoundName,
+                                currentTheme,
+                                customAccentColor,
+                              });
                             }
-                            
-                            saveData();
+                            setCustomAccentColor(e.target.value);
+                            setSettingsChanged(true);
                           }}
                           className="w-12 h-8 rounded border-2 cursor-pointer"
                           style={{ borderColor: theme.accent }}
@@ -2460,8 +2876,21 @@ export default function TimerPage() {
                   <div className="space-y-2">
                     <button
                       onClick={() => {
-                        setBackgroundSound("")
-                        setSettingsChanged(true)
+                        if (!originalSettings) {
+                          setOriginalSettings({
+                            sessionSettings,
+                            autoStart,
+                            notifications,
+                            soundVolume,
+                            backgroundSound,
+                            bgSoundVolume,
+                            notificationSound,
+                            currentTheme,
+                            customAccentColor,
+                          });
+                        }
+                        setBackgroundSound("");
+                        setSettingsChanged(true);
                       }}
                       className={`w-full p-3 rounded-lg text-left transition-all duration-500 hover:scale-105 transform ${
                         backgroundSound === ""
@@ -2485,8 +2914,21 @@ export default function TimerPage() {
                       <button
                         key={sound.name}
                         onClick={() => {
-                          setBackgroundSound(sound.file)
-                          setSettingsChanged(true)
+                          if (!originalSettings) {
+                            setOriginalSettings({
+                              sessionSettings,
+                              autoStart,
+                              notifications,
+                              soundVolume,
+                              backgroundSound,
+                              bgSoundVolume,
+                              notificationSound,
+                              currentTheme,
+                              customAccentColor,
+                            });
+                          }
+                          setBackgroundSound(sound.file);
+                          setSettingsChanged(true);
                         }}
                         className={`w-full p-3 rounded-lg text-left transition-all duration-500 hover:scale-105 transform ${
                           backgroundSound === sound.file
@@ -2529,8 +2971,8 @@ export default function TimerPage() {
                         step="0.1"
                         value={bgSoundVolume}
                         onChange={(e) => {
-                          setBgSoundVolume(parseFloat(e.target.value))
-                          setSettingsChanged(true)
+                          setBgSoundVolume(parseFloat(e.target.value));
+                          setSettingsChanged(true);
                         }}
                         className="w-full h-2 rounded-lg appearance-none cursor-pointer"
                         style={{
@@ -2560,11 +3002,11 @@ export default function TimerPage() {
                             soundVolume,
                             backgroundSound,
                             bgSoundVolume,
-                            notificationSound
-                          })
+                            notificationSound,
+                          });
                         }
-                        setAutoStart(!autoStart)
-                        setSettingsChanged(true)
+                        setAutoStart(!autoStart);
+                        setSettingsChanged(true);
                       }}
                       className={`w-12 h-7 rounded-full transition-all duration-500 hover:scale-110 shadow-lg`}
                       style={{
@@ -2588,8 +3030,8 @@ export default function TimerPage() {
                     </span>
                     <button
                       onClick={() => {
-                        setNotifications(!notifications)
-                        setSettingsChanged(true)
+                        setNotifications(!notifications);
+                        setSettingsChanged(true);
                       }}
                       className={`w-12 h-7 rounded-full transition-all duration-500 hover:scale-110 shadow-lg`}
                       style={{
@@ -2618,8 +3060,8 @@ export default function TimerPage() {
                       step="0.1"
                       value={soundVolume}
                       onChange={(e) => {
-                        setSoundVolume(parseFloat(e.target.value))
-                        setSettingsChanged(true)
+                        setSoundVolume(parseFloat(e.target.value));
+                        setSettingsChanged(true);
                       }}
                       className="w-full h-2 rounded-lg appearance-none cursor-pointer"
                       style={{
@@ -2651,11 +3093,13 @@ export default function TimerPage() {
                                 soundVolume,
                                 backgroundSound,
                                 bgSoundVolume,
-                                notificationSound
-                              })
+                                notificationSound,
+                                currentTheme,
+                                customAccentColor,
+                              });
                             }
-                            setNotificationSound(sound.value)
-                            setSettingsChanged(true)
+                            setNotificationSound(sound.value);
+                            setSettingsChanged(true);
                           }}
                           className={`w-full p-3 rounded-lg text-left transition-all duration-500 hover:scale-105 transform ${
                             notificationSound === sound.value
@@ -2686,7 +3130,10 @@ export default function TimerPage() {
           </div>
 
           {/* Panel Navigation */}
-          <div className="p-4 border-t" style={{ borderColor: `${theme.accent}20` }}>
+          <div
+            className="p-4 border-t"
+            style={{ borderColor: `${theme.accent}20` }}
+          >
             <div className="flex gap-2">
               {[
                 { id: "tasks", icon: CheckSquare, label: "Tasks" },
@@ -2702,7 +3149,8 @@ export default function TimerPage() {
                       : `${theme.text} opacity-70 hover:opacity-100`
                   }`}
                   style={{
-                    backgroundColor: activePanel === id ? theme.accent : "transparent",
+                    backgroundColor:
+                      activePanel === id ? theme.accent : "transparent",
                   }}
                 >
                   <Icon className="w-4 h-4" />
@@ -2749,8 +3197,18 @@ export default function TimerPage() {
         <FocusOnboarding
           onComplete={handleOnboardingComplete}
           onClose={() => setShowOnboarding(false)}
+          isNewUser={isNewUser}
+          onInitializeSettings={initializeTimerSettings}
         />
       )}
+
+      {/* New User Info Modal */}
+      {/* Removed - info available via i button */}
+
+      {/* Hidden audio elements */}
+      <audio ref={bgAudioRef} />
+      <audio ref={bgAudioRef2} />
+      <audio ref={notificationAudioRef} preload="none" />
     </div>
   );
 }

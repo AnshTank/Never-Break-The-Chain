@@ -12,17 +12,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Simple test response
-    return NextResponse.json({ 
-      message: 'Settings API working',
-      user: user.email,
-      mnzdConfigs: [
-        { id: 'code', name: 'Code', description: 'Programming', minMinutes: 30, color: '#3b82f6' },
-        { id: 'think', name: 'Think', description: 'Learning', minMinutes: 20, color: '#8b5cf6' },
-        { id: 'express', name: 'Express', description: 'Writing', minMinutes: 15, color: '#06b6d4' },
-        { id: 'move', name: 'Move', description: 'Exercise', minMinutes: 25, color: '#10b981' }
-      ]
-    })
+    const settings = await DatabaseService.getUserSettings(user.email)
+    
+    return NextResponse.json(settings)
     
   } catch (error) {
     console.error('Error fetching user settings:', error)
