@@ -261,11 +261,11 @@ export default function DayEditModal({
       };
       
       // console.log('Day edit modal save debug:', {
-        modalDate: date,
-        dateStr: dateStr,
-        finalEntry: finalEntry,
-        isToday: dateStr === new Date().toISOString().split('T')[0]
-      });
+      //   modalDate: date,
+      //   dateStr: dateStr,
+      //   finalEntry: finalEntry,
+      //   isToday: dateStr === new Date().toISOString().split('T')[0]
+      // });
       
       // Save to database
       await updateProgressForDate(dateStr, finalEntry);

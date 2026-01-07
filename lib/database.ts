@@ -207,11 +207,11 @@ export class DatabaseService {
       )
       
       // console.log('DatabaseService.updateDailyProgress - MongoDB Result:', {
-        matchedCount: result.matchedCount,
-        modifiedCount: result.modifiedCount,
-        upsertedCount: result.upsertedCount,
-        upsertedId: result.upsertedId
-      })
+      //   matchedCount: result.matchedCount,
+      //   modifiedCount: result.modifiedCount,
+      //   upsertedCount: result.upsertedCount,
+      //   upsertedId: result.upsertedId
+      // })
       
       // Verify the update by reading back the data
       const updatedDoc = await db.collection<DailyProgress>('dailyProgress').findOne({ userId, date })
@@ -219,10 +219,10 @@ export class DatabaseService {
       
     } catch (error) {
       // console.error('DatabaseService.updateDailyProgress - Error:', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        error
-      })
+      //   message: error instanceof Error ? error.message : 'Unknown error',
+      //   stack: error instanceof Error ? error.stack : undefined,
+      //   error
+      // })
       throw error
     }
   }

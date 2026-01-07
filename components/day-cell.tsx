@@ -29,20 +29,20 @@ export default function DayCell({ day, date, entry, isToday, onEntryChange }: Da
   // Debug logging for December 30th and 31st
   if (dateStr === '2024-12-30' || dateStr === '2024-12-31') {
     // console.log(`Debug ${dateStr}:`, {
-      dateStr,
-      isToday,
-      propEntry: entry,
-      todayProgress: getTodayProgress(),
-      actualEntry,
-      hasActualEntry: !!actualEntry,
-      hasTasks: !!actualEntry?.tasks,
-      tasksLength: actualEntry?.tasks?.length || 0,
-      completedTasks: actualEntry?.tasks?.filter(task => {
-        const config = settings?.mnzdConfigs.find(c => c.id === task.id)
-        const minRequired = config?.minMinutes || 0
-        return task.minutes >= minRequired
-      }).length || 0
-    })
+    //   dateStr,
+    //   isToday,
+    //   propEntry: entry,
+    //   todayProgress: getTodayProgress(),
+    //   actualEntry,
+    //   hasActualEntry: !!actualEntry,
+    //   hasTasks: !!actualEntry?.tasks,
+    //   tasksLength: actualEntry?.tasks?.length || 0,
+    //   completedTasks: actualEntry?.tasks?.filter(task => {
+    //     const config = settings?.mnzdConfigs.find(c => c.id === task.id)
+    //     const minRequired = config?.minMinutes || 0
+    //     return task.minutes >= minRequired
+    //   }).length || 0
+    // })
   }
 
   const handleClick = () => {
