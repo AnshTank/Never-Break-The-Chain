@@ -375,7 +375,8 @@ export default function TimerPage() {
 
   // Three.js Environment Setup
   useEffect(() => {
-    if (!mountRef.current || isMobile) return;
+    if (isMobile) return;
+    if (!mountRef.current) return;
 
     // Clean up previous scene
     if (rendererRef.current) {
@@ -1322,7 +1323,7 @@ export default function TimerPage() {
 
   return (
     <div
-      className="fixed inset-0 overflow-hidden transition-all duration-1000 ease-in-out"
+      className="min-h-[100dvh] w-full overflow-hidden relative transition-all duration-1000 ease-in-out"
       style={{ background: theme.background }}
     >
       <style jsx global>{`
@@ -1333,8 +1334,22 @@ export default function TimerPage() {
           -ms-overflow-style: none;
           scrollbar-width: none;
         }
-        body {
-          overflow: hidden;
+        @media (min-width: 768px) {
+          body {
+            overflow: hidden;
+          }
+        }
+        @media (max-width: 768px) {
+          * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+          }
+          input, textarea, select {
+            -webkit-user-select: auto;
+            user-select: auto;
+          }
         }
         .loading-bar {
           animation: loading 2s ease-in-out infinite;
@@ -1430,17 +1445,17 @@ export default function TimerPage() {
       ></div>
 
       {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-4 md:p-8">
+      <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-4 md:p-8 safe-area-inset-top">
         <Link
           href="/"
-          className={`${theme.text} hover:opacity-80 transition-all duration-300 font-medium text-base md:text-lg`}
+          className={`${theme.text} hover:opacity-80 transition-all duration-300 font-medium text-base md:text-lg touch-manipulation`}
         >
           ← Dashboard
         </Link>
         <div className="flex items-center gap-2 md:gap-4">
           <button
             onClick={() => setShowOnboarding(true)}
-            className={`p-2 md:p-3 rounded-full ${theme.panel} backdrop-blur-xl transition-all duration-300 hover:scale-110 ${theme.border} border`}
+            className={`p-2 md:p-3 rounded-full ${theme.panel} backdrop-blur-xl transition-all duration-300 hover:scale-110 ${theme.border} border touch-manipulation`}
             title="Learn about Focus Timer"
           >
             <svg
@@ -1457,25 +1472,27 @@ export default function TimerPage() {
               />
             </svg>
           </button>
-          <button
-            onClick={refreshTheme}
-            className={`p-2 md:p-3 rounded-full ${theme.panel} backdrop-blur-xl transition-all duration-300 hover:scale-110 ${theme.border} border ${isMobile ? 'hidden' : ''}`}
-            title="Refresh Theme"
-          >
-            <svg
-              className={`w-4 h-4 md:w-5 md:h-5 ${theme.text}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          {!isMobile && (
+            <button
+              onClick={refreshTheme}
+              className={`p-2 md:p-3 rounded-full ${theme.panel} backdrop-blur-xl transition-all duration-300 hover:scale-110 ${theme.border} border touch-manipulation`}
+              title="Refresh Theme"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-          </button>
+              <svg
+                className={`w-4 h-4 md:w-5 md:h-5 ${theme.text}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+            </button>
+          )}
           <button
             onClick={() => switchMode(mode === "focus" ? "break" : "focus")}
             disabled={isTransitioning}
@@ -1483,12 +1500,12 @@ export default function TimerPage() {
               theme.panel
             } backdrop-blur-xl transition-all duration-500 ${
               theme.border
-            } border hover:scale-105 shadow-2xl ${
+            } border hover:scale-105 shadow-2xl touch-manipulation ${
               isTransitioning ? "opacity-50 cursor-not-allowed" : ""
             }`}
             style={{ color: theme.accent }}
           >
-            <span className="font-medium text-xs md:text-base">
+            <span className="font-medium text-xs md:text-base whitespace-nowrap">
               {mode === "focus" ? "Focus Mode" : "Break Mode"}
             </span>
           </button>
@@ -1776,7 +1793,7 @@ export default function TimerPage() {
 
       {/* Redesigned Sliding Panel */}
       <div
-        className={`fixed inset-y-0 right-0 w-full md:w-96 ${
+        className={`fixed inset-y-0 right-0 w-full md:w-96 overflow-y-auto overscroll-contain ${
           theme.panel
         } backdrop-blur-2xl shadow-2xl transform transition-all duration-700 ease-out ${
           theme.border
