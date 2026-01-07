@@ -948,41 +948,13 @@ export default function TimerPage() {
     }
   }, [backgroundSound]);
 
-  // Background sound volume with smooth transitions
+  // Background sound volume with immediate updates
   useEffect(() => {
-    const smoothVolumeChange = (
-      audioRef: React.RefObject<HTMLAudioElement>,
-      targetVolume: number
-    ) => {
-      if (!audioRef.current || isChangingVolume.current) return;
-
-      isChangingVolume.current = true;
-      const currentVolume = audioRef.current.volume;
-      const volumeDiff = targetVolume - currentVolume;
-      const steps = 20;
-      const stepSize = volumeDiff / steps;
-      const stepDuration = 50; // 50ms per step = 1 second total
-
-      let step = 0;
-      const volumeInterval = setInterval(() => {
-        if (audioRef.current && step < steps) {
-          audioRef.current.volume = Math.max(
-            0,
-            Math.min(1, currentVolume + stepSize * step)
-          );
-          step++;
-        } else {
-          if (audioRef.current) {
-            audioRef.current.volume = targetVolume;
-          }
-          clearInterval(volumeInterval);
-          isChangingVolume.current = false;
-        }
-      }, stepDuration);
-    };
-
-    smoothVolumeChange(bgAudioRef, bgSoundVolume);
-    smoothVolumeChange(bgAudioRef2, bgSoundVolume);
+    [bgAudioRef, bgAudioRef2].forEach((ref) => {
+      if (ref.current) {
+        ref.current.volume = bgSoundVolume;
+      }
+    });
   }, [bgSoundVolume]);
 
   const initializeTimerSettings = async () => {
@@ -1350,7 +1322,7 @@ export default function TimerPage() {
 
   return (
     <div
-      className="fixed inset-0 overflow-hidden"
+      className="fixed inset-0 overflow-hidden transition-all duration-1000 ease-in-out"
       style={{ background: theme.background }}
     >
       <style jsx global>{`
@@ -1453,7 +1425,7 @@ export default function TimerPage() {
 
       {/* Overlay */}
       <div
-        className="fixed inset-0 -z-5"
+        className="fixed inset-0 -z-5 transition-all duration-1000 ease-in-out"
         style={{ background: theme.overlay }}
       ></div>
 
@@ -1485,31 +1457,29 @@ export default function TimerPage() {
               />
             </svg>
           </button>
-          {!isMobile && (
-            <button
-              onClick={refreshTheme}
-              className={`p-3 rounded-full ${theme.panel} backdrop-blur-xl transition-all duration-300 hover:scale-110 ${theme.border} border`}
-              title="Refresh Theme"
+          <button
+            onClick={refreshTheme}
+            className={`p-2 md:p-3 rounded-full ${theme.panel} backdrop-blur-xl transition-all duration-300 hover:scale-110 ${theme.border} border ${isMobile ? 'hidden' : ''}`}
+            title="Refresh Theme"
+          >
+            <svg
+              className={`w-4 h-4 md:w-5 md:h-5 ${theme.text}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <svg
-                className={`w-5 h-5 ${theme.text}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-            </button>
-          )}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+          </button>
           <button
             onClick={() => switchMode(mode === "focus" ? "break" : "focus")}
             disabled={isTransitioning}
-            className={`px-4 py-2 md:px-8 md:py-3 rounded-full ${
+            className={`px-3 py-2 md:px-8 md:py-3 rounded-full ${
               theme.panel
             } backdrop-blur-xl transition-all duration-500 ${
               theme.border
@@ -1518,7 +1488,7 @@ export default function TimerPage() {
             }`}
             style={{ color: theme.accent }}
           >
-            <span className="font-medium text-sm md:text-base">
+            <span className="font-medium text-xs md:text-base">
               {mode === "focus" ? "Focus Mode" : "Break Mode"}
             </span>
           </button>
@@ -1548,14 +1518,14 @@ export default function TimerPage() {
                 isMobile ? "text-3xl" : "text-4xl lg:text-6xl"
               } font-extralight ${theme.text} ${
                 isMobile ? "mb-2" : "mb-3 lg:mb-4"
-              } transition-all duration-700 tracking-wide`}
+              } transition-all duration-1000 tracking-wide`}
             >
               {mode === "focus" ? "Focus Time" : "Break Time"}
             </h1>
             <p
               className={`${theme.text} opacity-90 ${
                 isMobile ? "text-sm px-4" : "text-base lg:text-xl px-8"
-              } font-light max-w-4xl mx-auto leading-relaxed transition-all duration-700`}
+              } font-light max-w-4xl mx-auto leading-relaxed transition-all duration-1000`}
             >
               {currentQuote}
             </p>
@@ -1617,7 +1587,7 @@ export default function TimerPage() {
                 stroke="currentColor"
                 strokeWidth="0.5"
                 fill="none"
-                className={`${theme.text} opacity-20 transition-all duration-700`}
+                className={`${theme.text} opacity-20 transition-all duration-1000`}
               />
               <circle
                 cx="50"
@@ -1641,14 +1611,14 @@ export default function TimerPage() {
                     isMobile ? "text-4xl" : "text-4xl lg:text-6xl"
                   } font-extralight ${theme.text} ${
                     isMobile ? "mb-2" : "mb-3"
-                  } tabular-nums transition-all duration-700 tracking-wider`}
+                  } tabular-nums transition-all duration-1000 tracking-wider`}
                 >
                   {formatTime(timeLeft)}
                 </div>
                 <div
                   className={`${theme.text} opacity-70 ${
                     isMobile ? "text-sm" : "text-base lg:text-xl"
-                  } font-light transition-all duration-700`}
+                  } font-light transition-all duration-1000`}
                 >
                   {isRunning
                     ? mode === "focus"
@@ -1660,7 +1630,7 @@ export default function TimerPage() {
                   <div
                     className={`${
                       isMobile ? "mt-1 text-xs" : "mt-2 text-sm lg:text-lg"
-                    } ${theme.text} opacity-50 transition-all duration-700`}
+                    } ${theme.text} opacity-50 transition-all duration-1000`}
                   >
                     Session {pomodoroCount + 1}
                   </div>
@@ -1754,7 +1724,7 @@ export default function TimerPage() {
               theme.panel
             } backdrop-blur-xl rounded-full ${
               isMobile ? "p-2" : "p-3"
-            } shadow-2xl ${theme.border} border transition-all duration-700 ${
+            } shadow-2xl ${theme.border} border transition-all duration-1000 ${
               showModeTransition
                 ? "opacity-0 translate-y-4"
                 : "opacity-100 translate-y-0"
