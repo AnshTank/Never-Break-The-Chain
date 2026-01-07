@@ -394,11 +394,11 @@ export default function CoolLoading({
             analytics: analyticsData,
             todayProgress: progressData,
           };
-          console.log("Loading complete, passing data:", finalData);
+          // console.log("Loading complete, passing data:", finalData);
           onLoadingComplete(finalData);
         }
       } catch (error) {
-        console.error("Loading error:", error);
+        // console.error("Loading error:", error);
         if (mounted) {
           setProgress(100);
           if (onLoadingComplete) {

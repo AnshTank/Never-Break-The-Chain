@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(timerData)
   } catch (error) {
-    console.error('Error loading timer data:', error)
+    // console.error('Error loading timer data:', error)
     return NextResponse.json({ error: 'Failed to load timer data' }, { status: 500 })
   }
 }
@@ -45,7 +45,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error saving timer data:', error)
+    // console.error('Error saving timer data:', error)
     return NextResponse.json({ error: 'Failed to save timer data' }, { status: 500 })
   }
 }

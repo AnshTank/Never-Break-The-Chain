@@ -17,9 +17,9 @@ export function clearAllCaches(): void {
     
     keysToRemove.forEach(key => localStorage.removeItem(key))
     
-    console.log('All caches cleared')
+    // console.log('All caches cleared')
   } catch (error) {
-    console.error('Error clearing caches:', error)
+    // console.error('Error clearing caches:', error)
   }
 }
 
@@ -27,8 +27,8 @@ export function clearProgressCaches(): void {
   try {
     localStorage.removeItem('progressCache')
     localStorage.removeItem('trackedDays')
-    console.log('Progress caches cleared')
+    // console.log('Progress caches cleared')
   } catch (error) {
-    console.error('Error clearing progress caches:', error)
+    // console.error('Error clearing progress caches:', error)
   }
 }

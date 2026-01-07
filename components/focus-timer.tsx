@@ -38,7 +38,7 @@ export default function FocusTimer({ onTimeUpdate, onSessionComplete, taskName =
               onTimeUpdate(newSessionTime);
               onSessionComplete?.(completedMinutes);
             } catch (error) {
-              console.error('Timer callback error:', error);
+              // console.error('Timer callback error:', error);
             }
             return 0;
           }
@@ -83,7 +83,7 @@ export default function FocusTimer({ onTimeUpdate, onSessionComplete, taskName =
       try {
         onTimeUpdate(newSessionTime);
       } catch (error) {
-        console.error('Timer update error:', error);
+        // console.error('Timer update error:', error);
       }
     }
   };
@@ -98,7 +98,7 @@ export default function FocusTimer({ onTimeUpdate, onSessionComplete, taskName =
       try {
         onTimeUpdate(newSessionTime);
       } catch (error) {
-        console.error('Timer update error:', error);
+        // console.error('Timer update error:', error);
       }
     }
     setTimeLeft(totalTime);
@@ -111,7 +111,7 @@ export default function FocusTimer({ onTimeUpdate, onSessionComplete, taskName =
     try {
       onTimeUpdate(0);
     } catch (error) {
-      console.error('Timer reset error:', error);
+      // console.error('Timer reset error:', error);
     }
   };
 

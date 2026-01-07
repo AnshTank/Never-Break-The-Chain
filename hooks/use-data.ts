@@ -39,7 +39,7 @@ export function useDailyProgress(date: string) {
         setProgress(data)
       }
     } catch (err) {
-      console.error('Error fetching progress:', err)
+      // console.error('Error fetching progress:', err)
       if (isMountedRef.current) {
         fetchedRef.current = null
         setProgress(null)
@@ -75,7 +75,7 @@ export function useDailyProgress(date: string) {
       mnzdEvents.emitProgressUpdate(date, updatedProgress)
       window.dispatchEvent(new CustomEvent('progressUpdated', { detail: { date } }))
     } catch (err) {
-      console.error('Error updating progress:', err)
+      // console.error('Error updating progress:', err)
       throw err
     }
   }, [date, progress])

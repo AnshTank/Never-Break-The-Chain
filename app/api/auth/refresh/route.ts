@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     return response
     
   } catch (error) {
-    console.error('Token refresh error occurred at:', new Date().toISOString())
+    // console.error('Token refresh error occurred at:', new Date().toISOString())
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

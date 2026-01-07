@@ -118,7 +118,7 @@ export async function DELETE(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error("Delete account error:", error);
+    // console.error("Delete account error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

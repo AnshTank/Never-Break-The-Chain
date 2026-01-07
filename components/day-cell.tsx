@@ -28,7 +28,7 @@ export default function DayCell({ day, date, entry, isToday, onEntryChange }: Da
   
   // Debug logging for December 30th and 31st
   if (dateStr === '2024-12-30' || dateStr === '2024-12-31') {
-    console.log(`Debug ${dateStr}:`, {
+    // console.log(`Debug ${dateStr}:`, {
       dateStr,
       isToday,
       propEntry: entry,
@@ -128,7 +128,7 @@ export default function DayCell({ day, date, entry, isToday, onEntryChange }: Da
       window.dispatchEvent(new CustomEvent('progressUpdated', { detail: { date: dateStr } }))
       window.dispatchEvent(new CustomEvent('analyticsRefresh'))
     } catch (error) {
-      console.error('Error saving entry:', error)
+      // console.error('Error saving entry:', error)
     }
   }
 

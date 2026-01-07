@@ -50,7 +50,7 @@ class StateManager {
         return data
       })
       .catch(err => {
-        console.error('Error fetching settings:', err)
+        // console.error('Error fetching settings:', err)
         this.state.settingsLoading = false
         this.notify()
         throw err
@@ -79,7 +79,7 @@ class StateManager {
       // Refetch fresh data
       await this.fetchSettings()
     } catch (err) {
-      console.error('Error updating settings:', err)
+      // console.error('Error updating settings:', err)
       throw err
     }
   }
@@ -100,7 +100,7 @@ class StateManager {
         return data
       })
       .catch(err => {
-        console.error('Error fetching user status:', err)
+        // console.error('Error fetching user status:', err)
         this.state.userStatusLoading = false
         this.notify()
         throw err
@@ -124,7 +124,7 @@ class StateManager {
       this.state.userStatus = { isNewUser: newStatus }
       this.notify()
     } catch (err) {
-      console.error('Error updating user status:', err)
+      // console.error('Error updating user status:', err)
       throw err
     }
   }

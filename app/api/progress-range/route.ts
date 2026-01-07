@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(progressData)
     
   } catch (error) {
-    console.error('Error fetching progress range:', error)
+    // console.error('Error fetching progress range:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

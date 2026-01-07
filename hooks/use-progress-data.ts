@@ -32,31 +32,31 @@ export function useProgressData(month?: Date) {
       if (progressResponse.ok) {
         progressData = await progressResponse.json()
       } else {
-        console.warn('Failed to fetch progress data:', progressResponse.status)
+        // console.warn('Failed to fetch progress data:', progressResponse.status)
       }
       
       if (settingsResponse.ok) {
         const settingsData = await settingsResponse.json()
         mnzdConfigs = settingsData.mnzdConfigs || []
       } else {
-        console.warn('Failed to fetch settings:', settingsResponse.status)
+        // console.warn('Failed to fetch settings:', settingsResponse.status)
       }
       
-      console.log('useProgressData - Raw progress data:', progressData)
-      console.log('useProgressData - MNZD configs:', mnzdConfigs)
+      // console.log('useProgressData - Raw progress data:', progressData)
+      // console.log('useProgressData - MNZD configs:', mnzdConfigs)
       
       // Transform database data to JourneyData format
       const journeyData: JourneyData = {}
       
       progressData.forEach((dayProgress: any) => {
-        console.log('Processing day progress:', dayProgress)
+        // console.log('Processing day progress:', dayProgress)
         
         const dayEntry: DayEntry = {
           date: dayProgress.date,
           tasks: dayProgress.tasks.map((task: any) => {
             const config = mnzdConfigs.find(c => c.id === task.id)
             const minMinutes = config?.minMinutes || 0
-            console.log(`Task ${task.id}: ${task.minutes} minutes, minRequired: ${minMinutes}, completed: ${task.minutes >= minMinutes}`)
+            // console.log(`Task ${task.id}: ${task.minutes} minutes, minRequired: ${minMinutes}, completed: ${task.minutes >= minMinutes}`)
             return {
               id: task.id,
               name: task.name || config?.name || task.id,
@@ -72,14 +72,14 @@ export function useProgressData(month?: Date) {
         // Calculate if day is completed (all tasks meet minimum requirements)
         dayEntry.completed = dayEntry.tasks.every(task => task.completed)
         
-        console.log('Final day entry:', dayEntry)
+        // console.log('Final day entry:', dayEntry)
         journeyData[dayProgress.date] = dayEntry
       })
       
-      console.log('useProgressData - Transformed journey data:', journeyData)
+      // console.log('useProgressData - Transformed journey data:', journeyData)
       setData(journeyData)
     } catch (error) {
-      console.error('Error fetching progress data:', error)
+      // console.error('Error fetching progress data:', error)
       setData({})
     } finally {
       setLoading(false)

@@ -8,17 +8,17 @@ export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('Setup password API called');
+    // console.log('Setup password API called');
     const user = getUserFromRequest(request)
-    console.log('User from JWT:', user);
+    // console.log('User from JWT:', user);
     
     if (!user?.userId || !user?.email) {
-      console.log('No user found in JWT');
+      // console.log('No user found in JWT');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { password } = await request.json()
-    console.log('Password length:', password?.length);
+    // console.log('Password length:', password?.length);
     
     if (!password || password.length < 6) {
       return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     
     // Find user by ObjectId
     const existingUser = await users.findOne({ _id: new ObjectId(user.userId) })
-    console.log('Found user:', existingUser ? 'Yes' : 'No');
+    // console.log('Found user:', existingUser ? 'Yes' : 'No');
     
     if (!existingUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
@@ -52,11 +52,11 @@ export async function POST(request: NextRequest) {
       }
     )
     
-    console.log('Update result:', updateResult);
+    // console.log('Update result:', updateResult);
     return NextResponse.json({ success: true })
     
   } catch (error) {
-    console.error('Setup password error:', error)
+    // console.error('Setup password error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

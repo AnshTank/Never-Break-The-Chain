@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     }, { status: 200 })
 
   } catch (error) {
-    console.error('Complete welcome error occurred at:', new Date().toISOString(), error)
+    // console.error('Complete welcome error occurred at:', new Date().toISOString(), error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -12,7 +12,7 @@ interface DailyCheckInProps {
 }
 
 export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
-  console.log('DailyCheckIn received preloadedData:', preloadedData);
+  // console.log('DailyCheckIn received preloadedData:', preloadedData);
   
   const [showMNZDModal, setShowMNZDModal] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);

@@ -78,7 +78,7 @@ export default function JourneyGraph({ journeyData }: JourneyGraphProps) {
       
       setMonthData(transformedData)
     } catch (error) {
-      console.error('Error fetching month data:', error)
+      // console.error('Error fetching month data:', error)
       setMonthData({})
     } finally {
       setLoading(false)

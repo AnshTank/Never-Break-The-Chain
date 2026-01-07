@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     // Secure logging - don't expose full error details
-    console.error('Login error occurred at:', new Date().toISOString())
+    // console.error('Login error occurred at:', new Date().toISOString())
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

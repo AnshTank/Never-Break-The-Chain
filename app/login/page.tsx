@@ -82,7 +82,7 @@ function LoginForm() {
       const data = await response.json()
       
       if (response.ok) {
-        router.push('/welcome')
+        window.location.href = '/welcome'
       } else {
         setError(data.error || "Failed to continue setup")
         setShowIncompleteSetup(false)

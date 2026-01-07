@@ -19,7 +19,7 @@ export default function Header() {
           setUserName(userData.name || userData.email)
         }
       } catch (error) {
-        console.log('Error fetching user data:', error)
+        // console.log('Error fetching user data:', error)
       }
     }
     

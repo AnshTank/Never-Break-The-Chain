@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     })
     
   } catch (error) {
-    console.error('Error fetching user status:', error)
+    // console.error('Error fetching user status:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -53,7 +53,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true })
     
   } catch (error) {
-    console.error('Error updating user status:', error)
+    // console.error('Error updating user status:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

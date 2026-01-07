@@ -19,7 +19,7 @@ export async function logout(): Promise<void> {
     // Redirect to login
     window.location.href = '/login'
   } catch (error) {
-    console.error('Logout error:', error)
+    // console.error('Logout error:', error)
     // Force clear storage and redirect even if API fails
     localStorage.clear()
     window.location.href = '/login'

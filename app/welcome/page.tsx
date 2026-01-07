@@ -48,7 +48,6 @@ export default function WelcomePage() {
     useState<MNZDConfig[]>(defaultMNZDConfigs);
   const [mounted, setMounted] = useState(false);
   const [showPasswordSetup, setShowPasswordSetup] = useState(false);
-  const [showJourneyModal, setShowJourneyModal] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const { updateSettings } = useUserSettings();
   const {
@@ -128,11 +127,6 @@ export default function WelcomePage() {
   };
 
   const handleFinish = async () => {
-    setShowJourneyModal(true);
-  };
-
-  const handleConfirmJourney = async () => {
-    setShowJourneyModal(false);
     setShowPasswordSetup(true);
   };
 
@@ -1015,40 +1009,6 @@ export default function WelcomePage() {
         onClose={() => setShowPasswordSetup(false)}
         userEmail={userEmail}
       />
-
-      {/* Journey Confirmation Modal */}
-      {showJourneyModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20 max-w-md w-full mx-4 animate-in fade-in duration-300">
-            <div className="text-center space-y-6">
-              <div className="text-6xl">🤝</div>
-              <h3 className="text-2xl font-bold text-white">Our Promise</h3>
-              <div className="space-y-4 text-white/90">
-                <p className="leading-relaxed">
-                  We haven't forgotten our promise to help you set up a secure
-                  password for your account.
-                </p>
-                <p className="leading-relaxed">
-                  Every day you complete your MNZD tasks, you're not just
-                  building habits—you're becoming the person you've always
-                  wanted to be.
-                </p>
-                <p className="font-semibold text-transparent bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text">
-                  Your chain starts today. Never break it.
-                </p>
-              </div>
-              <div className="pt-4">
-                <Button
-                  onClick={handleConfirmJourney}
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0"
-                >
-                  Setup Password 🔐
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

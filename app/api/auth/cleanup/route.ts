@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({ message: 'Cleanup completed' }, { status: 200 })
   } catch (error) {
-    console.error('Cleanup error:', error)
+    // console.error('Cleanup error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

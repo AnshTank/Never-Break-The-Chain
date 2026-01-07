@@ -375,8 +375,7 @@ export default function TimerPage() {
 
   // Three.js Environment Setup
   useEffect(() => {
-    if (isMobile) return;
-    if (!mountRef.current) return;
+    if (!mountRef.current || isMobile) return;
 
     // Clean up previous scene
     if (rendererRef.current) {
@@ -736,21 +735,26 @@ export default function TimerPage() {
             setSoundVolume(ts.soundVolume || 0.5);
 
             // Map background sound from DB to name and file
-            const bgSound = backgroundSounds.find(s => s.file === ts.backgroundSound)
-            setBackgroundSound(ts.backgroundSound || '')
-            setBackgroundSoundName(bgSound?.name || 'None')
-            setBgSoundVolume(ts.bgSoundVolume || 0.5)
-            
+            const bgSound = backgroundSounds.find(
+              (s) => s.file === ts.backgroundSound
+            );
+            setBackgroundSound(ts.backgroundSound || "");
+            setBackgroundSoundName(bgSound?.name || "None");
+            setBgSoundVolume(ts.bgSoundVolume || 0.5);
+
             // Map notification sound from DB to name
-            const notifSound = notificationSounds.find(s => s.value === ts.notificationSound)
-            setNotificationSound(ts.notificationSound || 'default')
-            setNotificationSoundName(notifSound?.name || 'Default (System)')
+            const notifSound = notificationSounds.find(
+              (s) => s.value === ts.notificationSound
+            );
+            setNotificationSound(ts.notificationSound || "default");
+            setNotificationSoundName(notifSound?.name || "Default (System)");
 
             // Load theme settings from timerSettings
             if (ts.timerTheme !== undefined) {
-              const themeIndex = typeof ts.timerTheme === 'string' 
-                ? themes.findIndex(t => t.name === ts.timerTheme)
-                : ts.timerTheme;
+              const themeIndex =
+                typeof ts.timerTheme === "string"
+                  ? themes.findIndex((t) => t.name === ts.timerTheme)
+                  : ts.timerTheme;
               setCurrentTheme(themeIndex >= 0 ? themeIndex : 0);
             }
             if (ts.timerCustomAccentColor) {
@@ -761,13 +765,18 @@ export default function TimerPage() {
             setSelectedDuration(newSessionSettings.focusTime);
             setTimeLeft(newSessionSettings.focusTime * 60);
             setBreakDuration(newSessionSettings.breakTime);
-            
+
             // Auto-scroll duration selector to current value
             setTimeout(() => {
-              const selector = document.querySelector('.duration-selector');
-              const activeButton = document.querySelector(`button[data-duration="${newSessionSettings.focusTime}"]`);
+              const selector = document.querySelector(".duration-selector");
+              const activeButton = document.querySelector(
+                `button[data-duration="${newSessionSettings.focusTime}"]`
+              );
               if (selector && activeButton) {
-                activeButton.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+                activeButton.scrollIntoView({
+                  behavior: "smooth",
+                  inline: "center",
+                });
               }
             }, 100);
           }
@@ -1285,10 +1294,10 @@ export default function TimerPage() {
       await fetch("/api/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          timerSettings: { 
-            timerTheme: themes[newTheme].name 
-          } 
+        body: JSON.stringify({
+          timerSettings: {
+            timerTheme: themes[newTheme].name,
+          },
         }),
       });
     } catch (error) {
@@ -1323,7 +1332,7 @@ export default function TimerPage() {
 
   return (
     <div
-      className="min-h-[100dvh] w-full overflow-hidden relative transition-all duration-1000 ease-in-out"
+      className={`${isMobile ? 'min-h-screen' : 'fixed inset-0'} ${isMobile ? 'overflow-auto' : 'overflow-hidden'} transition-all duration-1000 ease-in-out`}
       style={{ background: theme.background }}
     >
       <style jsx global>{`
@@ -1334,22 +1343,12 @@ export default function TimerPage() {
           -ms-overflow-style: none;
           scrollbar-width: none;
         }
-        @media (min-width: 768px) {
-          body {
-            overflow: hidden;
-          }
+        body {
+          overflow: ${isMobile ? 'auto' : 'hidden'};
         }
-        @media (max-width: 768px) {
-          * {
-            -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-          }
-          input, textarea, select {
-            -webkit-user-select: auto;
-            user-select: auto;
-          }
+        html, body {
+          height: ${isMobile ? 'auto' : '100%'};
+          min-height: ${isMobile ? '100vh' : '100%'};
         }
         .loading-bar {
           animation: loading 2s ease-in-out infinite;
@@ -1445,17 +1444,17 @@ export default function TimerPage() {
       ></div>
 
       {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between p-4 md:p-8 safe-area-inset-top">
+      <div className={`${isMobile ? 'fixed' : 'absolute'} top-0 left-0 right-0 z-30 flex items-center justify-between p-4 md:p-8`}>
         <Link
           href="/"
-          className={`${theme.text} hover:opacity-80 transition-all duration-300 font-medium text-base md:text-lg touch-manipulation`}
+          className={`${theme.text} hover:opacity-80 transition-all duration-300 font-medium text-base md:text-lg`}
         >
           ← Dashboard
         </Link>
         <div className="flex items-center gap-2 md:gap-4">
           <button
             onClick={() => setShowOnboarding(true)}
-            className={`p-2 md:p-3 rounded-full ${theme.panel} backdrop-blur-xl transition-all duration-300 hover:scale-110 ${theme.border} border touch-manipulation`}
+            className={`p-2 md:p-3 rounded-full ${theme.panel} backdrop-blur-xl transition-all duration-300 hover:scale-110 ${theme.border} border`}
             title="Learn about Focus Timer"
           >
             <svg
@@ -1472,27 +1471,29 @@ export default function TimerPage() {
               />
             </svg>
           </button>
-          {!isMobile && (
-            <button
-              onClick={refreshTheme}
-              className={`p-2 md:p-3 rounded-full ${theme.panel} backdrop-blur-xl transition-all duration-300 hover:scale-110 ${theme.border} border touch-manipulation`}
-              title="Refresh Theme"
+          <button
+            onClick={refreshTheme}
+            className={`p-2 md:p-3 rounded-full ${
+              theme.panel
+            } backdrop-blur-xl transition-all duration-300 hover:scale-110 ${
+              theme.border
+            } border ${isMobile ? "hidden" : ""}`}
+            title="Refresh Theme"
+          >
+            <svg
+              className={`w-4 h-4 md:w-5 md:h-5 ${theme.text}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <svg
-                className={`w-4 h-4 md:w-5 md:h-5 ${theme.text}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-            </button>
-          )}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+          </button>
           <button
             onClick={() => switchMode(mode === "focus" ? "break" : "focus")}
             disabled={isTransitioning}
@@ -1500,12 +1501,12 @@ export default function TimerPage() {
               theme.panel
             } backdrop-blur-xl transition-all duration-500 ${
               theme.border
-            } border hover:scale-105 shadow-2xl touch-manipulation ${
+            } border hover:scale-105 shadow-2xl ${
               isTransitioning ? "opacity-50 cursor-not-allowed" : ""
             }`}
             style={{ color: theme.accent }}
           >
-            <span className="font-medium text-xs md:text-base whitespace-nowrap">
+            <span className="font-medium text-xs md:text-base">
               {mode === "focus" ? "Focus Mode" : "Break Mode"}
             </span>
           </button>
@@ -1514,7 +1515,7 @@ export default function TimerPage() {
 
       {/* Main Timer */}
       <div
-        className={`flex items-center justify-center min-h-screen ${
+        className={`flex items-center justify-center ${isMobile ? 'h-screen' : 'min-h-screen'} ${
           isMobile ? "p-4" : "p-4 lg:p-8"
         } transition-all duration-500 ${
           showModeTransition ? "opacity-0 scale-95" : "opacity-100 scale-100"
@@ -1793,7 +1794,7 @@ export default function TimerPage() {
 
       {/* Redesigned Sliding Panel */}
       <div
-        className={`fixed inset-y-0 right-0 w-full md:w-96 overflow-y-auto overscroll-contain ${
+        className={`fixed inset-y-0 right-0 w-full md:w-96 ${
           theme.panel
         } backdrop-blur-2xl shadow-2xl transform transition-all duration-700 ease-out ${
           theme.border

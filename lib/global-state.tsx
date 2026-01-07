@@ -78,7 +78,7 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
       const data = await response.json()
       setState(prev => ({ ...prev, settings: data, settingsLoading: false }))
     } catch (err) {
-      console.error('Error fetching settings:', err)
+      // console.error('Error fetching settings:', err)
       fetchedRef.current.settings = false
       setState(prev => ({ ...prev, settingsLoading: false }))
     }
@@ -108,7 +108,7 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
       const data = await response.json()
       setState(prev => ({ ...prev, analytics: data, analyticsLoading: false }))
     } catch (err) {
-      console.error('Error fetching analytics:', err)
+      // console.error('Error fetching analytics:', err)
       fetchedRef.current.analytics = null
       setState(prev => ({ ...prev, analyticsLoading: false }))
     }
@@ -130,7 +130,7 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
       const data = await response.json()
       setState(prev => ({ ...prev, isNewUser: data.isNewUser, userLoading: false }))
     } catch (err) {
-      console.error('Error fetching user status:', err)
+      // console.error('Error fetching user status:', err)
       fetchedRef.current.user = false
       setState(prev => ({ ...prev, isNewUser: null, userLoading: false }))
     }
@@ -151,7 +151,7 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
       // Emit real-time update event
       mnzdEvents.emitSettingsUpdate(newSettings)
     } catch (err) {
-      console.error('Error updating settings:', err)
+      // console.error('Error updating settings:', err)
     }
   }
 
@@ -165,7 +165,7 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
       if (!response.ok) throw new Error('Failed to update user status')
       setState(prev => ({ ...prev, isNewUser: newStatus }))
     } catch (err) {
-      console.error('Error updating user status:', err)
+      // console.error('Error updating user status:', err)
     }
   }
 
@@ -208,7 +208,7 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
       
       return data
     } catch (err) {
-      console.error('Error loading progress:', err)
+      // console.error('Error loading progress:', err)
       return null
     }
   }
@@ -249,7 +249,7 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
       const updatedData = { ...state.dailyProgressCache[date], ...updates }
       mnzdEvents.emitProgressUpdate(date, updatedData)
     } catch (err) {
-      console.error('Error updating progress:', err)
+      // console.error('Error updating progress:', err)
       throw err
     }
   }
@@ -326,7 +326,7 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
               }))
             }
           } catch (progressError) {
-            console.error('Error loading today progress:', progressError)
+            // console.error('Error loading today progress:', progressError)
             if (mounted) {
               setState(prev => ({
                 ...prev,
@@ -344,7 +344,7 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
           }
         }
       } catch (error) {
-        console.error('Error initializing global state:', error)
+        // console.error('Error initializing global state:', error)
         if (mounted) {
           setState(prev => ({
             ...prev,

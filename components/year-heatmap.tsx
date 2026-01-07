@@ -51,7 +51,7 @@ export default function YearHeatmap({ journeyData }: YearHeatmapProps) {
       
       setYearData(transformedData)
     } catch (error) {
-      console.error('Error fetching year data:', error)
+      // console.error('Error fetching year data:', error)
       setYearData({})
     } finally {
       setLoading(false)
@@ -63,7 +63,7 @@ export default function YearHeatmap({ journeyData }: YearHeatmapProps) {
   }, [selectedYear])
 
   const getColorForHours = (hours: number) => {
-    console.log('getColorForHours - hours:', hours, 'type:', typeof hours)
+    // console.log('getColorForHours - hours:', hours, 'type:', typeof hours)
     if (hours < 0.1) return "bg-gray-100 dark:bg-gray-800"
     if (hours < 1) return "bg-green-100 dark:bg-green-900"
     if (hours < 2) return "bg-green-200 dark:bg-green-800"

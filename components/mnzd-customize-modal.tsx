@@ -39,7 +39,7 @@ export default function MNZDCustomizeModal({ isOpen, onClose, onSaveStart }: MNZ
       await updateSettings({ mnzdConfigs: configs })
       onClose()
     } catch (error) {
-      console.error('Failed to save MNZD settings:', error)
+      // console.error('Failed to save MNZD settings:', error)
       alert('Failed to save settings. Please try again.')
     } finally {
       setIsSaving(false)

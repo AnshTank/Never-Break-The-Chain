@@ -54,7 +54,7 @@ export const authOptions = {
             name: user.name,
           }
         } catch (error) {
-          console.error("Auth error:", error)
+          // console.error("Auth error:", error)
           return null
         }
       }
@@ -87,7 +87,7 @@ export const authOptions = {
           
           await client.close()
         } catch (error) {
-          console.error("OAuth user save error:", error)
+          // console.error("OAuth user save error:", error)
         }
       }
       return true

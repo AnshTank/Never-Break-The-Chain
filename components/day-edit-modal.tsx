@@ -89,7 +89,7 @@ export default function DayEditModal({
 }: DayEditModalProps) {
   const { settings } = useUserSettings();
   const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  console.log('Day edit modal - Date received:', date, 'DateStr:', dateStr);
+  // console.log('Day edit modal - Date received:', date, 'DateStr:', dateStr);
   const { loadProgressForDate, updateProgressForDate, getTodayProgress } = useGlobalDailyProgress();
   
   const [entry, setEntry] = useState<DayEntry | null>(null);
@@ -260,7 +260,7 @@ export default function DayEditModal({
         totalHours: Math.round(finalTotalHours * 10) / 10,
       };
       
-      console.log('Day edit modal save debug:', {
+      // console.log('Day edit modal save debug:', {
         modalDate: date,
         dateStr: dateStr,
         finalEntry: finalEntry,
@@ -279,7 +279,7 @@ export default function DayEditModal({
       // Close modal
       onClose();
     } catch (error) {
-      console.error('Error saving progress:', error);
+      // console.error('Error saving progress:', error);
     } finally {
       setIsSaving(false);
     }
