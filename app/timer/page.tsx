@@ -327,31 +327,31 @@ export default function TimerPage() {
       : themes[0];
 
   // Timer logic
-  useEffect(() => {
-    if (isRunning && timeLeft > 0) {
-      intervalRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            setIsRunning(false);
-            startBeepSequence();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+useEffect(() => {
+  if (isRunning && timeLeft > 0) {
+    intervalRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          handleComplete();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  } else {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
+  }
 
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [isRunning, timeLeft]);
+  return () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+}, [isRunning, timeLeft]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -862,28 +862,6 @@ export default function TimerPage() {
     }
   }, []);
 
-  useEffect(() => {
-    if (isRunning) {
-      intervalRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            handleComplete();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    }
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [isRunning]);
-
   // Background sound management with seamless looping
   useEffect(() => {
     const setupAudio = (audioRef: React.RefObject<HTMLAudioElement>) => {
@@ -1116,9 +1094,10 @@ export default function TimerPage() {
     }, 300);
   };
   const handleComplete = async () => {
-    setIsRunning(false);
+  setIsRunning(false);
+  startBeepSequence();
 
-    if (audioRef.current) {
+  if (audioRef.current) {
       audioRef.current.src =
         "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTuR2O/Eeyw";
       audioRef.current.volume = soundVolume;
@@ -1222,12 +1201,19 @@ export default function TimerPage() {
     await saveData();
   };
 
-  const start = () => setIsRunning(true);
-  const pause = () => setIsRunning(false);
-  const reset = () => {
-    setIsRunning(false);
-    setTimeLeft(selectedDuration * 60);
-  };
+  const start = () => {
+  stopBeepSequence();
+  setIsRunning(true);
+};
+const pause = () => {
+  stopBeepSequence();
+  setIsRunning(false);
+};
+const reset = () => {
+  stopBeepSequence();
+  setIsRunning(false);
+  setTimeLeft(selectedDuration * 60);
+};
 
   const setDuration = (minutes: number) => {
     setSelectedDuration(minutes);
