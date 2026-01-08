@@ -711,14 +711,16 @@ useEffect(() => {
             setMnzdConfigs(settings.mnzdConfigs);
           }
 
-          // Check newUser flag and show onboarding immediately
-          if (settings.newUser) {
-            setIsNewUser(true);
-            setShowOnboarding(true);
-            setShowLoadingScreen(false); // Hide loading immediately for new users
-          } else {
-            setIsNewUser(false);
-          }
+          
+          // Check newUser flag - only show onboarding if newUser is true
+if (settings.newUser === true) {
+  setIsNewUser(true);
+  setShowOnboarding(true);
+  setShowLoadingScreen(false); // Hide loading immediately for new users
+} else {
+  setIsNewUser(false);
+  setShowOnboarding(false); // Explicitly don't show onboarding for existing users
+}
 
           if (settings.timerSettings) {
             const ts = settings.timerSettings;
@@ -825,11 +827,7 @@ useEffect(() => {
     };
 
     const savedData = localStorage.getItem("focusTimerData");
-    const hasSeenOnboarding = localStorage.getItem("focusOnboardingComplete");
-
-    if (!hasSeenOnboarding) {
-      setShowOnboarding(true);
-    }
+    
 
     if (savedData) {
       const data = JSON.parse(savedData);
@@ -1294,18 +1292,18 @@ const reset = () => {
   };
 
   const handleOnboardingComplete = (settings: {
-    focusTime: number;
-    breakTime: number;
-    dailySessionGoal: number;
-  }) => {
-    setSessionSettings(settings);
-    setSelectedDuration(settings.focusTime);
-    setTimeLeft(settings.focusTime * 60);
-    setBreakDuration(settings.breakTime);
-    setShowOnboarding(false);
-    localStorage.setItem("focusOnboardingComplete", "true");
-    saveData();
-  };
+  focusTime: number;
+  breakTime: number;
+  dailySessionGoal: number;
+}) => {
+  setSessionSettings(settings);
+  setSelectedDuration(settings.focusTime);
+  setTimeLeft(settings.focusTime * 60);
+  setBreakDuration(settings.breakTime);
+  setShowOnboarding(false);
+  // Don't use localStorage anymore - newUser flag is managed in DB
+  saveData();
+};
 
   // Generate time options
   const focusOptions = Array.from({ length: 16 }, (_, i) => 15 + i * 5); // 15-90 minutes
