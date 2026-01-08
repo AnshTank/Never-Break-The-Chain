@@ -52,21 +52,21 @@ function SignupForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-blue-950/30 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-8 shadow-xl">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent">
-              Create Account
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm relative z-10">
+        <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
+              Create account
             </h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-2">
-              Sign up to start your journey
+            <p className="text-slate-600 dark:text-slate-400 text-sm">
+              Sign up to get started
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4 mb-6">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+            <div>
+              <Label htmlFor="name" className="text-sm font-medium">Name</Label>
               <Input
                 id="name"
                 type="text"
@@ -75,10 +75,11 @@ function SignupForm() {
                 placeholder="Enter your name"
                 required
                 disabled={isLoading}
+                className="mt-1"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+            <div>
+              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -87,44 +88,40 @@ function SignupForm() {
                 placeholder="Enter your email"
                 required
                 disabled={isLoading}
+                className="mt-1"
               />
             </div>
 
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800/30">
-              <div className="flex items-center gap-3">
-                <div className="text-2xl">🔐</div>
-                <div>
-                  <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                    Don't worry about passwords yet!
-                  </p>
-                  <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
-                    We'll help you set up a secure password during your welcome journey.
-                  </p>
-                </div>
-              </div>
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-md p-3 border border-blue-200 dark:border-blue-800">
+              <p className="text-sm text-blue-800 dark:text-blue-200 font-medium mb-1">
+                No password needed yet
+              </p>
+              <p className="text-xs text-blue-600 dark:text-blue-300">
+                We'll help you set up a secure password during the welcome process.
+              </p>
             </div>
 
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
+              className="w-full"
               disabled={isLoading}
             >
-              {isLoading ? "Creating account..." : "Start Your Journey"}
+              {isLoading ? "Creating account..." : "Create account"}
             </Button>
           </form>
 
           {error && (
-            <div className="mt-4 text-red-600 dark:text-red-400 text-sm text-center">
-              {error}
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+              <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
             </div>
           )}
 
-          <div className="mt-8 text-center">
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-700 text-center">
             <p className="text-slate-600 dark:text-slate-400 text-sm">
               Already have an account?{" "}
               <Link
                 href="/login"
-                className="text-blue-600 dark:text-blue-400 font-medium hover:underline"
+                className="text-blue-600 font-medium hover:underline"
               >
                 Sign in
               </Link>
@@ -139,8 +136,8 @@ function SignupForm() {
 export default function Signup() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin"></div>
       </div>
     }>
       <SignupForm />

@@ -96,22 +96,22 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-blue-950/30 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-8 shadow-xl">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent">
-              Welcome Back
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm relative z-10">
+        <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
+              Welcome back
             </h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-2">Sign in to continue your journey</p>
+            <p className="text-slate-600 dark:text-slate-400 text-sm">Sign in to your account</p>
           </div>
 
           {showIncompleteSetup ? (
-            <div className="text-center space-y-4">
-              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-                <h3 className="font-semibold text-amber-800 dark:text-amber-200 mb-2">Account Setup Incomplete</h3>
+            <div className="space-y-4">
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md p-4">
+                <h3 className="font-medium text-amber-800 dark:text-amber-200 mb-2">Setup incomplete</h3>
                 <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
-                  Your account <strong>{incompleteEmail}</strong> was created but setup wasn't completed.
+                  Your account <strong>{incompleteEmail}</strong> needs to be set up.
                 </p>
                 <Button
                   type="button"
@@ -119,23 +119,23 @@ function LoginForm() {
                   disabled={isLoading}
                   className="w-full bg-amber-600 hover:bg-amber-700 text-white"
                 >
-                  {isLoading ? "Continuing..." : "Continue Setup"}
+                  {isLoading ? "Continuing..." : "Continue setup"}
                 </Button>
                 <Button
                   type="button"
                   onClick={() => setShowIncompleteSetup(false)}
                   variant="ghost"
-                  className="w-full mt-2 text-slate-600 dark:text-slate-400"
+                  className="w-full mt-2"
                 >
-                  Back to Login
+                  Back to login
                 </Button>
               </div>
             </div>
           ) : (
             <>
               <form onSubmit={handleCredentialsSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                <div>
+                  <Label htmlFor="email" className="text-sm font-medium">Email</Label>
                   <Input
                     id="email"
                     type="email"
@@ -144,10 +144,11 @@ function LoginForm() {
                     placeholder="Enter your email"
                     required
                     disabled={isLoading}
+                    className="mt-1"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                <div>
+                  <Label htmlFor="password" className="text-sm font-medium">Password</Label>
                   <Input
                     id="password"
                     type="password"
@@ -156,31 +157,37 @@ function LoginForm() {
                     placeholder="Enter your password"
                     required
                     disabled={isLoading}
+                    className="mt-1"
                   />
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="rememberMe"
-                    checked={rememberMe}
-                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                    disabled={isLoading}
-                  />
-                  <Label htmlFor="rememberMe" className="text-sm text-slate-600 dark:text-slate-400 cursor-pointer">
-                    Remember me
-                  </Label>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="rememberMe"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                      disabled={isLoading}
+                    />
+                    <Label htmlFor="rememberMe" className="text-sm cursor-pointer">
+                      Remember me
+                    </Label>
+                  </div>
+                  <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
+                    Forgot password?
+                  </Link>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+                <p className="text-xs text-slate-500">
                   {rememberMe 
-                    ? "You'll stay logged in for 7 days, even after closing your browser" 
+                    ? "You'll stay logged in for 7 days" 
                     : "You'll be logged out after 24 hours of inactivity"
                   }
                 </p>
                 <Button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
+                  className="w-full"
                   disabled={isLoading}
                 >
-                  {isLoading ? "Signing in..." : "Sign In"}
+                  {isLoading ? "Signing in..." : "Sign in"}
                 </Button>
               </form>
               
@@ -194,7 +201,7 @@ function LoginForm() {
                     }
                     handleContinueSetup()
                   }}
-                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                  className="text-sm text-blue-600 hover:underline"
                   disabled={isLoading}
                 >
                   Can't remember your password? Try account recovery
@@ -204,32 +211,31 @@ function LoginForm() {
           )}
 
           {error && (
-            <div className="mt-4 text-red-600 dark:text-red-400 text-sm text-center">{error}</div>
+            <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+              <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+            </div>
           )}
           
           {searchParams.get('message') && (
-            <div className="mt-4 text-green-600 dark:text-green-400 text-sm text-center">
-              {searchParams.get('message')}
+            <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+              <p className="text-green-600 dark:text-green-400 text-sm">
+                {searchParams.get('message')}
+              </p>
             </div>
           )}
 
-          <div className="mt-6 flex justify-center gap-4 text-center">
-            <Link href="/forgot-password" className="text-blue-600 dark:text-blue-400 text-sm hover:underline">
-              Forgot your password?
-            </Link>
-            <span className="text-slate-300 dark:text-slate-600">•</span>
-            <Link href="/delete-account" className="text-red-500 dark:text-red-400 text-sm hover:underline">
-              Delete account
-            </Link>
-          </div>
-
-          <div className="mt-6 text-center">
-            <p className="text-slate-600 dark:text-slate-400 text-sm">
-              Don't have an account?{" "}
-              <Link href="/signup" className="text-blue-600 dark:text-blue-400 font-medium hover:underline">
-                Sign up
+          <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <div className="text-center space-y-2">
+              <Link href="/delete-account" className="text-red-500 text-sm hover:underline block">
+                Delete account
               </Link>
-            </p>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">
+                Don't have an account?{" "}
+                <Link href="/signup" className="text-blue-600 font-medium hover:underline">
+                  Sign up
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -240,8 +246,8 @@ function LoginForm() {
 export default function Login() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin"></div>
       </div>
     }>
       <LoginForm />
