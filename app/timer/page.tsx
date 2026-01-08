@@ -1559,89 +1559,100 @@ const reset = () => {
           )}
 
           {/* Timer Circle */}
-          <div
-            className={`relative ${
-              isMobile ? "mb-6" : "mb-12"
-            } transition-all duration-700 ${
-              showModeTransition
-                ? "opacity-0 scale-90"
-                : "opacity-100 scale-100"
-            }`}
-          >
-            {!isMobile && (
-              <div className="absolute inset-0 animate-pulse">
-                <div
-                  className="w-72 h-72 lg:w-96 lg:h-96 mx-auto rounded-full opacity-20 blur-3xl"
-                  style={{
-                    background: `radial-gradient(circle, ${theme.accent}40 0%, transparent 70%)`,
-                  }}
-                ></div>
-              </div>
-            )}
-            <svg
-              className={`${
-                isMobile ? "w-56 h-56" : "w-64 h-64 lg:w-80 lg:h-80"
-              } mx-auto transform -rotate-90 relative z-10`}
-              viewBox="0 0 100 100"
-            >
-              <circle
-                cx="50"
-                cy="50"
-                r="45"
-                stroke="currentColor"
-                strokeWidth="0.5"
-                fill="none"
-                className={`${theme.text} opacity-20 transition-all duration-1000`}
-              />
-              <circle
-                cx="50"
-                cy="50"
-                r="45"
-                stroke={theme.accent}
-                strokeWidth="3"
-                fill="none"
-                strokeDasharray={`${2 * Math.PI * 45}`}
-                strokeDashoffset={`${
-                  2 * Math.PI * 45 * (1 - getProgress() / 100)
-                }`}
-                className="transition-all duration-1000 ease-linear drop-shadow-lg"
-                strokeLinecap="round"
-              />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div
-                  className={`${
-                    isMobile ? "text-4xl" : "text-4xl lg:text-6xl"
-                  } font-extralight ${theme.text} ${
-                    isMobile ? "mb-2" : "mb-3"
-                  } tabular-nums transition-all duration-1000 tracking-wider`}
-                >
-                  {formatTime(timeLeft)}
-                </div>
-                <div
-                  className={`${theme.text} opacity-70 ${
-                    isMobile ? "text-sm" : "text-base lg:text-xl"
-                  } font-light transition-all duration-1000`}
-                >
-                  {isRunning
-                    ? mode === "focus"
-                      ? "Deep Focus"
-                      : "Rest Time"
-                    : "Ready to Begin"}
-                </div>
-                {isRunning && mode === "focus" && (
-                  <div
-                    className={`${
-                      isMobile ? "mt-1 text-xs" : "mt-2 text-sm lg:text-lg"
-                    } ${theme.text} opacity-50 transition-all duration-1000`}
-                  >
-                    Session {pomodoroCount + 1}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+<button
+  onClick={() => {
+    if (timeLeft === 0) {
+      reset();
+    } else if (isRunning) {
+      pause();
+    } else {
+      start();
+    }
+  }}
+  className={`relative ${
+    isMobile ? "mb-6" : "mb-12"
+  } transition-all duration-700 ${
+    showModeTransition
+      ? "opacity-0 scale-90"
+      : "opacity-100 scale-100"
+  } cursor-pointer hover:scale-105 active:scale-95`}
+>
+  {!isMobile && (
+    <div className="absolute inset-0 animate-pulse pointer-events-none">
+      <div
+        className="w-72 h-72 lg:w-96 lg:h-96 mx-auto rounded-full opacity-20 blur-3xl"
+        style={{
+          background: `radial-gradient(circle, ${theme.accent}40 0%, transparent 70%)`,
+        }}
+      ></div>
+    </div>
+  )}
+  <svg
+    className={`${
+      isMobile ? "w-56 h-56" : "w-64 h-64 lg:w-80 lg:h-80"
+    } mx-auto transform -rotate-90 relative z-10`}
+    viewBox="0 0 100 100"
+  >
+    <circle
+      cx="50"
+      cy="50"
+      r="45"
+      stroke="currentColor"
+      strokeWidth="0.5"
+      fill="none"
+      className={`${theme.text} opacity-20 transition-all duration-1000`}
+    />
+    <circle
+      cx="50"
+      cy="50"
+      r="45"
+      stroke={theme.accent}
+      strokeWidth="3"
+      fill="none"
+      strokeDasharray={`${2 * Math.PI * 45}`}
+      strokeDashoffset={`${
+        2 * Math.PI * 45 * (1 - getProgress() / 100)
+      }`}
+      className="transition-all duration-1000 ease-linear drop-shadow-lg"
+      strokeLinecap="round"
+    />
+  </svg>
+  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+    <div className="text-center">
+      <div
+        className={`${
+          isMobile ? "text-4xl" : "text-4xl lg:text-6xl"
+        } font-extralight ${theme.text} ${
+          isMobile ? "mb-2" : "mb-3"
+        } tabular-nums transition-all duration-1000 tracking-wider`}
+      >
+        {formatTime(timeLeft)}
+      </div>
+      <div
+        className={`${theme.text} opacity-70 ${
+          isMobile ? "text-sm" : "text-base lg:text-xl"
+        } font-light transition-all duration-1000`}
+      >
+        {timeLeft === 0
+          ? "Tap to Reset"
+          : isRunning
+          ? mode === "focus"
+            ? "Deep Focus"
+            : "Rest Time"
+          : "Tap to Start"}
+      </div>
+      {isRunning && mode === "focus" && (
+        <div
+          className={`${
+            isMobile ? "mt-1 text-xs" : "mt-2 text-sm lg:text-lg"
+          } ${theme.text} opacity-50 transition-all duration-1000`}
+        >
+          Session {pomodoroCount + 1}
+        </div>
+      )}
+    </div>
+  </div>
+</button>
 
           {/* Controls */}
           <div
