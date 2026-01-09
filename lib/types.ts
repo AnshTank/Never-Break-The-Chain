@@ -26,4 +26,5 @@ export interface MNZDConfig {
   name: string
   description: string
   minMinutes: number
+  color?: string
 }

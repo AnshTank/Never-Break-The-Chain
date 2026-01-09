@@ -32,19 +32,28 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    // Save MNZD configurations to user settings
+    // Save MNZD configurations to user settings using email as userId
     if (mnzdConfigs && Array.isArray(mnzdConfigs)) {
+      // Ensure MNZD configs have all required fields
+      const processedConfigs = mnzdConfigs.map(config => ({
+        id: config.id,
+        name: config.name || config.id.charAt(0).toUpperCase() + config.id.slice(1),
+        description: config.description || '',
+        minMinutes: config.minMinutes || 15,
+        color: config.color || '#3b82f6' // Default blue color if not provided
+      }))
+
       await userSettings.updateOne(
-        { userId: user.userId },
+        { userId: user.email }, // Use email from JWT as userId
         {
           $set: {
-            mnzdConfigs: mnzdConfigs,
-            updatedAt: new Date()
+            mnzdConfigs: processedConfigs,
+            updatedAt: new Date(),
+            welcomeCompleted: true
           },
           $setOnInsert: {
-            userId: user.userId,
+            userId: user.email, // Use email from JWT as userId
             newUser: false,
-            welcomeCompleted: true,
             createdAt: new Date()
           }
         },
