@@ -86,7 +86,6 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
 
   const fetchAnalytics = async (month?: Date) => {
     const monthKey = month ? month.toISOString().split('T')[0].substring(0, 7) : 'current'
-    if (fetchedRef.current.analytics === monthKey) return
     
     try {
       setState(prev => ({ ...prev, analyticsLoading: true }))
@@ -95,8 +94,10 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
       const url = month ? `/api/analytics?month=${month.toISOString()}` : '/api/analytics'
       const response = await fetch(url, {
         method: 'GET',
-        cache: 'force-cache',
-        next: { revalidate: 180 } // Cache for 3 minutes
+        cache: 'no-cache', // Force fresh data
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
       })
       if (!response.ok) {
         if (response.status === 401) {
@@ -175,6 +176,7 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
   }
 
   const refetchAnalytics = async (month?: Date) => {
+    // Always reset cache when explicitly refetching
     fetchedRef.current.analytics = null
     await fetchAnalytics(month)
   }
@@ -405,9 +407,9 @@ export function useAnalytics() {
   const { analytics, analyticsLoading, refetchAnalytics } = useGlobalState()
   const lastRefetchRef = useRef<string | null>(null)
   
-  const refetch = useCallback((month?: Date) => {
+  const refetch = useCallback((month?: Date, force = false) => {
     const monthKey = month ? month.toISOString().split('T')[0].substring(0, 7) : 'current'
-    if (lastRefetchRef.current === monthKey) return Promise.resolve()
+    if (!force && lastRefetchRef.current === monthKey) return Promise.resolve()
     
     lastRefetchRef.current = monthKey
     return refetchAnalytics(month)

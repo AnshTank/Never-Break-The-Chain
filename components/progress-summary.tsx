@@ -28,7 +28,7 @@ export default function ProgressSummary({ currentMonth }: ProgressSummaryProps) 
   // Optimize refresh handler with useCallback
   const handleRefresh = useCallback(async () => {
     if (currentMonth) {
-      await refetch(currentMonth)
+      await refetch(currentMonth, true) // Force refresh
     }
   }, [refetch, currentMonth])
 
