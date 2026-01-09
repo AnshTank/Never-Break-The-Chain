@@ -332,8 +332,7 @@ export default function TimerPage() {
       intervalRef.current = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
-            setIsRunning(false);
-            startBeepSequence();
+            handleComplete();
             return 0;
           }
           return prev - 1;
@@ -349,6 +348,7 @@ export default function TimerPage() {
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
   }, [isRunning, timeLeft]);
@@ -711,13 +711,14 @@ export default function TimerPage() {
             setMnzdConfigs(settings.mnzdConfigs);
           }
 
-          // Check newUser flag and show onboarding immediately
-          if (settings.newUser) {
+          // Check newUser flag - only show onboarding if newUser is true
+          if (settings.newUser === true) {
             setIsNewUser(true);
             setShowOnboarding(true);
             setShowLoadingScreen(false); // Hide loading immediately for new users
           } else {
             setIsNewUser(false);
+            setShowOnboarding(false); // Explicitly don't show onboarding for existing users
           }
 
           if (settings.timerSettings) {
@@ -825,11 +826,6 @@ export default function TimerPage() {
     };
 
     const savedData = localStorage.getItem("focusTimerData");
-    const hasSeenOnboarding = localStorage.getItem("focusOnboardingComplete");
-
-    if (!hasSeenOnboarding) {
-      setShowOnboarding(true);
-    }
 
     if (savedData) {
       const data = JSON.parse(savedData);
@@ -861,28 +857,6 @@ export default function TimerPage() {
       Notification.requestPermission();
     }
   }, []);
-
-  useEffect(() => {
-    if (isRunning) {
-      intervalRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            handleComplete();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    }
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [isRunning]);
 
   // Background sound management with seamless looping
   useEffect(() => {
@@ -1117,6 +1091,7 @@ export default function TimerPage() {
   };
   const handleComplete = async () => {
     setIsRunning(false);
+    startBeepSequence();
 
     if (audioRef.current) {
       audioRef.current.src =
@@ -1222,9 +1197,16 @@ export default function TimerPage() {
     await saveData();
   };
 
-  const start = () => setIsRunning(true);
-  const pause = () => setIsRunning(false);
+  const start = () => {
+    stopBeepSequence();
+    setIsRunning(true);
+  };
+  const pause = () => {
+    stopBeepSequence();
+    setIsRunning(false);
+  };
   const reset = () => {
+    stopBeepSequence();
     setIsRunning(false);
     setTimeLeft(selectedDuration * 60);
   };
@@ -1317,7 +1299,7 @@ export default function TimerPage() {
     setTimeLeft(settings.focusTime * 60);
     setBreakDuration(settings.breakTime);
     setShowOnboarding(false);
-    localStorage.setItem("focusOnboardingComplete", "true");
+    // Don't use localStorage anymore - newUser flag is managed in DB
     saveData();
   };
 
@@ -1332,7 +1314,9 @@ export default function TimerPage() {
 
   return (
     <div
-      className={`${isMobile ? 'min-h-screen' : 'fixed inset-0'} ${isMobile ? 'overflow-auto' : 'overflow-hidden'} transition-all duration-1000 ease-in-out`}
+      className={`${isMobile ? "min-h-screen" : "fixed inset-0"} ${
+        isMobile ? "overflow-auto" : "overflow-hidden"
+      } transition-all duration-1000 ease-in-out`}
       style={{ background: theme.background }}
     >
       <style jsx global>{`
@@ -1344,11 +1328,12 @@ export default function TimerPage() {
           scrollbar-width: none;
         }
         body {
-          overflow: ${isMobile ? 'auto' : 'hidden'};
+          overflow: ${isMobile ? "auto" : "hidden"};
         }
-        html, body {
-          height: ${isMobile ? 'auto' : '100%'};
-          min-height: ${isMobile ? '100vh' : '100%'};
+        html,
+        body {
+          height: ${isMobile ? "auto" : "100%"};
+          min-height: ${isMobile ? "100vh" : "100%"};
         }
         .loading-bar {
           animation: loading 2s ease-in-out infinite;
@@ -1444,7 +1429,11 @@ export default function TimerPage() {
       ></div>
 
       {/* Header */}
-      <div className={`${isMobile ? 'fixed' : 'absolute'} top-0 left-0 right-0 z-30 flex items-center justify-between p-4 md:p-8`}>
+      <div
+        className={`${
+          isMobile ? "fixed" : "absolute"
+        } top-0 left-0 right-0 z-30 flex items-center justify-between p-4 md:p-8`}
+      >
         <Link
           href="/"
           className={`${theme.text} hover:opacity-80 transition-all duration-300 font-medium text-base md:text-lg`}
@@ -1515,9 +1504,9 @@ export default function TimerPage() {
 
       {/* Main Timer */}
       <div
-        className={`flex items-center justify-center ${isMobile ? 'h-screen' : 'min-h-screen'} ${
-          isMobile ? "p-4" : "p-4 lg:p-8"
-        } transition-all duration-500 ${
+        className={`flex items-center justify-center ${
+          isMobile ? "h-screen" : "min-h-screen"
+        } ${isMobile ? "p-4" : "p-4 lg:p-8"} transition-all duration-500 ${
           showModeTransition ? "opacity-0 scale-95" : "opacity-100 scale-100"
         }`}
       >
@@ -1573,17 +1562,26 @@ export default function TimerPage() {
           )}
 
           {/* Timer Circle */}
-          <div
+          <button
+            onClick={() => {
+              if (timeLeft === 0) {
+                reset();
+              } else if (isRunning) {
+                pause();
+              } else {
+                start();
+              }
+            }}
             className={`relative ${
               isMobile ? "mb-6" : "mb-12"
             } transition-all duration-700 ${
               showModeTransition
                 ? "opacity-0 scale-90"
                 : "opacity-100 scale-100"
-            }`}
+            } cursor-pointer hover:scale-105 active:scale-95`}
           >
             {!isMobile && (
-              <div className="absolute inset-0 animate-pulse">
+              <div className="absolute inset-0 animate-pulse pointer-events-none">
                 <div
                   className="w-72 h-72 lg:w-96 lg:h-96 mx-auto rounded-full opacity-20 blur-3xl"
                   style={{
@@ -1622,7 +1620,7 @@ export default function TimerPage() {
                 strokeLinecap="round"
               />
             </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center">
                 <div
                   className={`${
@@ -1638,11 +1636,13 @@ export default function TimerPage() {
                     isMobile ? "text-sm" : "text-base lg:text-xl"
                   } font-light transition-all duration-1000`}
                 >
-                  {isRunning
+                  {timeLeft === 0
+                    ? "Tap to Reset"
+                    : isRunning
                     ? mode === "focus"
                       ? "Deep Focus"
                       : "Rest Time"
-                    : "Ready to Begin"}
+                    : "Tap to Start"}
                 </div>
                 {isRunning && mode === "focus" && (
                   <div
@@ -1655,7 +1655,7 @@ export default function TimerPage() {
                 )}
               </div>
             </div>
-          </div>
+          </button>
 
           {/* Controls */}
           <div

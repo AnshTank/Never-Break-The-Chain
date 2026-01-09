@@ -132,10 +132,11 @@ export default function WelcomePage() {
 
   const handlePasswordSetupComplete = async () => {
     try {
-      // Mark welcome as completed
+      // Mark welcome as completed and save MNZD configs
       const response = await fetch("/api/user/complete-welcome", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mnzdConfigs }),
       });
 
       if (response.ok) {

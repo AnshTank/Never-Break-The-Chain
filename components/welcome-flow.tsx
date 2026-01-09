@@ -25,9 +25,32 @@ export default function WelcomeFlow({ isNewUser, onComplete }: WelcomeFlowProps)
     setTempConfigs(updated);
   };
 
-  const handleComplete = () => {
-    onComplete(tempConfigs);
-    setStep("complete");
+  const handleComplete = async () => {
+    try {
+      // Send MNZD configs to the API
+      const response = await fetch('/api/user/complete-welcome', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ mnzdConfigs: tempConfigs }),
+      })
+
+      if (response.ok) {
+        onComplete(tempConfigs)
+        setStep("complete")
+      } else {
+        console.error('Failed to save MNZD configurations')
+        // Still complete the flow locally even if API fails
+        onComplete(tempConfigs)
+        setStep("complete")
+      }
+    } catch (error) {
+      console.error('Error saving MNZD configurations:', error)
+      // Still complete the flow locally even if API fails
+      onComplete(tempConfigs)
+      setStep("complete")
+    }
   };
 
   return (
