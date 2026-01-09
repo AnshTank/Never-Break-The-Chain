@@ -60,6 +60,24 @@ export default function WelcomePage() {
   useEffect(() => {
     setMounted(true);
 
+    // Load saved MNZD configs from localStorage with error handling
+    if (typeof window !== 'undefined') {
+      try {
+        const savedConfigs = localStorage.getItem('welcome-mnzd-configs');
+        if (savedConfigs) {
+          const parsedConfigs = JSON.parse(savedConfigs);
+          // Validate the structure before setting
+          if (Array.isArray(parsedConfigs) && parsedConfigs.length === 4) {
+            setMnzdConfigs(parsedConfigs);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading saved configs:', error);
+        // Clear corrupted data
+        localStorage.removeItem('welcome-mnzd-configs');
+      }
+    }
+
     // Prevent accidental navigation away from welcome flow
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isNewUser === true) {
@@ -142,6 +160,14 @@ export default function WelcomePage() {
       if (response.ok) {
         // Update user status to not new user
         await updateUserStatus(false);
+        // Clear localStorage after successful completion
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.removeItem('welcome-mnzd-configs');
+          } catch (error) {
+            console.error('Error clearing localStorage:', error);
+          }
+        }
         setShowPasswordSetup(false);
         router.push("/");
       } else {
@@ -163,11 +189,19 @@ export default function WelcomePage() {
     field: keyof MNZDConfig,
     value: string | number
   ) => {
-    setMnzdConfigs((prev) =>
-      prev.map((config) =>
-        config.id === id ? { ...config, [field]: value } : config
-      )
+    const updatedConfigs = mnzdConfigs.map((config) =>
+      config.id === id ? { ...config, [field]: value } : config
     );
+    setMnzdConfigs(updatedConfigs);
+    
+    // Save to localStorage with error handling
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('welcome-mnzd-configs', JSON.stringify(updatedConfigs));
+      } catch (error) {
+        console.error('Error saving configs to localStorage:', error);
+      }
+    }
   };
 
   if (userStatusLoading || !mounted) {
@@ -242,6 +276,53 @@ export default function WelcomePage() {
             border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
           }
         }
+
+        /* Dynamic viewport scaling */
+        @media (max-height: 800px) {
+          .welcome-container {
+            transform: scale(0.85);
+            transform-origin: center;
+          }
+          .daily-commitment-header {
+            margin-top: 1rem;
+          }
+        }
+        @media (max-height: 700px) {
+          .welcome-container {
+            transform: scale(0.75);
+            transform-origin: center;
+          }
+          .daily-commitment-header {
+            margin-top: 0.5rem;
+          }
+        }
+        @media (max-height: 600px) {
+          .welcome-container {
+            transform: scale(0.65);
+            transform-origin: center;
+            overflow-y: auto;
+          }
+          .daily-commitment-header {
+            margin-top: 0.25rem;
+          }
+        }
+        
+        /* Less aggressive scaling for Daily Commitment section */
+        @media (max-height: 800px) {
+          .welcome-container:has(.daily-commitment-header) {
+            transform: scale(0.9);
+          }
+        }
+        @media (max-height: 700px) {
+          .welcome-container:has(.daily-commitment-header) {
+            transform: scale(0.85);
+          }
+        }
+        @media (max-height: 600px) {
+          .welcome-container:has(.daily-commitment-header) {
+            transform: scale(0.8);
+          }
+        }
       `}</style>
 
       {/* Minimal Background */}
@@ -257,7 +338,7 @@ export default function WelcomePage() {
 
       <div className="relative z-10 h-full flex flex-col">
         {/* Progress Indicator - Mobile Responsive */}
-        <div className="absolute top-4 sm:top-8 left-1/2 transform -translate-x-1/2 z-20">
+        <div className="absolute top-4 sm:top-8 left-1/2 transform -translate-x-1/2 z-20" style={{top: 'clamp(1rem, 5vh, 2rem)'}}>
           <div className="bg-slate-800/80 backdrop-blur-sm rounded-full px-3 sm:px-4 py-1.5 sm:py-2 border border-slate-700">
             <div className="flex items-center space-x-1.5 sm:space-x-2">
               {[1, 2, 3, 4].map((i) => (
@@ -289,8 +370,8 @@ export default function WelcomePage() {
         </div>
 
         {/* Main Content Area - Mobile Responsive */}
-        <div className="flex-1 flex items-center justify-center px-4 sm:px-4">
-          <div className="max-w-5xl w-full">
+        <div className="flex-1 flex items-center justify-center px-4 sm:px-4 welcome-container">
+          <div className="max-w-3xl w-full">
             {/* Step 1: Hero Welcome - Mobile Responsive */}
             {step === 1 && (
               <div className="text-center space-y-6 sm:space-y-8 animate-in fade-in duration-1000">
@@ -672,7 +753,7 @@ export default function WelcomePage() {
                             "Move for 25 minutes daily. Walking, gym, yoga - any movement counts. Your body fuels your mind."}
                         </p>
                       </div>
-                      
+
                       <div className="relative h-[450px] sm:h-[500px]">
                         {mnzdConfigs.map((config, index) => (
                           <div
@@ -689,12 +770,19 @@ export default function WelcomePage() {
                               <div className="flex-1 space-y-3 sm:space-y-4">
                                 {/* Header with Theme Color - Left aligned on mobile and desktop */}
                                 <div className="flex items-center mb-3 sm:mb-4">
-                                  <div className={`w-12 h-12 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl flex items-center justify-center text-white font-bold text-lg sm:text-3xl shadow-lg flex-shrink-0`} style={{ backgroundColor: config.color }}>
+                                  <div
+                                    className={`w-12 h-12 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl flex items-center justify-center text-white font-bold text-lg sm:text-3xl shadow-lg flex-shrink-0`}
+                                    style={{ backgroundColor: config.color }}
+                                  >
                                     {config.id.charAt(0).toUpperCase()}
                                   </div>
                                   <div className="ml-3 flex-1 min-w-0">
-                                    <h3 className="text-lg sm:text-2xl font-bold text-white mb-1 sm:mb-2">{config.name}</h3>
-                                    <p className="text-slate-400 text-xs sm:text-sm break-words">{config.description}</p>
+                                    <h3 className="text-lg sm:text-2xl font-bold text-white mb-1 sm:mb-2">
+                                      {config.name}
+                                    </h3>
+                                    <p className="text-slate-400 text-xs sm:text-sm break-words">
+                                      {config.description}
+                                    </p>
                                   </div>
                                 </div>
 
@@ -889,17 +977,17 @@ export default function WelcomePage() {
                   </>
                 ) : (
                   /* Summary & Edit Option - Mobile Responsive */
-                  <>
-                    <div className="text-center mb-6 sm:mb-8">
-                      <h1 className="text-2xl sm:text-4xl font-bold text-white mb-3 sm:mb-4">
+                  <div className="welcome-container">
+                    <div className="text-center mb-2 daily-commitment-header">
+                      <h1 className="text-xl sm:text-3xl font-bold text-white mb-2 sm:mb-3">
                         Your Daily Commitment
                       </h1>
-                      <p className="text-sm sm:text-lg text-slate-300">
+                      <p className="text-xs sm:text-base text-slate-300">
                         Review your MNZD system • Edit if needed
                       </p>
                     </div>
 
-                    <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 px-2 sm:px-0">
+                    <div className="max-w-3xl mx-auto space-y-2 sm:space-y-4 px-2 sm:px-0">
                       {/* Summary Cards - Mobile Responsive */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                         {mnzdConfigs.map((config, index) => (
@@ -926,12 +1014,12 @@ export default function WelcomePage() {
                       </div>
 
                       {/* Total Summary - Mobile Responsive */}
-                      <div className="bg-gradient-to-r from-slate-800/30 to-slate-700/30 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-slate-600/30">
+                      <div className="bg-gradient-to-r from-slate-800/30 to-slate-700/30 backdrop-blur-sm rounded-2xl p-3 sm:p-4 border border-slate-600/30">
                         <div className="text-center">
-                          <h3 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">
+                          <h3 className="text-lg sm:text-xl font-semibold text-white mb-2 sm:mb-3">
                             Daily Overview
                           </h3>
-                          <div className="flex items-center justify-center space-x-4 sm:space-x-8">
+                          <div className="flex items-center justify-center space-x-3 sm:space-x-6">
                             <div className="text-center">
                               <div className="text-2xl sm:text-3xl font-bold text-blue-400">
                                 {mnzdConfigs.reduce(
@@ -964,6 +1052,132 @@ export default function WelcomePage() {
                         </div>
                       </div>
 
+                      {/* Motivational Impact Calculations */}
+                      <div className="bg-gradient-to-br from-blue-900/20 to-purple-900/20 backdrop-blur-sm rounded-2xl p-3 sm:p-4 border border-blue-500/20">
+                        <div className="text-center mb-3">
+                          <h3 className="text-lg sm:text-xl font-semibold text-white mb-1 sm:mb-2">
+                            Your Journey Impact
+                          </h3>
+                          <p className="text-xs sm:text-sm text-slate-400">
+                            See the compound effect of your daily commitment
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div className="text-center p-3 bg-white/5 rounded-xl">
+                            <div className="text-lg sm:text-xl font-bold text-blue-400">
+                              {Math.round(
+                                (mnzdConfigs.reduce(
+                                  (sum, config) => sum + config.minMinutes,
+                                  0
+                                ) *
+                                  30) /
+                                  60
+                              )}
+                              h
+                            </div>
+                            <div className="text-xs text-slate-400">
+                              per month
+                            </div>
+                            <div className="text-xs text-blue-300 mt-1">
+                              ={" "}
+                              {Math.round(
+                                (mnzdConfigs.reduce(
+                                  (sum, config) => sum + config.minMinutes,
+                                  0
+                                ) *
+                                  30) /
+                                  60 /
+                                  8
+                              )}{" "}
+                              work days
+                            </div>
+                          </div>
+
+                          <div className="text-center p-3 bg-white/5 rounded-xl">
+                            <div className="text-lg sm:text-xl font-bold text-emerald-400">
+                              {Math.round(
+                                (mnzdConfigs.reduce(
+                                  (sum, config) => sum + config.minMinutes,
+                                  0
+                                ) *
+                                  180) /
+                                  60
+                              )}
+                              h
+                            </div>
+                            <div className="text-xs text-slate-400">
+                              in 6 months
+                            </div>
+                            <div className="text-xs text-emerald-300 mt-1">
+                              ={" "}
+                              {Math.round(
+                                (mnzdConfigs.reduce(
+                                  (sum, config) => sum + config.minMinutes,
+                                  0
+                                ) *
+                                  180) /
+                                  60 /
+                                  40
+                              )}{" "}
+                              weeks of learning
+                            </div>
+                          </div>
+
+                          <div className="text-center p-3 bg-white/5 rounded-xl">
+                            <div className="text-lg sm:text-xl font-bold text-purple-400">
+                              {Math.round(
+                                (mnzdConfigs.reduce(
+                                  (sum, config) => sum + config.minMinutes,
+                                  0
+                                ) *
+                                  365) /
+                                  60
+                              )}
+                              h
+                            </div>
+                            <div className="text-xs text-slate-400">
+                              per year
+                            </div>
+                            <div className="text-xs text-purple-300 mt-1">
+                              = Master level expertise
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 p-2 sm:p-3 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-xl border border-yellow-500/20">
+                          <div className="text-center">
+                            <div className="text-sm font-medium text-yellow-300 mb-1">
+                              💡 Fun Fact
+                            </div>
+                            <div className="text-xs text-slate-300">
+                              {(() => {
+                                const yearlyHours = Math.round(
+                                  (mnzdConfigs.reduce(
+                                    (sum, config) => sum + config.minMinutes,
+                                    0
+                                  ) *
+                                    365) /
+                                    60
+                                );
+                                if (yearlyHours < 600) {
+                                  return "Even this pace puts you ahead of people who rely only on motivation.";
+                                } else if (yearlyHours < 900) {
+                                  return "This level builds stronger fundamentals than most college coursework.";
+                                } else if (yearlyHours < 1200) {
+                                  return "This is where real skill separation begins — consistency beats raw talent here.";
+                                } else if (yearlyHours < 3000) {
+                                  return "4–8 focused hours a day compounds into elite-level expertise most people never reach.";
+                                } else {
+                                  return "This intensity is how founders, athletes, and top performers compress decades into years.";
+                                }
+                              })()}{" "}
+                              🎯
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Action Buttons - Mobile Responsive */}
                       <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
                         <Button
@@ -983,7 +1197,7 @@ export default function WelcomePage() {
                         </Button>
                       </div>
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
             )}
