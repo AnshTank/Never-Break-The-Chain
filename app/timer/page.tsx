@@ -327,6 +327,7 @@ export default function TimerPage() {
       : themes[0];
 
   // Timer logic
+<<<<<<< HEAD
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
       intervalRef.current = setInterval(() => {
@@ -343,8 +344,27 @@ export default function TimerPage() {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+=======
+useEffect(() => {
+  if (isRunning && timeLeft > 0) {
+    intervalRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          handleComplete();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  } else {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+>>>>>>> 17b1e3e43d6aaea29d74038d78d5e8a680afea54
     }
+  }
 
+<<<<<<< HEAD
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -352,6 +372,15 @@ export default function TimerPage() {
       }
     };
   }, [isRunning, timeLeft]);
+=======
+  return () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+}, [isRunning, timeLeft]);
+>>>>>>> 17b1e3e43d6aaea29d74038d78d5e8a680afea54
 
   useEffect(() => {
     const checkMobile = () => {
@@ -711,6 +740,7 @@ export default function TimerPage() {
             setMnzdConfigs(settings.mnzdConfigs);
           }
 
+<<<<<<< HEAD
           // Check newUser flag - only show onboarding if newUser is true
           if (settings.newUser === true) {
             setIsNewUser(true);
@@ -720,6 +750,18 @@ export default function TimerPage() {
             setIsNewUser(false);
             setShowOnboarding(false); // Explicitly don't show onboarding for existing users
           }
+=======
+          
+          // Check newUser flag - only show onboarding if newUser is true
+if (settings.newUser === true) {
+  setIsNewUser(true);
+  setShowOnboarding(true);
+  setShowLoadingScreen(false); // Hide loading immediately for new users
+} else {
+  setIsNewUser(false);
+  setShowOnboarding(false); // Explicitly don't show onboarding for existing users
+}
+>>>>>>> 17b1e3e43d6aaea29d74038d78d5e8a680afea54
 
           if (settings.timerSettings) {
             const ts = settings.timerSettings;
@@ -826,6 +868,10 @@ export default function TimerPage() {
     };
 
     const savedData = localStorage.getItem("focusTimerData");
+<<<<<<< HEAD
+=======
+    
+>>>>>>> 17b1e3e43d6aaea29d74038d78d5e8a680afea54
 
     if (savedData) {
       const data = JSON.parse(savedData);
@@ -1090,10 +1136,15 @@ export default function TimerPage() {
     }, 300);
   };
   const handleComplete = async () => {
+<<<<<<< HEAD
     setIsRunning(false);
     startBeepSequence();
+=======
+  setIsRunning(false);
+  startBeepSequence();
+>>>>>>> 17b1e3e43d6aaea29d74038d78d5e8a680afea54
 
-    if (audioRef.current) {
+  if (audioRef.current) {
       audioRef.current.src =
         "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTuR2O/Eeyw";
       audioRef.current.volume = soundVolume;
@@ -1198,6 +1249,7 @@ export default function TimerPage() {
   };
 
   const start = () => {
+<<<<<<< HEAD
     stopBeepSequence();
     setIsRunning(true);
   };
@@ -1210,6 +1262,20 @@ export default function TimerPage() {
     setIsRunning(false);
     setTimeLeft(selectedDuration * 60);
   };
+=======
+  stopBeepSequence();
+  setIsRunning(true);
+};
+const pause = () => {
+  stopBeepSequence();
+  setIsRunning(false);
+};
+const reset = () => {
+  stopBeepSequence();
+  setIsRunning(false);
+  setTimeLeft(selectedDuration * 60);
+};
+>>>>>>> 17b1e3e43d6aaea29d74038d78d5e8a680afea54
 
   const setDuration = (minutes: number) => {
     setSelectedDuration(minutes);
@@ -1290,6 +1356,7 @@ export default function TimerPage() {
   };
 
   const handleOnboardingComplete = (settings: {
+<<<<<<< HEAD
     focusTime: number;
     breakTime: number;
     dailySessionGoal: number;
@@ -1302,6 +1369,20 @@ export default function TimerPage() {
     // Don't use localStorage anymore - newUser flag is managed in DB
     saveData();
   };
+=======
+  focusTime: number;
+  breakTime: number;
+  dailySessionGoal: number;
+}) => {
+  setSessionSettings(settings);
+  setSelectedDuration(settings.focusTime);
+  setTimeLeft(settings.focusTime * 60);
+  setBreakDuration(settings.breakTime);
+  setShowOnboarding(false);
+  // Don't use localStorage anymore - newUser flag is managed in DB
+  saveData();
+};
+>>>>>>> 17b1e3e43d6aaea29d74038d78d5e8a680afea54
 
   // Generate time options
   const focusOptions = Array.from({ length: 16 }, (_, i) => 15 + i * 5); // 15-90 minutes
@@ -1562,6 +1643,7 @@ export default function TimerPage() {
           )}
 
           {/* Timer Circle */}
+<<<<<<< HEAD
           <button
             onClick={() => {
               if (timeLeft === 0) {
@@ -1656,6 +1738,102 @@ export default function TimerPage() {
               </div>
             </div>
           </button>
+=======
+<button
+  onClick={() => {
+    if (timeLeft === 0) {
+      reset();
+    } else if (isRunning) {
+      pause();
+    } else {
+      start();
+    }
+  }}
+  className={`relative ${
+    isMobile ? "mb-6" : "mb-12"
+  } transition-all duration-700 ${
+    showModeTransition
+      ? "opacity-0 scale-90"
+      : "opacity-100 scale-100"
+  } cursor-pointer hover:scale-105 active:scale-95`}
+>
+  {!isMobile && (
+    <div className="absolute inset-0 animate-pulse pointer-events-none">
+      <div
+        className="w-72 h-72 lg:w-96 lg:h-96 mx-auto rounded-full opacity-20 blur-3xl"
+        style={{
+          background: `radial-gradient(circle, ${theme.accent}40 0%, transparent 70%)`,
+        }}
+      ></div>
+    </div>
+  )}
+  <svg
+    className={`${
+      isMobile ? "w-56 h-56" : "w-64 h-64 lg:w-80 lg:h-80"
+    } mx-auto transform -rotate-90 relative z-10`}
+    viewBox="0 0 100 100"
+  >
+    <circle
+      cx="50"
+      cy="50"
+      r="45"
+      stroke="currentColor"
+      strokeWidth="0.5"
+      fill="none"
+      className={`${theme.text} opacity-20 transition-all duration-1000`}
+    />
+    <circle
+      cx="50"
+      cy="50"
+      r="45"
+      stroke={theme.accent}
+      strokeWidth="3"
+      fill="none"
+      strokeDasharray={`${2 * Math.PI * 45}`}
+      strokeDashoffset={`${
+        2 * Math.PI * 45 * (1 - getProgress() / 100)
+      }`}
+      className="transition-all duration-1000 ease-linear drop-shadow-lg"
+      strokeLinecap="round"
+    />
+  </svg>
+  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+    <div className="text-center">
+      <div
+        className={`${
+          isMobile ? "text-4xl" : "text-4xl lg:text-6xl"
+        } font-extralight ${theme.text} ${
+          isMobile ? "mb-2" : "mb-3"
+        } tabular-nums transition-all duration-1000 tracking-wider`}
+      >
+        {formatTime(timeLeft)}
+      </div>
+      <div
+        className={`${theme.text} opacity-70 ${
+          isMobile ? "text-sm" : "text-base lg:text-xl"
+        } font-light transition-all duration-1000`}
+      >
+        {timeLeft === 0
+          ? "Tap to Reset"
+          : isRunning
+          ? mode === "focus"
+            ? "Deep Focus"
+            : "Rest Time"
+          : "Tap to Start"}
+      </div>
+      {isRunning && mode === "focus" && (
+        <div
+          className={`${
+            isMobile ? "mt-1 text-xs" : "mt-2 text-sm lg:text-lg"
+          } ${theme.text} opacity-50 transition-all duration-1000`}
+        >
+          Session {pomodoroCount + 1}
+        </div>
+      )}
+    </div>
+  </div>
+</button>
+>>>>>>> 17b1e3e43d6aaea29d74038d78d5e8a680afea54
 
           {/* Controls */}
           <div
