@@ -10,7 +10,7 @@
 
 *A production-ready habit tracking application built with Next.js that helps you maintain consistency in your daily habits using Jerry Seinfeld's "Don't Break the Chain" methodology.*
 
-[🚀 Live Demo](https://your-app-url.vercel.app) • [📖 Documentation](#documentation) • [🐛 Report Bug](https://github.com/your-username/never-break-the-chain/issues) • [✨ Request Feature](https://github.com/your-username/never-break-the-chain/issues)
+[🚀 Live Demo](https://never-break-the-chain-anshtank.vercel.app) • [📖 Documentation](#documentation) • [🐛 Report Bug](https://github.com/AnshTank/Never-Break-The-Chain/issues) • [✨ Request Feature](https://github.com/AnshTank/Never-Break-The-Chain/issues)
 
 </div>
 
@@ -68,6 +68,14 @@ Our core methodology focuses on four essential daily pillars:
 - **♿ Accessibility** - WCAG 2.1 compliant with keyboard navigation support
 - **🔄 Real-Time Updates** - Live data synchronization across all components
 
+### 📢 Smart Notification System
+- **🌅 Morning Motivation** - AI-powered 7 AM daily boost messages
+- **🌆 Evening Check-ins** - 8 PM progress review with personalized insights
+- **🧠 Pattern Recognition** - Learns your habits and sends targeted reminders
+- **🎯 Adaptive Messaging** - Different messages based on streak length and completion rate
+- **📧 Browser Notifications** - Native notification support with permission management
+- **📋 Test Suite** - Built-in notification testing at `/test-notifications`
+
 ---
 
 ## 🛠️ Tech Stack
@@ -113,8 +121,8 @@ Ensure you have the following installed:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/never-break-the-chain.git
-   cd never-break-the-chain
+   git clone https://github.com/AnshTank/Never-Break-The-Chain.git
+   cd Never-Break-The-Chain
    ```
 
 2. **Install dependencies**
@@ -493,10 +501,10 @@ This project is licensed under a Custom License - see the [LICENSE](LICENSE) fil
 
 <div align="center">
 
-**Built with ❤️ by [Your Name](https://github.com/your-username)**
+**Built with ❤️ by [AnshTank](https://github.com/AnshTank)**
 
 *Start your journey today and never break the chain! 🔗*
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-username/never-break-the-chain)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/AnshTank/Never-Break-The-Chain)
 
 </div>

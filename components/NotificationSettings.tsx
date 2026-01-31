@@ -3,14 +3,7 @@
 import { useState } from 'react';
 import { Bell, BellOff, TestTube, Sparkles, Clock, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-// import { useNotifications } from './use-notifications';
-// Temporarily disable notifications hook
-const useNotifications = () => ({
-  isEnabled: false,
-  permission: 'default',
-  enableNotifications: async () => false,
-  sendTestNotification: async () => {}
-});
+import { useNotifications } from '@/lib/notifications/use-notifications';
 import { toast } from 'sonner';
 
 export default function NotificationSettings() {

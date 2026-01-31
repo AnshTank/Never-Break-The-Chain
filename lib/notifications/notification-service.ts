@@ -69,8 +69,49 @@ const eveningMessages = {
   ]
 };
 
-// Funny & Motivational Patterns
-const patternMessages = {
+// Random Smart Reminders (throughout the day)
+const randomReminders = {
+  gentle: [
+    "🌟 Quick check-in: How's your MNZD progress today? Small steps count! 👣",
+    "💡 Friendly reminder: Your future self will thank you for today's efforts! ✨",
+    "🎯 Just a nudge: Which MNZD pillar could use some love right now? 💝",
+    "⚡ Power moment: 5 minutes of progress beats zero minutes of perfection! 🚀",
+    "🌱 Growth check: Every small action is building your stronger tomorrow! 💪"
+  ],
+  motivational: [
+    "🔥 Your chain is waiting! Which pillar will you strengthen next? 💎",
+    "🏆 Champions show up even when they don't feel like it. That's you! 👑",
+    "⭐ Plot twist: Today's the day you surprise yourself with progress! 🎭",
+    "🚀 Momentum builder: One MNZD task can shift your entire day! ⚡",
+    "💪 Strength reminder: You've overcome 100% of your tough days so far! 🌟"
+  ],
+  encouraging: [
+    "🤗 No pressure, just possibility: What feels achievable right now? 🌈",
+    "💝 Self-care reminder: Progress over perfection, always! 🌸",
+    "🌅 Fresh perspective: Every moment is a new chance to begin! ✨",
+    "🎨 Creative nudge: How can you make MNZD fun today? 🎪",
+    "🌊 Flow state: Sometimes the best progress happens naturally! 🍃"
+  ]
+};
+
+// Inactivity-based messages
+const inactivityMessages = {
+  short: [ // 2-3 hours inactive
+    "👋 Just checking in! Your MNZD journey is still calling! 📞",
+    "🌟 Gentle reminder: Small progress is still progress! 🐣",
+    "💡 Quick thought: Which pillar feels most doable right now? 🤔"
+  ],
+  medium: [ // 4-6 hours inactive
+    "🔔 Friendly nudge: Your chain misses you! Ready to reconnect? 🔗",
+    "⏰ Time check: A few minutes of MNZD can energize your day! ⚡",
+    "🎯 Opportunity alert: Perfect moment for a quick win! 🏹"
+  ],
+  long: [ // 6+ hours inactive
+    "🌅 New chapter: Every moment is a fresh start for your habits! 📖",
+    "💪 Comeback time: You've got this - one step at a time! 🚶‍♂️",
+    "🔄 Reset mode: Today still has potential for progress! 🌟"
+  ]
+};
   weekendWarrior: "🎉 Weekend warrior detected! You crush it on weekends! 💪",
   weekdayChamp: "💼 Weekday champion! Your work-life balance is inspiring! ⚖️",
   morningPerson: "🌅 Early bird catches the worm! Your morning game is strong! ☕",
@@ -81,6 +122,54 @@ const patternMessages = {
 
 // Smart Notification Logic
 export class NotificationService {
+  private static lastActivity: number = Date.now();
+  private static randomNotificationTimer: NodeJS.Timeout | null = null;
+  
+  // Track user activity
+  static updateActivity(): void {
+    this.lastActivity = Date.now();
+  }
+  
+  // Get random reminder based on inactivity duration
+  static getRandomReminder(inactiveHours: number): string {
+    if (inactiveHours < 3) {
+      const messages = [...randomReminders.gentle, ...randomReminders.encouraging];
+      return messages[Math.floor(Math.random() * messages.length)];
+    } else if (inactiveHours < 6) {
+      const messages = [...randomReminders.motivational, ...inactivityMessages.medium];
+      return messages[Math.floor(Math.random() * messages.length)];
+    } else {
+      const messages = [...randomReminders.motivational, ...inactivityMessages.long];
+      return messages[Math.floor(Math.random() * messages.length)];
+    }
+  }
+  
+  // Start smart random notifications
+  static startSmartReminders(): void {
+    if (this.randomNotificationTimer) return;
+    
+    const checkInactivity = () => {
+      const now = Date.now();
+      const inactiveTime = now - this.lastActivity;
+      const inactiveHours = inactiveTime / (1000 * 60 * 60);
+      
+      // Send random notification if inactive for 2+ hours
+      if (inactiveHours >= 2) {
+        const message = this.getRandomReminder(inactiveHours);
+        this.sendNotification('🔗 Gentle Reminder', message);
+        
+        // Reset activity to avoid spam
+        this.lastActivity = now;
+      }
+      
+      // Random interval between 1-4 hours
+      const nextCheck = Math.random() * 3 * 60 * 60 * 1000 + 60 * 60 * 1000;
+      this.randomNotificationTimer = setTimeout(checkInactivity, nextCheck);
+    };
+    
+    // Start first check after 2 hours
+    this.randomNotificationTimer = setTimeout(checkInactivity, 2 * 60 * 60 * 1000);
+  }
   static generateMorningMessage(progress: UserProgress): string {
     if (progress.streak > 7) {
       const message = morningMessages.streak[Math.floor(Math.random() * morningMessages.streak.length)];
@@ -140,7 +229,7 @@ export class NotificationService {
 
   // Browser Notification API
   static async requestPermission(): Promise<boolean> {
-    if (!('Notification' in window)) {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
       console.log('This browser does not support notifications');
       return false;
     }
@@ -158,6 +247,8 @@ export class NotificationService {
   }
 
   static async sendNotification(title: string, message: string, icon?: string): Promise<void> {
+    if (typeof window === 'undefined') return;
+    
     if (await this.requestPermission()) {
       new Notification(title, {
         body: message,
@@ -170,43 +261,60 @@ export class NotificationService {
     }
   }
 
-  // Schedule notifications
+  // Schedule notifications using browser's built-in scheduling
   static scheduleNotifications(progress: UserProgress): void {
-    // Morning notification (7 AM)
-    const morningTime = new Date();
-    morningTime.setHours(7, 0, 0, 0);
+    // Start smart random reminders
+    this.startSmartReminders();
     
-    if (morningTime < new Date()) {
-      morningTime.setDate(morningTime.getDate() + 1);
-    }
-
-    const morningDelay = morningTime.getTime() - new Date().getTime();
-    setTimeout(() => {
-      const message = this.generateMorningMessage(progress);
-      this.sendNotification('🔗 Never Break The Chain', message);
-    }, morningDelay);
-
-    // Evening check-in (8 PM)
-    const eveningTime = new Date();
-    eveningTime.setHours(20, 0, 0, 0);
+    // Check if it's time for morning notification (7 AM)
+    const now = new Date();
+    const currentHour = now.getHours();
     
-    if (eveningTime < new Date()) {
-      eveningTime.setDate(eveningTime.getDate() + 1);
-    }
-
-    const eveningDelay = eveningTime.getTime() - new Date().getTime();
-    setTimeout(() => {
-      const message = this.generateEveningMessage(progress);
-      this.sendNotification('🎯 Daily Check-in', message);
+    // If it's before 7 AM, schedule morning notification for today
+    if (currentHour < 7) {
+      const morningTime = new Date();
+      morningTime.setHours(7, 0, 0, 0);
       
-      // Add pattern message if available
-      const patternMsg = this.getPatternMessage(progress);
-      if (patternMsg) {
-        setTimeout(() => {
-          this.sendNotification('🧠 Smart Insight', patternMsg);
-        }, 5000);
-      }
-    }, eveningDelay);
+      const delay = morningTime.getTime() - now.getTime();
+      setTimeout(() => {
+        const message = this.generateMorningMessage(progress);
+        this.sendNotification('🔗 Never Break The Chain', message);
+      }, delay);
+    }
+    
+    // If it's before 8 PM, schedule evening notification for today
+    if (currentHour < 20) {
+      const eveningTime = new Date();
+      eveningTime.setHours(20, 0, 0, 0);
+      
+      const delay = eveningTime.getTime() - now.getTime();
+      setTimeout(() => {
+        const message = this.generateEveningMessage(progress);
+        this.sendNotification('🎯 Daily Check-in', message);
+        
+        // Add pattern message if available
+        const patternMsg = this.getPatternMessage(progress);
+        if (patternMsg) {
+          setTimeout(() => {
+            this.sendNotification('🧠 Smart Insight', patternMsg);
+          }, 5000);
+        }
+      }, delay);
+    }
+    
+    // Schedule for next day if both times have passed
+    if (currentHour >= 20) {
+      // Schedule tomorrow's morning notification
+      const tomorrowMorning = new Date();
+      tomorrowMorning.setDate(tomorrowMorning.getDate() + 1);
+      tomorrowMorning.setHours(7, 0, 0, 0);
+      
+      const delay = tomorrowMorning.getTime() - now.getTime();
+      setTimeout(() => {
+        const message = this.generateMorningMessage(progress);
+        this.sendNotification('🔗 Never Break The Chain', message);
+      }, delay);
+    }
   }
 }
 
