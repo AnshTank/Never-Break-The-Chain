@@ -64,7 +64,7 @@ export default function TermsOfService() {
             </div>
             <h1 className="text-4xl font-bold text-slate-900 mb-4">Simple Terms</h1>
             <p className="text-slate-600 text-lg">No legal jargon. Just honest rules that protect everyone.</p>
-            <p className="text-sm text-slate-500 mt-2">Last updated: January 2025</p>
+            <p className="text-sm text-slate-500 mt-2">Last updated: January 2026</p>
           </div>
 
           {/* Main Terms */}

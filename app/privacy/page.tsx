@@ -77,7 +77,7 @@ export default function PrivacyPolicy() {
             </div>
             <h1 className="text-4xl font-bold text-slate-900 mb-4">Your Privacy Matters</h1>
             <p className="text-slate-600 text-lg">Simple, honest privacy practices. No confusing legal language.</p>
-            <p className="text-sm text-slate-500 mt-2">Last updated: January 2025</p>
+            <p className="text-sm text-slate-500 mt-2">Last updated: January 2026</p>
           </div>
 
           {/* Data Collection */}
