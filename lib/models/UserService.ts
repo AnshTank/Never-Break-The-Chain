@@ -90,6 +90,16 @@ export class UserService {
   static async verifyOTP(email: string, inputOTP: string): Promise<{ success: boolean; message: string }> {
     const user = await this.findUserByEmail(email);
     
+    console.log('OTP Verification Debug:', {
+      email,
+      inputOTP,
+      userExists: !!user,
+      storedOTP: user?.otpCode,
+      otpExpires: user?.otpExpires,
+      currentTime: new Date(),
+      otpAttempts: user?.otpAttempts
+    });
+    
     if (!user || !user.otpCode || !user.otpExpires) {
       return { success: false, message: 'No OTP found. Please request a new code.' };
     }
@@ -104,7 +114,17 @@ export class UserService {
       return { success: false, message: 'Too many failed attempts. Please request a new code.' };
     }
     
-    if (user.otpCode === inputOTP) {
+    // Ensure both OTPs are strings and trim whitespace
+    const storedOTP = String(user.otpCode).trim();
+    const providedOTP = String(inputOTP).trim();
+    
+    console.log('OTP Comparison:', {
+      storedOTP,
+      providedOTP,
+      match: storedOTP === providedOTP
+    });
+    
+    if (storedOTP === providedOTP) {
       await this.clearOTP(email);
       return { success: true, message: 'OTP verified successfully' };
     }

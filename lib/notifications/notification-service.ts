@@ -140,6 +140,26 @@ const patternMessages = {
 export class NotificationService {
   private static lastActivity: number = Date.now();
   private static randomNotificationTimer: NodeJS.Timeout | null = null;
+  private static serviceWorkerRegistration: ServiceWorkerRegistration | null = null;
+
+  // Initialize service worker for push notifications
+  static async initializeServiceWorker(): Promise<void> {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+      console.log('Service Worker not supported');
+      return;
+    }
+
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      this.serviceWorkerRegistration = registration;
+      console.log('Service Worker registered successfully:', registration);
+      
+      // Request notification permission when SW is ready
+      await this.requestPermission();
+    } catch (error) {
+      console.error('Service Worker registration failed:', error);
+    }
+  }
 
   // Track user activity
   static updateActivity(): void {
@@ -277,7 +297,7 @@ export class NotificationService {
     }
   }
 
-  // Browser Notification API
+  // Browser Notification API with Service Worker support
   static async requestPermission(): Promise<boolean> {
     if (typeof window === "undefined" || !("Notification" in window)) {
       console.log("This browser does not support notifications");
@@ -290,7 +310,13 @@ export class NotificationService {
 
     if (Notification.permission !== "denied") {
       const permission = await Notification.requestPermission();
-      return permission === "granted";
+      if (permission === "granted") {
+        // Initialize service worker after permission granted
+        if (!this.serviceWorkerRegistration) {
+          await this.initializeServiceWorker();
+        }
+        return true;
+      }
     }
 
     return false;
@@ -304,8 +330,41 @@ export class NotificationService {
     if (typeof window === "undefined") return;
 
     if (await this.requestPermission()) {
+      // Use Service Worker for better notification support
+      if (this.serviceWorkerRegistration) {
+        try {
+          await this.serviceWorkerRegistration.showNotification(title, {
+            body: message,
+            icon: icon || '/favicon.svg',
+            badge: '/favicon.svg',
+            tag: "chain-reminder",
+            requireInteraction: false,
+            silent: false,
+            actions: [
+              {
+                action: 'open',
+                title: 'Open App'
+              },
+              {
+                action: 'dismiss', 
+                title: 'Dismiss'
+              }
+            ],
+            data: {
+              url: '/dashboard',
+              timestamp: Date.now()
+            }
+          });
+          return;
+        } catch (error) {
+          console.error('Service Worker notification failed:', error);
+        }
+      }
+      
+      // Fallback to regular notification
       new Notification(title, {
         body: message,
+        icon: icon || '/favicon.svg',
         tag: "chain-reminder",
         requireInteraction: false,
         silent: false,

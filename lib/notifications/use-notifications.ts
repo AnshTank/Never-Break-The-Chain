@@ -14,6 +14,9 @@ export const useNotifications = () => {
       setPermission(Notification.permission);
       setIsEnabled(Notification.permission === 'granted');
       
+      // Initialize service worker for push notifications
+      NotificationService.initializeServiceWorker();
+      
       // Track user activity for smart notifications
       if (Notification.permission === 'granted') {
         const trackActivity = () => NotificationService.updateActivity();

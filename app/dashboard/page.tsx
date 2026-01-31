@@ -10,7 +10,9 @@ import ProgressSummary from "@/components/progress-summary";
 import ProgressView from "@/components/progress-view";
 import CoolLoading from "@/components/cool-loading";
 import MNZDInfoSection from "@/components/mnzd-info-section";
+import NotificationSettings from "@/components/NotificationSettings";
 import { GlobalStateProvider } from "@/lib/global-state";
+import { useNotifications } from "@/lib/notifications/use-notifications";
 
 export default function Home() {
   const router = useRouter();
@@ -19,6 +21,7 @@ export default function Home() {
     "calendar"
   );
   const [loadedData, setLoadedData] = useState<any>({});
+  const { scheduleSmartNotifications, isEnabled } = useNotifications();
 
   // Memoize current month to prevent unnecessary re-renders
   const today = useMemo(() => new Date(), []);
@@ -48,7 +51,24 @@ export default function Home() {
     console.log("Homepage received data:", data);
     setLoadedData(data);
     setIsLoading(false);
-  }, []);
+    
+    // Initialize smart notifications with user progress
+    if (isEnabled && data) {
+      const userProgress = {
+        completed: data.todayProgress?.completed || 0,
+        streak: data.currentStreak || 0,
+        timeOfDay: new Date().getHours() < 12 ? "morning" : "evening",
+        patterns: {
+          usualCompletionTime: "12:00",
+          strongestPillar: "Move",
+          weakestPillar: "Document",
+          weekdayPerformance: 75,
+          weekendPerformance: 60
+        }
+      };
+      scheduleSmartNotifications(userProgress);
+    }
+  }, [isEnabled, scheduleSmartNotifications]);
 
   // Early return for loading states - no duplicate API calls
   if (isLoading) {
@@ -158,6 +178,9 @@ export default function Home() {
 
                 {/* Daily Check-in */}
                 <DailyCheckIn preloadedData={loadedData} />
+
+                {/* Notification Settings */}
+                <NotificationSettings />
 
                 {/* Current Month Calendar */}
                 <div className="space-y-4">
