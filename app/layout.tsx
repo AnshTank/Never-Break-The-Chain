@@ -14,11 +14,7 @@ export const metadata: Metadata = {
   title: "Never Break the Chain",
   description: "Showing up daily, even on bad days.",
   icons: {
-    icon: [
-      { url: "/favicon.ico", sizes: "32x32" },
-      { url: "/favicon.svg", type: "image/svg+xml" },
-    ],
-    apple: "/apple-icon.png",
+    icon: "/favicon.svg",
   },
 }
 
