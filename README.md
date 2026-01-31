@@ -1,4 +1,4 @@
-# 🔗 Never Break The Chain
+# Never Break The Chain
 
 <div align="center">
 
@@ -8,77 +8,73 @@
 ![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-green?style=for-the-badge&logo=mongodb)
 ![Vercel](https://img.shields.io/badge/Vercel-Deploy-black?style=for-the-badge&logo=vercel)
 
-*A production-ready habit tracking application built with Next.js that helps you maintain consistency in your daily habits using Jerry Seinfeld's "Don't Break the Chain" methodology.*
+**A production-ready habit tracking application built with Next.js that helps you maintain consistency in your daily habits using Jerry Seinfeld's "Don't Break the Chain" methodology.**
 
-[🚀 Live Demo](https://never-break-the-chain-anshtank.vercel.app) • [📖 Documentation](#documentation) • [🐛 Report Bug](https://github.com/AnshTank/Never-Break-The-Chain/issues) • [✨ Request Feature](https://github.com/AnshTank/Never-Break-The-Chain/issues)
+[**Live Demo**](https://never-break-the-chain-anshtank.vercel.app) • [**Report Bug**](https://github.com/AnshTank/Never-Break-The-Chain/issues) • [**Request Feature**](https://github.com/AnshTank/Never-Break-The-Chain/issues)
 
 </div>
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
-- [✨ Features](#-features)
-- [🛠️ Tech Stack](#️-tech-stack)
-- [🚀 Quick Start](#-quick-start)
-- [📁 Project Structure](#-project-structure)
-- [🔐 Authentication System](#-authentication-system)
-- [📊 Analytics & Visualization](#-analytics--visualization)
-- [🎨 UI/UX Design](#-uiux-design)
-- [🔒 Security Features](#-security-features)
-- [🚀 Deployment](#-deployment)
-- [🧪 Testing](#-testing)
-- [🤝 Contributing](#-contributing)
-- [📄 License](#-license)
-- [🙏 Acknowledgments](#-acknowledgments)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Quick Start](#quick-start)
+- [Project Structure](#project-structure)
+- [Authentication System](#authentication-system)
+- [Analytics & Visualization](#analytics--visualization)
+- [Security Features](#security-features)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [License](#license)
+- [Contact](#contact)
 
 ---
 
-## ✨ Features
+## Features
 
-### 🎯 MNZD Habit Tracking System
+### MNZD Habit Tracking System
 Our core methodology focuses on four essential daily pillars:
 
-- **🧘 M**editation - Mindfulness, mental clarity, and emotional well-being
-- **📚 N**utrition - Healthy eating habits, learning, and knowledge acquisition
-- **🏃 Z**one - Physical exercise, movement, and fitness activities
-- **💼 D**iscipline - Focused work, productivity, and skill development
+- **Meditation** - Mindfulness, mental clarity, and emotional well-being
+- **Nutrition** - Healthy eating habits, learning, and knowledge acquisition
+- **Zone** - Physical exercise, movement, and fitness activities
+- **Discipline** - Focused work, productivity, and skill development
 
-### 📊 Advanced Analytics & Visualization
-- **📅 Interactive Calendar** - Monthly view with intuitive color-coded progress indicators
-- **📈 Multi-Chart Analytics** - Area, Bar, Line, and Scatter plot visualizations
-- **🔥 GitHub-Style Heatmap** - Year-long contribution-style progress tracking
-- **⏱️ Real-Time Tracking** - Live progress updates with actual hours worked
-- **🏆 Streak Management** - Current and longest streaks with detailed success rates
-- **📊 Progress Insights** - Detailed analytics with trend analysis and predictions
+### Advanced Analytics & Visualization
+- **Interactive Calendar** - Monthly view with intuitive color-coded progress indicators
+- **Multi-Chart Analytics** - Area, Bar, Line, and Scatter plot visualizations
+- **GitHub-Style Heatmap** - Year-long contribution-style progress tracking
+- **Real-Time Tracking** - Live progress updates with actual hours worked
+- **Streak Management** - Current and longest streaks with detailed success rates
+- **Progress Insights** - Detailed analytics with trend analysis and predictions
 
-### 🔐 Enterprise-Grade Authentication
-- **🔑 Custom JWT System** - Secure token-based authentication with refresh tokens
-- **📧 Email Verification** - OTP-based account verification for enhanced security
-- **🔒 Password Security** - bcrypt encryption with 12 rounds and strength validation
-- **🛡️ Rate Limiting** - Brute force protection with intelligent blocking
-- **🔄 Session Management** - Automatic token refresh and secure session handling
-- **📱 Multi-Device Support** - Seamless authentication across all devices
+### Enterprise-Grade Authentication
+- **Custom JWT System** - Secure token-based authentication with refresh tokens
+- **Email Verification** - OTP-based account verification for enhanced security
+- **Password Security** - bcrypt encryption with 12 rounds and strength validation
+- **Rate Limiting** - Brute force protection with intelligent blocking
+- **Session Management** - Automatic token refresh and secure session handling
+- **Multi-Device Support** - Seamless authentication across all devices
 
-### 🎨 Modern User Experience
-- **📱 Responsive Design** - Optimized for desktop, tablet, and mobile devices
-- **🌙 Theme Support** - Dark/light mode with system preference detection
-- **⚡ Performance Optimized** - Fast loading with Next.js 16 and Turbopack
-- **🎭 Smooth Animations** - Framer Motion powered transitions and micro-interactions
-- **♿ Accessibility** - WCAG 2.1 compliant with keyboard navigation support
-- **🔄 Real-Time Updates** - Live data synchronization across all components
+### Modern User Experience
+- **Responsive Design** - Optimized for desktop, tablet, and mobile devices
+- **Performance Optimized** - Fast loading with Next.js 16 and Turbopack
+- **Smooth Animations** - Framer Motion powered transitions and micro-interactions
+- **Accessibility** - WCAG 2.1 compliant with keyboard navigation support
+- **Real-Time Updates** - Live data synchronization across all components
 
-### 📢 Smart Notification System
-- **🌅 Morning Motivation** - AI-powered 7 AM daily boost messages
-- **🌆 Evening Check-ins** - 8 PM progress review with personalized insights
-- **🧠 Pattern Recognition** - Learns your habits and sends targeted reminders
-- **🎯 Adaptive Messaging** - Different messages based on streak length and completion rate
-- **📧 Browser Notifications** - Native notification support with permission management
-- **📋 Test Suite** - Built-in notification testing at `/test-notifications`
+### Smart Notification System
+- **Morning Motivation** - Daily boost messages at 7 AM
+- **Evening Check-ins** - Progress review at 8 PM with personalized insights
+- **Pattern Recognition** - Learns your habits and sends targeted reminders
+- **Adaptive Messaging** - Different messages based on streak length and completion rate
+- **Browser Notifications** - Native notification support with permission management
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend
 - **Framework**: Next.js 16 with App Router
@@ -108,7 +104,7 @@ Our core methodology focuses on four essential daily pillars:
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 Ensure you have the following installed:
@@ -146,10 +142,10 @@ Ensure you have the following installed:
    # Email Service (Gmail SMTP)
    EMAIL_HOST="smtp.gmail.com"
    EMAIL_PORT=587
-   EMAIL_USER="your-app-email@gmail.com"
+   EMAIL_USER="neverbreakthechain.anshtank@gmail.com"
    EMAIL_PASSWORD="your-gmail-app-password"
-   EMAIL_FROM="Never Break The Chain <your-app-email@gmail.com>"
-   ADMIN_EMAIL="admin@yourapp.com"
+   EMAIL_FROM="Never Break The Chain <neverbreakthechain.anshtank@gmail.com>"
+   ADMIN_EMAIL="anshtank9@gmail.com"
    ```
 
 4. **Database Setup**
@@ -179,74 +175,44 @@ npm start
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 never-break-the-chain/
-├── 📁 app/                          # Next.js App Router
-│   ├── 📁 api/                      # API Routes
-│   │   ├── 📁 auth/                 # Authentication endpoints
-│   │   │   ├── login/route.ts       # User login
-│   │   │   ├── signup/route.ts      # User registration
-│   │   │   ├── refresh/route.ts     # Token refresh
-│   │   │   ├── logout/route.ts      # User logout
-│   │   │   └── forgot-password/route.ts
-│   │   ├── 📁 user/                 # User management
-│   │   │   ├── profile/route.ts     # User profile
-│   │   │   └── mnzd-config/route.ts # MNZD settings
-│   │   ├── 📁 progress/             # Progress tracking
-│   │   │   └── route.ts             # Daily progress CRUD
-│   │   ├── 📁 analytics/            # Analytics data
-│   │   │   └── route.ts             # Statistics and insights
-│   │   └── 📁 settings/             # App settings
-│   │       └── route.ts             # User preferences
-│   ├── 📁 (pages)/                  # Application pages
-│   │   ├── dashboard/               # Main dashboard
-│   │   ├── login/                   # Authentication pages
-│   │   ├── signup/
-│   │   ├── welcome/                 # Onboarding flow
-│   │   ├── timer/                   # Focus timer
-│   │   └── analytics/               # Detailed analytics
-│   ├── layout.tsx                   # Root layout
-│   ├── page.tsx                     # Landing page
-│   └── globals.css                  # Global styles
-├── 📁 components/                   # React Components
-│   ├── 📁 ui/                       # Reusable UI components
-│   │   ├── button.tsx               # Button variants
-│   │   ├── input.tsx                # Form inputs
-│   │   ├── modal.tsx                # Modal dialogs
-│   │   └── ...                      # Other UI primitives
-│   ├── 📁 auth/                     # Authentication components
-│   ├── 📁 dashboard/                # Dashboard components
-│   ├── 📁 analytics/                # Chart components
-│   └── 📁 common/                   # Shared components
-├── 📁 lib/                          # Utility libraries
-│   ├── auth-utils.ts                # Authentication helpers
-│   ├── database.ts                  # Database connections
-│   ├── jwt.ts                       # JWT token management
-│   ├── email-service.ts             # Email functionality
-│   ├── validation.ts                # Zod schemas
-│   ├── utils.ts                     # General utilities
-│   └── types.ts                     # TypeScript definitions
-├── 📁 hooks/                        # Custom React hooks
-│   ├── use-auth.ts                  # Authentication hook
-│   ├── use-progress.ts              # Progress tracking
-│   └── use-analytics.ts             # Analytics data
-├── 📁 public/                       # Static assets
-│   ├── 📁 images/                   # Image assets
-│   ├── 📁 icons/                    # Icon files
-│   └── favicon.ico                  # Favicon
-├── 📁 scripts/                      # Build and utility scripts
-├── middleware.ts                    # Next.js middleware
-├── next.config.js                   # Next.js configuration
-├── tailwind.config.js               # Tailwind CSS config
-├── tsconfig.json                    # TypeScript config
-└── package.json                     # Dependencies and scripts
+├── app/                          # Next.js App Router
+│   ├── api/                      # API Routes
+│   │   ├── auth/                 # Authentication endpoints
+│   │   ├── user/                 # User management
+│   │   ├── progress/             # Progress tracking
+│   │   ├── analytics/            # Analytics data
+│   │   └── settings/             # App settings
+│   ├── dashboard/                # Main dashboard
+│   ├── login/                    # Authentication pages
+│   ├── signup/
+│   ├── welcome/                  # Onboarding flow
+│   ├── timer/                    # Focus timer
+│   └── analytics/                # Detailed analytics
+├── components/                   # React Components
+│   ├── ui/                       # Reusable UI components
+│   ├── auth/                     # Authentication components
+│   ├── dashboard/                # Dashboard components
+│   ├── analytics/                # Chart components
+│   └── common/                   # Shared components
+├── lib/                          # Utility libraries
+│   ├── auth-utils.ts             # Authentication helpers
+│   ├── database.ts               # Database connections
+│   ├── jwt.ts                    # JWT token management
+│   ├── email-service.ts          # Email functionality
+│   ├── validation.ts             # Zod schemas
+│   └── utils.ts                  # General utilities
+├── hooks/                        # Custom React hooks
+├── public/                       # Static assets
+└── middleware.ts                 # Next.js middleware
 ```
 
 ---
 
-## 🔐 Authentication System
+## Authentication System
 
 ### Flow Overview
 1. **Registration** → Email verification → Welcome onboarding → Password setup → Dashboard access
@@ -272,21 +238,21 @@ POST /api/auth/verify-otp      # Email verification
 
 ---
 
-## 📊 Analytics & Visualization
+## Analytics & Visualization
 
 ### Progress Color System
 Our intelligent color coding system provides instant visual feedback:
 
 | Hours | Color | Meaning | Hex Code |
 |-------|-------|---------|----------|
-| < 0.5h | 🔴 Red | Minimal activity | `#ef4444` |
-| 0.5-1h | 🟠 Orange | Low activity | `#f97316` |
-| 1-2h | 🟡 Yellow | Moderate activity | `#eab308` |
-| 2-3h | 🟢 Lime | Good progress | `#84cc16` |
-| 3-4h | 🔵 Green | Very good progress | `#22c55e` |
-| 4-6h | 🟢 Emerald | Excellent progress | `#10b981` |
-| 6-8h | 🔵 Teal | Outstanding progress | `#14b8a6` |
-| 8h+ | 🔵 Cyan | Exceptional progress | `#06b6d4` |
+| < 0.5h | Red | Minimal activity | `#ef4444` |
+| 0.5-1h | Orange | Low activity | `#f97316` |
+| 1-2h | Yellow | Moderate activity | `#eab308` |
+| 2-3h | Lime | Good progress | `#84cc16` |
+| 3-4h | Green | Very good progress | `#22c55e` |
+| 4-6h | Emerald | Excellent progress | `#10b981` |
+| 6-8h | Teal | Outstanding progress | `#14b8a6` |
+| 8h+ | Cyan | Exceptional progress | `#06b6d4` |
 
 ### Chart Types
 - **Area Charts**: Trend analysis over time
@@ -297,41 +263,14 @@ Our intelligent color coding system provides instant visual feedback:
 
 ---
 
-## 🎨 UI/UX Design
-
-### Design System
-- **Typography**: Inter font family with optimized loading
-- **Colors**: Carefully crafted palette with accessibility in mind
-- **Spacing**: 8px grid system for consistent layouts
-- **Components**: Radix UI primitives with custom styling
-- **Animations**: Subtle micro-interactions for enhanced UX
-
-### Responsive Breakpoints
-```css
-sm: 640px   /* Mobile landscape */
-md: 768px   /* Tablet */
-lg: 1024px  /* Desktop */
-xl: 1280px  /* Large desktop */
-2xl: 1536px /* Extra large */
-```
-
-### Accessibility Features
-- **Keyboard Navigation**: Full keyboard support
-- **Screen Readers**: ARIA labels and semantic HTML
-- **Color Contrast**: WCAG 2.1 AA compliant
-- **Focus Management**: Visible focus indicators
-- **Reduced Motion**: Respects user preferences
-
----
-
-## 🔒 Security Features
+## Security Features
 
 ### Data Protection
 - **Encryption**: All passwords encrypted with bcrypt (12 rounds)
 - **JWT Security**: Signed tokens with secure secrets
 - **HTTPS Only**: Secure cookie transmission
 - **Input Validation**: Comprehensive Zod schema validation
-- **SQL Injection**: MongoDB parameterized queries
+- **NoSQL Injection**: MongoDB parameterized queries
 
 ### Authentication Security
 - **Rate Limiting**: Progressive blocking for failed attempts
@@ -348,7 +287,7 @@ xl: 1280px  /* Large desktop */
 
 ---
 
-## 🚀 Deployment
+## Deployment
 
 ### Vercel Deployment (Recommended)
 
@@ -363,10 +302,10 @@ xl: 1280px  /* Large desktop */
    JWT_SECRET=your-production-jwt-secret
    EMAIL_HOST=smtp.gmail.com
    EMAIL_PORT=587
-   EMAIL_USER=your-production-email
+   EMAIL_USER=neverbreakthechain.anshtank@gmail.com
    EMAIL_PASSWORD=your-production-app-password
-   EMAIL_FROM=Your App <your-production-email>
-   ADMIN_EMAIL=admin@yourapp.com
+   EMAIL_FROM=Never Break The Chain <neverbreakthechain.anshtank@gmail.com>
+   ADMIN_EMAIL=anshtank9@gmail.com
    ```
 
 3. **Domain Configuration**
@@ -392,57 +331,9 @@ EXPOSE 3000
 CMD ["npm", "start"]
 ```
 
-#### Manual Server Deployment
-```bash
-# Build the application
-npm run build
-
-# Start with PM2
-pm2 start npm --name "never-break-chain" -- start
-
-# Or with systemd service
-sudo systemctl enable never-break-chain
-sudo systemctl start never-break-chain
-```
-
 ---
 
-## 🧪 Testing
-
-### Test Coverage
-- **Unit Tests**: Component and utility function testing
-- **Integration Tests**: API endpoint testing
-- **E2E Tests**: User flow testing with Playwright
-- **Performance Tests**: Load testing and optimization
-
-### Running Tests
-```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run tests with coverage
-npm run test:coverage
-
-# Run E2E tests
-npm run test:e2e
-```
-
-### Test Structure
-```
-__tests__/
-├── components/          # Component tests
-├── pages/              # Page tests
-├── api/                # API route tests
-├── utils/              # Utility function tests
-└── e2e/                # End-to-end tests
-```
-
----
-
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions from the community! Please read our contributing guidelines before submitting pull requests.
 
@@ -471,7 +362,7 @@ We welcome contributions from the community! Please read our contributing guidel
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under a Custom License - see the [LICENSE](LICENSE) file for details.
 
@@ -479,7 +370,20 @@ This project is licensed under a Custom License - see the [LICENSE](LICENSE) fil
 
 ---
 
-## 🙏 Acknowledgments
+## Contact
+
+**Project Maintainer**: Ansh Tank
+
+- **Personal Email**: [anshtank9@gmail.com](mailto:anshtank9@gmail.com)
+- **Project Email**: [neverbreakthechain.anshtank@gmail.com](mailto:neverbreakthechain.anshtank@gmail.com)
+- **GitHub**: [@AnshTank](https://github.com/AnshTank)
+- **Project Repository**: [Never-Break-The-Chain](https://github.com/AnshTank/Never-Break-The-Chain)
+
+For bug reports and feature requests, please use the [GitHub Issues](https://github.com/AnshTank/Never-Break-The-Chain/issues) page.
+
+---
+
+## Acknowledgments
 
 ### Inspiration
 - **Jerry Seinfeld**: For the "Don't Break the Chain" productivity methodology
@@ -503,7 +407,7 @@ This project is licensed under a Custom License - see the [LICENSE](LICENSE) fil
 
 **Built with ❤️ by [AnshTank](https://github.com/AnshTank)**
 
-*Start your journey today and never break the chain! 🔗*
+*Start your journey today and never break the chain!*
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/AnshTank/Never-Break-The-Chain)
 

@@ -1,12 +1,12 @@
 # Security Policy
 
-## 🔒 Security Overview
+## Security Overview
 
 Never Break The Chain takes security seriously. This document outlines our security practices and how to report security vulnerabilities.
 
-**Last Updated: January 2026**
+**Last Updated: January 2025**
 
-## 🛡️ Security Measures
+## Security Measures
 
 ### Authentication & Authorization
 - **JWT-based Authentication**: Secure token system with automatic refresh
@@ -18,7 +18,7 @@ Never Break The Chain takes security seriously. This document outlines our secur
 ### Data Protection
 - **Encryption**: All sensitive data encrypted at rest and in transit
 - **Input Validation**: Comprehensive validation using Zod schemas
-- **SQL Injection Prevention**: Parameterized queries and input sanitization
+- **NoSQL Injection Prevention**: Parameterized queries and input sanitization
 - **XSS Protection**: Content Security Policy and output encoding
 - **CSRF Protection**: SameSite cookies and token validation
 
@@ -29,26 +29,27 @@ Never Break The Chain takes security seriously. This document outlines our secur
 - **Database Security**: MongoDB Atlas with IP whitelisting and authentication
 - **Dependency Management**: Regular security updates and vulnerability scanning
 
-## 🚨 Reporting Security Vulnerabilities
+## Reporting Security Vulnerabilities
 
 If you discover a security vulnerability, please report it responsibly:
 
 ### What to Report
 - Authentication bypasses
 - Data exposure vulnerabilities
-- Injection vulnerabilities (SQL, NoSQL, XSS, etc.)
+- Injection vulnerabilities (NoSQL, XSS, etc.)
 - Privilege escalation issues
 - Sensitive data leaks
 - Any security-related bugs
 
 ### How to Report
-1. **Email**: Send details to [security@yourapp.com]
-2. **Include**:
+1. **Primary Contact**: neverbreakthechain.anshtank@gmail.com
+2. **Alternative Contact**: anshtank9@gmail.com
+3. **Include**:
    - Description of the vulnerability
    - Steps to reproduce
    - Potential impact
    - Your contact information
-3. **Response Time**: We aim to respond within 24 hours
+4. **Response Time**: We aim to respond within 24-48 hours
 
 ### What NOT to Report
 - Issues already covered in our documentation
@@ -57,26 +58,25 @@ If you discover a security vulnerability, please report it responsibly:
 - Denial of service attacks
 - Issues requiring physical access to user devices
 
-## 🔍 Security Response Process
+## Security Response Process
 
-1. **Acknowledgment**: We'll confirm receipt within 24 hours
+1. **Acknowledgment**: We'll confirm receipt within 24-48 hours
 2. **Investigation**: Our team will investigate and validate the report
 3. **Resolution**: We'll develop and test a fix
 4. **Disclosure**: We'll coordinate disclosure with the reporter
 5. **Recognition**: Valid reports may be eligible for recognition
 
-## ✅ Supported Versions
+## Supported Versions
 
 | Version | Supported          |
 | ------- | ------------------ |
 | 1.0.x   | ✅ Yes             |
 | < 1.0   | ❌ No              |
 
-## 🔐 Security Best Practices for Users
+## Security Best Practices for Users
 
 ### Account Security
 - Use a strong, unique password
-- Enable two-factor authentication when available
 - Keep your email account secure
 - Log out from shared devices
 - Report suspicious activity immediately
@@ -87,7 +87,7 @@ If you discover a security vulnerability, please report it responsibly:
 - Keep your browser updated
 - Review your account activity regularly
 
-## 🛠️ Security Features
+## Security Features
 
 ### For Developers
 - **Secure Development**: Following OWASP guidelines
@@ -103,13 +103,14 @@ If you discover a security vulnerability, please report it responsibly:
 - **Account Deletion**: Complete data removal on request
 - **Audit Logs**: Track account activity
 
-## 📞 Contact Information
+## Contact Information
 
-- **Security Team**: [security@yourapp.com]
-- **General Support**: [support@yourapp.com]
-- **Legal Issues**: [legal@yourapp.com]
+- **Security Reports**: neverbreakthechain.anshtank@gmail.com
+- **General Support**: neverbreakthechain.anshtank@gmail.com
+- **Project Maintainer**: anshtank9@gmail.com
+- **GitHub Repository**: https://github.com/AnshTank/Never-Break-The-Chain
 
-## 🔄 Updates
+## Updates
 
 This security policy is reviewed and updated regularly. Check back for the latest version.
 
@@ -117,4 +118,4 @@ This security policy is reviewed and updated regularly. Check back for the lates
 
 **Remember**: Security is a shared responsibility. We're committed to protecting your data, and we appreciate your help in keeping Never Break The Chain secure for everyone.
 
-© 2026 Never Break The Chain. All Rights Reserved.
+© 2025 Never Break The Chain. All Rights Reserved.
