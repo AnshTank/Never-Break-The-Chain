@@ -15,11 +15,10 @@ export const metadata: Metadata = {
   description: "Showing up daily, even on bad days.",
   icons: {
     icon: [
-      {
-        url: "/favicon.svg",
-        type: "image/svg+xml",
-      },
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
     ],
+    apple: "/apple-icon.png",
   },
 }
 
