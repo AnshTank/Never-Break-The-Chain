@@ -1,170 +1,120 @@
-# 🔒 SECURITY GUIDE - PRODUCTION DEPLOYMENT
+# Security Policy
 
-## ⚠️ CRITICAL SECURITY CHECKLIST
+## 🔒 Security Overview
 
-### 1. **ENVIRONMENT VARIABLES** (IMMEDIATE ACTION REQUIRED)
-```bash
-# NEVER commit these to Git - Use secure environment management
-MONGODB_URL="your_production_mongodb_url"
-JWT_SECRET="generate_new_256_bit_secret"
-EMAIL_PASSWORD="your_gmail_app_password"
-NODE_ENV="production"
-```
+Never Break The Chain takes security seriously. This document outlines our security practices and how to report security vulnerabilities.
 
-**Action Required:**
-- [ ] Regenerate ALL secrets for production
-- [ ] Use environment variable management (Vercel, Railway, etc.)
-- [ ] Remove `.env` from Git history completely
-- [ ] Enable MongoDB IP whitelist and authentication
+**Last Updated: January 2026**
 
-### 2. **RATE LIMITING** (PRODUCTION HARDENING)
-Current limits are development-friendly. For production:
+## 🛡️ Security Measures
 
-```typescript
-// Update in production
-const PRODUCTION_LIMITS = {
-  login: { attempts: 5, window: 900 }, // 5 per 15 min
-  signup: { attempts: 3, window: 3600 }, // 3 per hour
-  otp: { attempts: 3, window: 3600 }, // 3 per hour
-  contact: { attempts: 2, window: 3600 }, // 2 per hour
-}
-```
+### Authentication & Authorization
+- **JWT-based Authentication**: Secure token system with automatic refresh
+- **Password Security**: bcrypt encryption with 12 rounds
+- **Email Verification**: OTP-based account verification
+- **Session Management**: Automatic token expiration and cleanup
+- **Rate Limiting**: Protection against brute force attacks
 
-### 3. **JWT SECURITY**
-- [ ] Use 256-bit secrets (current: adequate)
-- [ ] Implement token rotation
-- [ ] Add token blacklisting for logout
-- [ ] Set secure cookie flags in production
+### Data Protection
+- **Encryption**: All sensitive data encrypted at rest and in transit
+- **Input Validation**: Comprehensive validation using Zod schemas
+- **SQL Injection Prevention**: Parameterized queries and input sanitization
+- **XSS Protection**: Content Security Policy and output encoding
+- **CSRF Protection**: SameSite cookies and token validation
 
-### 4. **INPUT VALIDATION** ✅
-- [x] Zod schemas implemented
-- [x] NoSQL injection prevention
-- [x] Email validation
-- [x] Password strength requirements
+### Infrastructure Security
+- **HTTPS Only**: All communications encrypted with TLS
+- **Secure Headers**: Security headers implemented via middleware
+- **Environment Variables**: Sensitive configuration stored securely
+- **Database Security**: MongoDB Atlas with IP whitelisting and authentication
+- **Dependency Management**: Regular security updates and vulnerability scanning
 
-### 5. **EMAIL SECURITY**
-- [ ] Implement SPF/DKIM records if using custom domain
-- [ ] Add email rate limiting per IP
-- [ ] Monitor bounce rates
-- [ ] Add unsubscribe mechanism
+## 🚨 Reporting Security Vulnerabilities
 
-## 🛡️ PRODUCTION SECURITY MEASURES
+If you discover a security vulnerability, please report it responsibly:
 
-### Database Security
-```javascript
-// MongoDB Production Config
-{
-  ssl: true,
-  authSource: "admin",
-  retryWrites: true,
-  w: "majority",
-  maxPoolSize: 10,
-  serverSelectionTimeoutMS: 5000,
-  socketTimeoutMS: 45000,
-}
-```
+### What to Report
+- Authentication bypasses
+- Data exposure vulnerabilities
+- Injection vulnerabilities (SQL, NoSQL, XSS, etc.)
+- Privilege escalation issues
+- Sensitive data leaks
+- Any security-related bugs
 
-### Headers Security
-```javascript
-// Add to next.config.js
-const securityHeaders = [
-  {
-    key: 'X-DNS-Prefetch-Control',
-    value: 'on'
-  },
-  {
-    key: 'Strict-Transport-Security',
-    value: 'max-age=63072000; includeSubDomains; preload'
-  },
-  {
-    key: 'X-Frame-Options',
-    value: 'DENY'
-  },
-  {
-    key: 'X-Content-Type-Options',
-    value: 'nosniff'
-  },
-  {
-    key: 'Referrer-Policy',
-    value: 'origin-when-cross-origin'
-  }
-]
-```
+### How to Report
+1. **Email**: Send details to [security@yourapp.com]
+2. **Include**:
+   - Description of the vulnerability
+   - Steps to reproduce
+   - Potential impact
+   - Your contact information
+3. **Response Time**: We aim to respond within 24 hours
 
-### CORS Configuration
-```javascript
-// API middleware
-const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://yourdomain.com'] 
-    : ['http://localhost:3000'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}
-```
+### What NOT to Report
+- Issues already covered in our documentation
+- Social engineering attacks
+- Physical security issues
+- Denial of service attacks
+- Issues requiring physical access to user devices
 
-## 🚨 IMMEDIATE PRODUCTION FIXES NEEDED
+## 🔍 Security Response Process
 
-### 1. Environment Variables
-- **CRITICAL**: Remove exposed credentials from `.env`
-- **CRITICAL**: Use secure secret management
-- **HIGH**: Enable MongoDB authentication
+1. **Acknowledgment**: We'll confirm receipt within 24 hours
+2. **Investigation**: Our team will investigate and validate the report
+3. **Resolution**: We'll develop and test a fix
+4. **Disclosure**: We'll coordinate disclosure with the reporter
+5. **Recognition**: Valid reports may be eligible for recognition
 
-### 2. Rate Limiting
-- **MEDIUM**: Tighten production rate limits
-- **MEDIUM**: Add IP-based blocking
+## ✅ Supported Versions
 
-### 3. Logging & Monitoring
-- **HIGH**: Add security event logging
-- **MEDIUM**: Implement error tracking (Sentry)
-- **LOW**: Add performance monitoring
+| Version | Supported          |
+| ------- | ------------------ |
+| 1.0.x   | ✅ Yes             |
+| < 1.0   | ❌ No              |
 
-## ✅ SECURITY FEATURES ALREADY IMPLEMENTED
+## 🔐 Security Best Practices for Users
 
-- [x] Password hashing with bcrypt (12 rounds)
-- [x] JWT with secure HTTP-only cookies
-- [x] Input validation with Zod schemas
-- [x] Rate limiting on authentication endpoints
-- [x] Email verification for new accounts
-- [x] OTP-based password reset
-- [x] NoSQL injection prevention
-- [x] XSS protection through React
-- [x] CSRF protection via SameSite cookies
+### Account Security
+- Use a strong, unique password
+- Enable two-factor authentication when available
+- Keep your email account secure
+- Log out from shared devices
+- Report suspicious activity immediately
 
-## 📋 PRODUCTION DEPLOYMENT CHECKLIST
+### Data Protection
+- Don't share your account credentials
+- Be cautious with public Wi-Fi
+- Keep your browser updated
+- Review your account activity regularly
 
-### Pre-Deployment
-- [ ] Security audit complete
-- [ ] Environment variables secured
-- [ ] Rate limits adjusted for production
-- [ ] Database security configured
-- [ ] SSL certificates ready
-- [ ] Domain configured
-- [ ] Email deliverability tested
+## 🛠️ Security Features
 
-### Post-Deployment
-- [ ] Security headers verified
-- [ ] Rate limiting tested
-- [ ] Email functionality tested
-- [ ] Authentication flow tested
-- [ ] Error handling verified
-- [ ] Performance monitoring active
+### For Developers
+- **Secure Development**: Following OWASP guidelines
+- **Code Review**: All code changes reviewed for security
+- **Dependency Scanning**: Regular vulnerability assessments
+- **Security Testing**: Automated and manual security testing
+- **Incident Response**: Documented procedures for security incidents
 
-## 🔧 RECOMMENDED PRODUCTION TOOLS
+### For Users
+- **Data Ownership**: You control your data
+- **Privacy Controls**: Granular privacy settings
+- **Data Export**: Export your data anytime
+- **Account Deletion**: Complete data removal on request
+- **Audit Logs**: Track account activity
 
-- **Environment**: Vercel/Railway/AWS
-- **Database**: MongoDB Atlas (M2+ tier)
-- **Monitoring**: Vercel Analytics + Sentry
-- **Email**: Gmail SMTP (current) or SendGrid
-- **Security**: Cloudflare (optional)
-- **Backup**: MongoDB Atlas automated backups
+## 📞 Contact Information
 
-## 📞 INCIDENT RESPONSE
+- **Security Team**: [security@yourapp.com]
+- **General Support**: [support@yourapp.com]
+- **Legal Issues**: [legal@yourapp.com]
 
-If security issues are discovered:
-1. **Immediate**: Rotate all secrets
-2. **Within 1 hour**: Assess impact
-3. **Within 24 hours**: Notify affected users
-4. **Within 48 hours**: Implement fixes
-5. **Within 1 week**: Security review and improvements
+## 🔄 Updates
+
+This security policy is reviewed and updated regularly. Check back for the latest version.
+
+---
+
+**Remember**: Security is a shared responsibility. We're committed to protecting your data, and we appreciate your help in keeping Never Break The Chain secure for everyone.
+
+© 2026 Never Break The Chain. All Rights Reserved.
