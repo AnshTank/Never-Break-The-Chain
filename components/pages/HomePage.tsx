@@ -22,13 +22,16 @@ import {
   CheckCircle,
 } from "lucide-react";
 
-// Animation variants
+// Detect mobile device
+const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+// Simplified animation variants for better performance
 const fadeInUp: Variants = {
-  hidden: { opacity: 0, y: 40 },
+  hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.7, ease: "easeOut" },
+    transition: { duration: 0.4, ease: "easeOut" },
   },
 };
 
@@ -36,20 +39,20 @@ const staggerContainer: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.05, delayChildren: 0.1 },
+    transition: { staggerChildren: 0.03, delayChildren: 0 },
   },
 };
 
 const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.95 },
+  hidden: { opacity: 0, scale: 0.98 },
   visible: {
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.4, ease: "easeOut" },
+    transition: { duration: 0.3, ease: "easeOut" },
   },
 };
 
-// Animated Section Component
+// Optimized Animated Section Component
 const AnimatedSection = ({
   children,
   className = "",
@@ -58,7 +61,7 @@ const AnimatedSection = ({
   className?: string;
 }) => {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const isInView = useInView(ref, { once: true, margin: "-150px" });
   const controls = useAnimation();
 
   useEffect(() => {
@@ -84,10 +87,10 @@ const AnimatedSection = ({
 const HeroSection = () => {
   return (
     <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
-      {/* Animated Background Orbs */}
+      {/* Simplified Background Orbs - fewer on mobile */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
-          animate={{
+          animate={isMobile ? {} : {
             x: [0, 50, 0],
             y: [0, -30, 0],
             scale: [1, 1.1, 1],
@@ -95,23 +98,27 @@ const HeroSection = () => {
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
           className="absolute top-20 -left-20 w-96 h-96 bg-[#0070A0]/10 rounded-full blur-[100px]"
         />
-        <motion.div
-          animate={{
-            x: [0, -30, 0],
-            y: [0, 50, 0],
-            scale: [1, 1.05, 1],
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-          className="absolute bottom-20 right-0 w-80 h-80 bg-[#1B9CCA]/10 rounded-full blur-[80px]"
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.1, 0.2, 0.1],
-          }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#F2B124]/5 rounded-full blur-[120px]"
-        />
+        {!isMobile && (
+          <>
+            <motion.div
+              animate={{
+                x: [0, -30, 0],
+                y: [0, 50, 0],
+                scale: [1, 1.05, 1],
+              }}
+              transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+              className="absolute bottom-20 right-0 w-80 h-80 bg-[#1B9CCA]/10 rounded-full blur-[80px]"
+            />
+            <motion.div
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.1, 0.2, 0.1],
+              }}
+              transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#F2B124]/5 rounded-full blur-[120px]"
+            />
+          </>
+        )}
       </div>
 
       <div className="container-max section-padding relative z-10">
@@ -153,7 +160,7 @@ const HeroSection = () => {
               className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8"
             >
               <motion.div
-                whileHover={{
+                whileHover={isMobile ? {} : {
                   scale: 1.05,
                   rotateX: 5,
                   rotateY: -5,
@@ -162,50 +169,53 @@ const HeroSection = () => {
                 className="relative group perspective-1000"
               >
                 <Link href="/signup" className="relative overflow-hidden">
-                  {/* Main button */}
+                  {/* Simplified button for mobile */}
                   <div className="relative px-5 md:px-6 py-2.5 md:py-3 bg-gradient-to-r from-[#0070A0] to-[#1B9CCA] text-white font-semibold rounded-full shadow-2xl flex items-center gap-2 text-sm transition-all duration-300 group-hover:shadow-[#0070A0]/50 group-hover:shadow-2xl">
-                    {/* Animated background layers */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#1B9CCA] to-[#0070A0] opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full" />
+                    {/* Reduced effects on mobile */}
+                    {!isMobile && (
+                      <>
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#1B9CCA] to-[#0070A0] opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-full" />
+                        <div className="absolute inset-0 rounded-full">
+                          <div className="absolute inset-0 bg-white/20 rounded-full scale-0 group-hover:scale-150 transition-transform duration-700 ease-out" />
+                          <div className="absolute inset-0 bg-white/10 rounded-full scale-0 group-hover:scale-125 transition-transform duration-500 ease-out delay-100" />
+                        </div>
+                      </>
+                    )}
 
-                    {/* Ripple effect */}
-                    <div className="absolute inset-0 rounded-full">
-                      <div className="absolute inset-0 bg-white/20 rounded-full scale-0 group-hover:scale-150 transition-transform duration-700 ease-out" />
-                      <div className="absolute inset-0 bg-white/10 rounded-full scale-0 group-hover:scale-125 transition-transform duration-500 ease-out delay-100" />
-                    </div>
-
-                    {/* Sparkle particles */}
-                    <div className="absolute inset-0 pointer-events-none">
-                      {Array.from({ length: 8 }).map((_, i) => (
-                        <motion.div
-                          key={i}
-                          className="absolute w-1 h-1 bg-white rounded-full"
-                          style={{
-                            left: `${20 + i * 10}%`,
-                            top: `${30 + (i % 2) * 40}%`,
-                          }}
-                          animate={{
-                            scale: [0, 1, 0],
-                            opacity: [0, 1, 0],
-                            rotate: [0, 180, 360],
-                          }}
-                          transition={{
-                            duration: 1.5,
-                            delay: i * 0.1,
-                            repeat: Infinity,
-                            repeatDelay: 2,
-                          }}
-                        />
-                      ))}
-                    </div>
+                    {/* Simplified sparkles for mobile */}
+                    {!isMobile && (
+                      <div className="absolute inset-0 pointer-events-none">
+                        {Array.from({ length: 4 }).map((_, i) => (
+                          <motion.div
+                            key={i}
+                            className="absolute w-1 h-1 bg-white rounded-full"
+                            style={{
+                              left: `${20 + i * 15}%`,
+                              top: `${30 + (i % 2) * 40}%`,
+                            }}
+                            animate={{
+                              scale: [0, 1, 0],
+                              opacity: [0, 1, 0],
+                            }}
+                            transition={{
+                              duration: 1.5,
+                              delay: i * 0.2,
+                              repeat: Infinity,
+                              repeatDelay: 3,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
 
                     {/* Content */}
                     <motion.div
                       className="relative z-10 flex items-center gap-2"
-                      whileHover={{ x: 2 }}
+                      whileHover={isMobile ? {} : { x: 2 }}
                       transition={{ type: "spring", stiffness: 400 }}
                     >
                       <motion.div
-                        animate={{ rotate: [0, 15, -15, 0] }}
+                        animate={isMobile ? {} : { rotate: [0, 15, -15, 0] }}
                         transition={{
                           duration: 2,
                           repeat: Infinity,
@@ -217,7 +227,7 @@ const HeroSection = () => {
                       <span>Start Your Chain</span>
                       <motion.div
                         className="group-hover:translate-x-1 transition-transform duration-300"
-                        animate={{ x: [0, 3, 0] }}
+                        animate={isMobile ? {} : { x: [0, 3, 0] }}
                         transition={{
                           duration: 1.5,
                           repeat: Infinity,
@@ -229,11 +239,13 @@ const HeroSection = () => {
                     </motion.div>
                   </div>
 
-                  {/* Glow effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#0070A0] to-[#1B9CCA] rounded-full blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-500 scale-110" />
-
-                  {/* Border animation */}
-                  <div className="absolute inset-0 rounded-full border-2 border-transparent group-hover:border-white/30 transition-all duration-300" />
+                  {/* Simplified glow for mobile */}
+                  {!isMobile && (
+                    <>
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#0070A0] to-[#1B9CCA] rounded-full blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-500 scale-110" />
+                      <div className="absolute inset-0 rounded-full border-2 border-transparent group-hover:border-white/30 transition-all duration-300" />
+                    </>
+                  )}
                 </Link>
               </motion.div>
 
@@ -271,15 +283,15 @@ const HeroSection = () => {
             </motion.div>
           </motion.div>
 
-          {/* Hero Image */}
+          {/* Hero Image - Simplified animation on mobile */}
           <motion.div
-            initial={{ opacity: 0, x: 100 }}
+            initial={{ opacity: 0, x: isMobile ? 0 : 100 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
+            transition={{ duration: isMobile ? 0.6 : 1, delay: 0.2, ease: "easeOut" }}
             className="relative"
           >
             <motion.div
-              animate={{ y: [0, -10, 0] }}
+              animate={isMobile ? {} : { y: [0, -10, 0] }}
               transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
               className="relative"
             >
@@ -287,6 +299,7 @@ const HeroSection = () => {
                 src="/images/hero-sketch.jpg"
                 alt="Person tracking their daily chain"
                 className="w-full max-w-lg mx-auto rounded-2xl shadow-2xl"
+                loading="eager"
               />
             </motion.div>
           </motion.div>
@@ -387,7 +400,7 @@ const FeaturesSection = () => {
         <motion.div
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
+          viewport={{ once: true, margin: "-200px" }}
           variants={staggerContainer}
           className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
         >
@@ -395,20 +408,17 @@ const FeaturesSection = () => {
             <motion.div
               key={feature.title}
               variants={scaleIn}
-              whileHover={{
-                y: -8,
-                scale: 1.02,
-                transition: { duration: 0.3, ease: "easeOut" },
+              whileHover={isMobile ? {} : {
+                y: -4,
+                transition: { duration: 0.2, ease: "easeOut" },
               }}
-              className="group bg-white rounded-2xl p-8 shadow-sm hover:shadow-2xl transition-shadow duration-300 border border-gray-100 hover:border-gray-200 relative overflow-hidden"
+              className="group bg-white rounded-2xl p-8 shadow-sm hover:shadow-lg transition-shadow duration-200 border border-gray-100 hover:border-gray-200 relative overflow-hidden"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-gray-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
               <div className="relative z-10">
                 <motion.div
                   className={`w-14 h-14 ${feature.color} rounded-xl flex items-center justify-center mb-6`}
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  transition={{ duration: 0.2 }}
+                  whileHover={isMobile ? {} : { scale: 1.05 }}
+                  transition={{ duration: 0.15 }}
                 >
                   <feature.icon className="w-7 h-7" />
                 </motion.div>
@@ -525,22 +535,23 @@ const HowItWorksSection = () => {
     <section id="how-it-works" className="py-24">
       <div className="container-max section-padding">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* Image */}
+          {/* Image - Simplified animation on mobile */}
           <motion.div
-            initial={{ opacity: 0, x: -60 }}
+            initial={{ opacity: 0, x: isMobile ? 0 : -60 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            transition={{ duration: isMobile ? 0.5 : 0.8, ease: "easeOut" }}
             className="relative order-2 lg:order-1"
           >
             <motion.div
-              animate={{ y: [0, -10, 0] }}
+              animate={isMobile ? {} : { y: [0, -10, 0] }}
               transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
             >
               <img
                 src="/images/story-philosophy.jpg"
                 alt="Chain reaction concept"
                 className="w-full rounded-2xl shadow-xl"
+                loading="lazy"
               />
             </motion.div>
 
@@ -584,8 +595,9 @@ const HowItWorksSection = () => {
               variants={fadeInUp}
               className="text-lg text-gray-600 mb-8 leading-relaxed"
             >
-              Smart notifications learn your patterns and send perfectly-timed motivational messages. 
-              Morning boosts at 7 AM, evening check-ins at 8 PM, and funny reminders that actually work.
+              Smart notifications learn your patterns and send perfectly-timed
+              motivational messages. Morning boosts at 7 AM, evening check-ins
+              at 8 PM, and funny reminders that actually work.
             </motion.p>
 
             <motion.div variants={staggerContainer} className="space-y-6">
@@ -712,22 +724,23 @@ const MNZDSection = () => {
             </motion.div>
           </motion.div>
 
-          {/* Image */}
+          {/* Image - Simplified animation on mobile */}
           <motion.div
-            initial={{ opacity: 0, x: 60 }}
+            initial={{ opacity: 0, x: isMobile ? 0 : 60 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            transition={{ duration: isMobile ? 0.5 : 0.8, ease: "easeOut" }}
             className="relative"
           >
             <motion.div
-              animate={{ y: [0, -10, 0] }}
+              animate={isMobile ? {} : { y: [0, -10, 0] }}
               transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
             >
               <img
                 src="/images/story-mnzd.jpg"
                 alt="MNZD Framework"
                 className="w-full rounded-2xl shadow-xl"
+                loading="lazy"
               />
             </motion.div>
           </motion.div>
@@ -787,8 +800,9 @@ const TestimonialsSection = () => {
             <motion.div
               key={testimonial.name}
               variants={scaleIn}
-              whileHover={{ y: -4, transition: { duration: 0.2 } }}
-              className={`bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-200 border border-gray-100 ${
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className={`bg-white rounded-2xl p-8 shadow-sm hover:shadow-md transition-all duration-150 border border-gray-100 ${
                 idx === 1 ? "md:-translate-y-4" : ""
               }`}
             >
@@ -824,9 +838,8 @@ const TestimonialsSection = () => {
   );
 };
 
-// Motivational CTA Section
+// Motivational CTA Section - Optimized for mobile
 const MotivationalSection = () => {
-  const sparkleArray = Array.from({ length: 8 });
   const stats = [
     {
       value: "37×",
@@ -850,35 +863,38 @@ const MotivationalSection = () => {
       color: "from-purple-400 to-pink-400",
     },
   ];
+  
   return (
     <section id="start-today" className="relative py-20 overflow-hidden">
-      {/* Creative Background */}
+      {/* Simplified Background for mobile */}
       <div className="absolute inset-0">
-        {/* Mesh Gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#0070A0] via-[#1B9CCA] to-[#0070A0] opacity-90" />
 
-        {/* Animated Geometric Shapes */}
-        <motion.div
-          animate={{
-            rotate: [0, 360],
-            scale: [1, 1.1, 1],
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute -top-20 -right-20 w-96 h-96 border border-white/20 rounded-full"
-        />
-        <motion.div
-          animate={{
-            rotate: [360, 0],
-            scale: [1, 0.9, 1],
-          }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute -bottom-32 -left-32 w-80 h-80 border-2 border-white/10 rounded-full"
-        />
+        {/* Reduced animations on mobile */}
+        {!isMobile && (
+          <>
+            <motion.div
+              animate={{
+                rotate: [0, 360],
+                scale: [1, 1.1, 1],
+              }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              className="absolute -top-20 -right-20 w-96 h-96 border border-white/20 rounded-full"
+            />
+            <motion.div
+              animate={{
+                rotate: [360, 0],
+                scale: [1, 0.9, 1],
+              }}
+              transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+              className="absolute -bottom-32 -left-32 w-80 h-80 border-2 border-white/10 rounded-full"
+            />
+          </>
+        )}
 
-        {/* Floating Dots Pattern */}
+        {/* Simplified floating dots for mobile */}
         <div className="absolute inset-0">
-          {Array.from({ length: 50 }).map((_, i) => {
-            // Use deterministic positioning based on index to avoid hydration mismatch
+          {Array.from({ length: isMobile ? 20 : 50 }).map((_, i) => {
             const left = (i * 37) % 100;
             const top = (i * 23) % 100;
             const delay = (i * 0.1) % 5;
@@ -886,12 +902,12 @@ const MotivationalSection = () => {
             return (
               <motion.div
                 key={i}
-                animate={{
+                animate={isMobile ? { opacity: [0.3, 0.6, 0.3] } : {
                   y: [0, -20, 0],
                   opacity: [0.3, 0.8, 0.3],
                 }}
                 transition={{
-                  duration: 3 + (i % 3),
+                  duration: isMobile ? 2 : 3 + (i % 3),
                   delay: delay,
                   repeat: Infinity,
                   ease: "easeInOut",
@@ -980,59 +996,25 @@ const MotivationalSection = () => {
 
           {/* CTA Section */}
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: 0.6, duration: 0.8 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
             className="text-center mb-16"
           >
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-8">
               <motion.div
-                whileHover={{
-                  x: [0, -1, 1, -1, 1, 0],
-                }}
-                whileTap={{ scale: 0.95 }}
-                transition={{
-                  x: { duration: 0.4, ease: "easeInOut" },
-                }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.15 }}
                 className="relative group"
               >
                 <Link href="/signup" className="relative">
-                  {/* Main button */}
-                  <div className="relative px-8 py-4 bg-white text-[#0070A0] font-black text-lg rounded-2xl shadow-2xl flex items-center gap-3 transition-all duration-300 group-hover:shadow-xl overflow-hidden">
-                    {/* Particle effects on hover */}
-                    <div className="absolute inset-0 pointer-events-none">
-                      {sparkleArray.map((_, i) => (
-                        <motion.div
-                          key={i}
-                          className="absolute w-2 h-2 bg-[#0070A0] rounded-full opacity-0 group-hover:opacity-100"
-                          style={{
-                            left: `${15 + i * 8}%`,
-                            top: `${20 + (i % 3) * 20}%`,
-                          }}
-                          variants={{
-                            hover: {
-                              scale: [0, 1.2, 0],
-                              y: [0, -20, -40],
-                              opacity: [0, 1, 0],
-                            }
-                          }}
-                          animate="hover"
-                          transition={{
-                            duration: 0.8,
-                            delay: i * 0.1,
-                            repeat: Infinity,
-                            repeatDelay: 1.5,
-                          }}
-                        />
-                      ))}
-                    </div>
-
+                  {/* Simplified button */}
+                  <div className="relative px-8 py-4 bg-white text-[#0070A0] font-black text-lg rounded-2xl shadow-xl hover:shadow-2xl flex items-center gap-3 transition-all duration-200 overflow-hidden">
                     {/* Content */}
                     <motion.div
                       className="relative z-10 flex items-center gap-3"
-                      whileHover={{ scale: 1.02 }}
-                      transition={{ type: "spring", stiffness: 400 }}
                     >
                       <Zap className="w-6 h-6" />
                       <span>Start Your Chain Now</span>
@@ -1053,27 +1035,27 @@ const MotivationalSection = () => {
 
           {/* Stats Grid */}
           <motion.div
-            initial={{ opacity: 0, y: 50 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: 0.8, duration: 0.8 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
             className="grid grid-cols-1 md:grid-cols-3 gap-8"
           >
             {stats.map((stat, index) => (
               <motion.div
                 key={stat.label}
-                initial={{ opacity: 0, y: 30, scale: 0.9 }}
-                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: 0.9 + index * 0.1, duration: 0.6 }}
-                whileHover={{ y: -10, scale: 1.02 }}
-                className="group relative"
+                transition={{ delay: index * 0.05, duration: 0.4 }}
+                whileHover={{ y: -3, scale: 1.01 }}
+                className="group relative cursor-pointer"
               >
                 {/* Card */}
-                <div className="relative bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-2xl overflow-hidden">
+                <div className="relative bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-200 overflow-hidden">
                   {/* Gradient overlay */}
                   <div
-                    className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}
+                    className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-5 transition-opacity duration-200`}
                   />
 
                   {/* Icon */}
@@ -1098,13 +1080,13 @@ const MotivationalSection = () => {
                     </div>
                   </div>
 
-                  {/* Shine effect */}
+                  {/* Simplified shine effect */}
                   <motion.div
                     initial={{ x: "-100%", opacity: 0 }}
-                    whileInView={{ x: "100%", opacity: [0, 1, 0] }}
+                    whileInView={{ x: "100%", opacity: [0, 0.3, 0] }}
                     viewport={{ once: true }}
-                    transition={{ delay: 1.2 + index * 0.2, duration: 1.5 }}
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12"
+                    transition={{ delay: 0.5 + index * 0.1, duration: 0.8 }}
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12"
                   />
                 </div>
               </motion.div>

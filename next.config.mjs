@@ -6,6 +6,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-}
+  trailingSlash: false,
+  assetPrefix: '',
+};
 
-export default nextConfig
+export default nextConfig;

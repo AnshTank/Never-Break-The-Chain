@@ -270,8 +270,6 @@ export class NotificationService {
       // Send welcome notification immediately
       new Notification("🎆 Never Break The Chain", {
         body: message,
-        icon: "/favicon.ico",
-        badge: "/favicon.ico",
         tag: "welcome-message",
         requireInteraction: true, // Keep it visible longer
         silent: false,
@@ -308,8 +306,6 @@ export class NotificationService {
     if (await this.requestPermission()) {
       new Notification(title, {
         body: message,
-        icon: icon || "/favicon.ico",
-        badge: "/favicon.ico",
         tag: "chain-reminder",
         requireInteraction: false,
         silent: false,
