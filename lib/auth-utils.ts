@@ -16,12 +16,12 @@ export async function logout(): Promise<void> {
     await fetch('/api/auth/logout', { method: 'POST' })
     // Clear ALL local storage data
     localStorage.clear()
-    // Redirect to login
-    window.location.href = '/login'
+    // Redirect to home page
+    window.location.href = '/'
   } catch (error) {
     // console.error('Logout error:', error)
     // Force clear storage and redirect even if API fails
     localStorage.clear()
-    window.location.href = '/login'
+    window.location.href = '/'
   }
 }

@@ -473,7 +473,7 @@ export default function JourneyGraph({ journeyData }: JourneyGraphProps) {
               />
               <Scatter
                 dataKey="hours"
-                shape={(props) => {
+                shape={(props: any) => {
                   const { cx, cy, payload } = props
                   const entry = data[data.indexOf(payload)]
                   

@@ -6,7 +6,7 @@ import { clearAllCaches } from "@/lib/cache-utils"
 
 export function useSessionManager() {
   const lastActivityRef = useRef<number>(Date.now())
-  const timeoutRef = useRef<NodeJS.Timeout>()
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const rememberMeRef = useRef<boolean>(false)
   const isAuthenticatedRef = useRef<boolean>(false)
 

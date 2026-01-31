@@ -1,60 +1,93 @@
-import { NextRequest, NextResponse } from 'next/server'
-import bcrypt from 'bcryptjs'
-import { connectToDatabase } from '@/lib/mongodb'
+import { NextRequest, NextResponse } from 'next/server';
+import { sendOTPSchema } from '@/lib/validation';
+import { UserService } from '@/lib/models/UserService';
+import { sendOTPEmail, generateOTP } from '@/lib/email-service';
+import { applyRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, newPassword, checkOnly } = await request.json()
+    const body = await request.json();
+    const { email, checkOnly } = body;
 
-    if (!email) {
+    // Input sanitization
+    if (!email || typeof email !== 'string') {
       return NextResponse.json(
-        { error: 'Email is required' },
+        { error: 'Valid email is required' },
         { status: 400 }
-      )
+      );
     }
 
-    const { db } = await connectToDatabase()
+    const sanitizedEmail = email.toLowerCase().trim();
+    
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(sanitizedEmail)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
+        { status: 400 }
+      );
+    }
 
-    const user = await db.collection('users').findOne({ email: email.toLowerCase() })
-    if (!user) {
+    // Check if user exists
+    const existingUser = await UserService.findUserByEmail(sanitizedEmail);
+    if (!existingUser) {
       return NextResponse.json(
         { error: 'No account found with this email address. Please check your email or create a new account.' },
         { status: 404 }
-      )
+      );
     }
 
     // If only checking if user exists
     if (checkOnly) {
-      return NextResponse.json({ message: 'User found' })
+      return NextResponse.json({ message: 'User found' });
     }
 
-    if (!newPassword) {
+    // Apply DUAL-LAYER rate limiting (IP + Email based)
+    // Layer 1: IP-based protection (prevents multiple email attacks from same IP)
+    const rateLimitResult = await applyRateLimit(request, 'forgot-password', 5, 300); // 5 per 5 minutes per IP
+    if (!rateLimitResult.success) {
       return NextResponse.json(
-        { error: 'New password is required' },
-        { status: 400 }
-      )
+        { error: 'Too many password reset attempts from this location. Please wait 5 minutes.' },
+        { status: 429 }
+      );
     }
 
-    if (newPassword.length < 6) {
+    // Layer 2: Email-based protection (prevents spam to specific email)
+    const { canSend, cooldownSeconds, message } = await UserService.canSendOTP(sanitizedEmail);
+    if (!canSend) {
       return NextResponse.json(
-        { error: 'Password must be at least 6 characters long' },
-        { status: 400 }
-      )
+        { 
+          error: message || `Please wait ${Math.ceil(cooldownSeconds / 60)} minutes before requesting another code.`,
+          cooldownSeconds 
+        },
+        { status: 429 }
+      );
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 12)
+    // Generate and send OTP
+    const otp = generateOTP();
+    const emailSent = await sendOTPEmail(sanitizedEmail, otp, 'reset');
     
-    await db.collection('users').updateOne(
-      { _id: user._id },
-      { $set: { password: hashedPassword } }
-    )
+    if (!emailSent) {
+      return NextResponse.json(
+        { error: 'Failed to send email. Please try again or contact support.' },
+        { status: 500 }
+      );
+    }
 
-    return NextResponse.json({ message: 'Password updated successfully' })
+    // Store OTP in database
+    await UserService.setOTP(sanitizedEmail, otp);
+
+    return NextResponse.json({
+      message: 'Password reset code sent to your email',
+      cooldownSeconds: 60
+    });
+
   } catch (error) {
-    // console.error('Forgot password error:', error)
+    console.error('Forgot password error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
-    )
+    );
   }
 }

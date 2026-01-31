@@ -25,11 +25,12 @@ interface GlobalStateContextType extends GlobalState {
   updateSettings: (updates: { mnzdConfigs?: MNZDConfig[]; theme?: 'light' | 'dark' | 'system' }) => Promise<void>
   updateUserStatus: (newStatus: boolean) => Promise<void>
   refetchSettings: () => Promise<void>
-  refetchAnalytics: () => Promise<void>
+  refetchAnalytics: (month?: Date) => Promise<void>
   refetchUser: () => Promise<void>
   loadProgressForDate: (date: string) => Promise<any>
   updateProgressForDate: (date: string, updates: any) => Promise<void>
   getTodayProgress: () => any
+  updateTodayProgressImmediate: (newData: any) => void
   clearAllCache: () => void
 }
 
@@ -147,7 +148,7 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
       if (!response.ok) throw new Error('Failed to update settings')
       
       const newSettings = { ...state.settings, ...updates }
-      setState(prev => ({ ...prev, settings: newSettings }))
+      setState(prev => ({ ...prev, settings: newSettings as any }))
       
       // Emit real-time update event
       mnzdEvents.emitSettingsUpdate(newSettings)
@@ -175,11 +176,11 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
     await fetchSettings()
   }
 
-  const refetchAnalytics = async (month?: Date) => {
+  const refetchAnalytics = useCallback(async (month?: Date) => {
     // Always reset cache when explicitly refetching
     fetchedRef.current.analytics = null
     await fetchAnalytics(month)
-  }
+  }, [])
 
   const refetchUser = async () => {
     fetchedRef.current.user = false

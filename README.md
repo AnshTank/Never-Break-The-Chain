@@ -2,6 +2,9 @@
 
 A production-ready journey tracking app built with Next.js that helps you maintain consistency in your daily habits using the "Don't Break the Chain" methodology.
 
+## 🚨 SECURITY NOTICE
+**Before deploying to production, please read [SECURITY.md](./SECURITY.md) for critical security configurations.**
+
 ## ✨ Features
 
 ### 🎯 **MNZD System**
@@ -19,11 +22,16 @@ Track 4 essential daily tasks:
 
 ### 🔐 **Secure Authentication**
 - Custom JWT-based authentication system
+- **Email verification required for new accounts**
+- **OTP-based password reset with 60-second cooldown**
+- **Contact support system for email delivery issues**
 - Secure user registration and onboarding flow
 - Password setup during welcome process
 - Session management with automatic token refresh
 - MongoDB integration for user data
-- Password encryption with bcrypt
+- Password encryption with bcrypt (12 rounds)
+- **Rate limiting and brute force protection**
+- **Input validation and NoSQL injection prevention**
 
 ### 📱 **Responsive Design**
 - Mobile-optimized interface
@@ -141,14 +149,22 @@ The app uses a dynamic color system based on actual hours worked:
 
 ## 🔄 Authentication Flow
 
-1. **Signup**: User creates account with email only
-2. **Welcome Flow**: 4-phase onboarding process
+1. **Signup**: User creates account with email and name
+2. **Email Verification**: Modal popup with OTP verification (required)
+3. **Welcome Flow**: 4-phase onboarding process after email verification
    - Phase 1: Hero welcome and motivation
    - Phase 2: Philosophy and methodology explanation
    - Phase 3: MNZD system deep dive
    - Phase 4: Customization and setup
-3. **Password Setup**: Secure password creation with email confirmation
-4. **Main App**: Full access to tracking and analytics
+4. **Password Setup**: Secure password creation with strength validation
+5. **Main App**: Full access to tracking and analytics
+
+### 🔑 Password Reset Flow
+
+1. **Email Entry**: User enters email, system validates existence
+2. **OTP Verification**: 6-digit code sent via email with 60s cooldown
+3. **Password Reset**: Strong password creation with real-time validation
+4. **Contact Support**: Fallback form for email delivery issues
 
 ## 📊 Analytics Features
 
@@ -161,33 +177,53 @@ The app uses a dynamic color system based on actual hours worked:
 
 ## 🔒 Security Features
 
-- JWT-based authentication with refresh tokens
-- Secure HTTP-only cookies
-- Password encryption with bcrypt
-- Input validation and sanitization
-- CSRF protection
-- Session timeout management
-- Automatic cache cleanup on logout
+- **Email Verification**: Required for all new accounts
+- **OTP-Based Password Reset**: 6-digit codes with 5-minute expiration
+- **Rate Limiting**: Comprehensive protection against brute force attacks
+- **Input Validation**: Zod schemas prevent injection attacks
+- **Password Security**: Strong requirements with real-time strength meter
+- **JWT Authentication**: Secure HTTP-only cookies with refresh tokens
+- **Contact Support**: Fallback system for email delivery issues
+- **Session Management**: Automatic timeout and cleanup
+- **NoSQL Injection Prevention**: Comprehensive input sanitization
+- **CSRF Protection**: SameSite cookie attributes
 
 ## 🚀 Production Deployment
 
-1. **Build the application**
+**⚠️ IMPORTANT: Read [SECURITY.md](./SECURITY.md) and [DEPLOYMENT.md](./DEPLOYMENT.md) before deploying to production.**
+
+### Quick Start
+1. **Security Setup**
+   ```bash
+   # Generate new production secrets
+   openssl rand -base64 32  # For JWT_SECRET
+   ```
+
+2. **Environment Configuration**
+   ```bash
+   # Copy production template
+   cp .env.production.example .env.production
+   # Fill in your production values
+   ```
+
+3. **Build and Deploy**
    ```bash
    npm run build
+   # Deploy to your preferred platform
    ```
 
-2. **Set production environment variables**
-   ```env
-   NODE_ENV=production
-   MONGODB_URL="your_production_mongodb_url"
-   JWT_SECRET="your_production_jwt_secret"
-   ```
+### Supported Platforms
+- **Vercel** (recommended)
+- **Railway** 
+- **Netlify**
+- **AWS/Digital Ocean**
 
-3. **Deploy to your preferred platform**
-   - Vercel (recommended)
-   - Netlify
-   - AWS
-   - Digital Ocean
+### Production Features
+- Professional email templates with branding
+- Enhanced security with rate limiting
+- Comprehensive error handling
+- Performance optimizations
+- Monitoring and logging ready
 
 ## 🤝 Contributing
 

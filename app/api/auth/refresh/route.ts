@@ -20,22 +20,25 @@ export async function POST(request: NextRequest) {
       return response
     }
     
-    // Generate new tokens
-    const { accessToken, refreshToken: newRefreshToken } = generateTokens({
+    // Detect remember me setting from refresh token expiration
+    const isLongLived = payload.exp && payload.iat && (payload.exp - payload.iat) > (100 * 24 * 60 * 60) // More than 100 days means remember me was used
+    
+    // Generate new tokens with remember me setting preserved
+    const { accessToken, refreshToken: newRefreshToken, accessTokenMaxAge, refreshTokenMaxAge } = generateTokens({
       userId: payload.userId,
       email: payload.email
-    })
+    }, Boolean(isLongLived))
     
     const response = NextResponse.json({ 
       message: 'Tokens refreshed successfully' 
     }, { status: 200 })
     
-    // Set new secure cookies
+    // Set new secure cookies with dynamic expiration
     response.cookies.set('auth-token', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 24 * 60 * 60, // 24 hours
+      maxAge: accessTokenMaxAge,
       path: '/'
     })
     
@@ -43,7 +46,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 90 * 24 * 60 * 60, // 90 days
+      maxAge: refreshTokenMaxAge,
       path: '/'
     })
     

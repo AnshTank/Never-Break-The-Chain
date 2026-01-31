@@ -1,5 +1,5 @@
 export interface MNZDTask {
-  id: "code" | "think" | "express" | "move"
+  id: "move" | "nourish" | "zone" | "document"
   name: string
   completed: boolean
   minutes: number
@@ -22,9 +22,9 @@ export interface JourneyData {
 }
 
 export interface MNZDConfig {
-  id: "code" | "think" | "express" | "move"
+  id: "move" | "nourish" | "zone" | "document"
   name: string
   description: string
   minMinutes: number
-  color?: string
+  color: string
 }

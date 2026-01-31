@@ -2,8 +2,24 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { connectToDatabase } from '@/lib/mongodb'
 import { generateTokens } from '@/lib/jwt'
+import { checkRateLimit } from '@/lib/rate-limit'
+import { validateRequest, signupSchema } from '@/lib/validation'
 
 export const runtime = 'nodejs'
+
+// Get client IP address
+function getClientIP(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  const realIP = request.headers.get('x-real-ip');
+  
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+  if (realIP) {
+    return realIP;
+  }
+  return 'unknown';
+}
 
 // Input validation and sanitization for email-only signup
 function validateAndSanitizeEmailOnly(email: any, name: any): { email: string; name: string } | null {
@@ -37,30 +53,34 @@ function validateAndSanitizeEmailOnly(email: any, name: any): { email: string; n
 
 export async function POST(request: NextRequest) {
   try {
-    // console.log('Signup API called')
+    const clientIP = getClientIP(request);
     
     let body
     try {
       body = await request.json()
     } catch (parseError) {
-      // console.error('JSON parsing error:', parseError)
       return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 })
     }
     
-    // console.log('Request body:', body)
-    const { email, name } = body
-
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 })
+    // Input validation with Zod
+    const validation = validateRequest(signupSchema, body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
+    
+    const { email, name } = validation.data;
+    const sanitizedEmail = email.toLowerCase().trim();
+    const sanitizedName = name || email.split('@')[0];
 
-    // Validate and sanitize inputs to prevent NoSQL injection
-    const sanitizedInputs = validateAndSanitizeEmailOnly(email, name)
-    if (!sanitizedInputs) {
-      // console.warn('Input validation failed:', { email, name, timestamp: new Date().toISOString() })
+    // Rate limiting check for signup attempts
+    const rateLimitResult = checkRateLimit(`signup:${clientIP}:${sanitizedEmail}`);
+    if (!rateLimitResult.allowed) {
+      const resetTime = rateLimitResult.resetTime ? new Date(rateLimitResult.resetTime).toISOString() : undefined;
       return NextResponse.json({ 
-        error: 'Invalid email format' 
-      }, { status: 400 })
+        error: 'Too many signup attempts. Please try again later.',
+        resetTime,
+        remainingAttempts: 0
+      }, { status: 429 });
     }
 
     // console.log('Connecting to database...')
@@ -68,58 +88,85 @@ export async function POST(request: NextRequest) {
     const users = db.collection('users')
 
     // Check if user already exists with sanitized email
-    const existingUser = await users.findOne({ email: sanitizedInputs.email })
+    const existingUser = await users.findOne({ email: sanitizedEmail })
     if (existingUser) {
-      // console.warn('Signup attempt with existing email:', { email: sanitizedInputs.email, timestamp: new Date().toISOString() })
-      return NextResponse.json({ error: 'User already exists' }, { status: 400 })
+      // Check if user has completed setup
+      if (existingUser.password && !existingUser.needsPasswordSetup) {
+        return NextResponse.json({ 
+          error: 'An account with this email already exists. Please sign in instead.',
+          userExists: true 
+        }, { status: 400 })
+      } else {
+        // User exists but hasn't verified email - send OTP automatically
+        const { generateOTP, sendOTPEmail } = await import('@/lib/email-service');
+        const otp = generateOTP();
+        const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+        
+        // Update user with new OTP
+        await users.updateOne(
+          { email: sanitizedEmail },
+          { 
+            $set: { 
+              otp, 
+              otpExpiry,
+              name: sanitizedName // Update name if provided
+            } 
+          }
+        );
+        
+        // Send OTP email
+        const emailSent = await sendOTPEmail(sanitizedEmail, otp, 'verification');
+        
+        if (emailSent) {
+          return NextResponse.json({ 
+            message: 'Please verify your email to continue.',
+            email: sanitizedEmail,
+            needsVerification: true
+          }, { status: 201 })
+        } else {
+          return NextResponse.json({ 
+            error: 'Email service temporarily unavailable. This might be due to network issues or rate limiting. Please try again in a few minutes or contact support.',
+            emailFailed: true
+          }, { status: 503 })
+        }
+      }
     }
 
-    // console.log('Creating user...')
-    // Create user with empty password (will be set during welcome)
+    // Create user without email verification initially
+    const { generateOTP, sendOTPEmail } = await import('@/lib/email-service');
+    const otp = generateOTP();
+    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    
     const result = await users.insertOne({
-      email: sanitizedInputs.email,
-      name: sanitizedInputs.name,
+      email: sanitizedEmail,
+      name: sanitizedName,
       password: "", // Empty password - user can't login until set
+      emailVerified: false, // Require email verification
       isNewUser: true,
       needsPasswordSetup: true,
+      otp,
+      otpExpiry,
       createdAt: new Date(),
     })
 
-    // console.log('User created, generating tokens...')
-    // Generate tokens for immediate login
-    const { accessToken, refreshToken, accessTokenMaxAge, refreshTokenMaxAge } = generateTokens({
-      userId: result.insertedId.toString(),
-      email: sanitizedInputs.email
-    })
-
-    // console.log('Signup: Generated tokens for user:', { userId: result.insertedId.toString(), email: sanitizedInputs.email })
-
-    // Create response with tokens for automatic login
-    const response = NextResponse.json({ 
-      message: 'Account created successfully! Redirecting to onboarding...',
-      email: sanitizedInputs.email,
-      redirect: '/welcome'
-    }, { status: 201 })
-
-    // Set secure HTTP-only cookies for automatic login
-    response.cookies.set('auth-token', accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: accessTokenMaxAge,
-      path: '/'
-    })
-
-    response.cookies.set('refresh-token', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: refreshTokenMaxAge,
-      path: '/'
-    })
-
-    // console.log('Signup successful, returning response')
-    return response
+    // Send OTP email
+    const emailSent = await sendOTPEmail(sanitizedEmail, otp, 'verification');
+    
+    if (emailSent) {
+      return NextResponse.json({ 
+        message: 'Account created! Please verify your email to continue.',
+        email: sanitizedEmail,
+        needsVerification: true
+      }, { status: 201 })
+    } else {
+      // Delete the user if email failed to send
+      await users.deleteOne({ email: sanitizedEmail });
+      
+      return NextResponse.json({ 
+        error: 'Email service temporarily unavailable. This might be due to network issues or rate limiting. Please try again in a few minutes or contact support.',
+        emailFailed: true
+      }, { status: 503 })
+    }
 
   } catch (error) {
     // Secure logging - don't expose full error details

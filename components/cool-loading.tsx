@@ -53,7 +53,7 @@ export default function CoolLoading({
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const frameIdRef = useRef<number>();
+  const frameIdRef = useRef<number | null>(null);
 
   // Three.js Setup
   useEffect(() => {
@@ -280,13 +280,23 @@ export default function CoolLoading({
     };
   }, []);
 
+  // Sync message with current loading step
   useEffect(() => {
-    const messageInterval = setInterval(() => {
-      setCurrentMessage(
-        loadingMessages[Math.floor(Math.random() * loadingMessages.length)]
-      );
-    }, 2500);
+    const currentStepIndex = loadingSteps.findIndex(step => !step.completed);
+    if (currentStepIndex !== -1) {
+      const stepMessages = [
+        "Building your journey...",
+        "Preparing your MNZD dashboard...", 
+        "Loading your progress...",
+        "Setting up your chain..."
+      ];
+      setCurrentMessage(stepMessages[currentStepIndex] || "Almost ready to track...");
+    } else if (progress === 100) {
+      setCurrentMessage("Almost ready to track...");
+    }
+  }, [loadingSteps, progress]);
 
+  useEffect(() => {
     const quoteInterval = setInterval(() => {
       setCurrentQuote(
         motivationalQuotes[
@@ -296,7 +306,6 @@ export default function CoolLoading({
     }, 4000);
 
     return () => {
-      clearInterval(messageInterval);
       clearInterval(quoteInterval);
     };
   }, []);
@@ -335,7 +344,7 @@ export default function CoolLoading({
 
         const userData = await userResponse.json();
         updateStep(0, 100, true);
-        setAllData((prev) => ({ ...prev, user: userData }));
+        setAllData((prev: any) => ({ ...prev, user: userData }));
 
         if (userData.isNewUser) {
           window.location.replace("/welcome");

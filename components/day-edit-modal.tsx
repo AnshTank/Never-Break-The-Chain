@@ -16,10 +16,10 @@ interface DayEditModalProps {
 
 const createEmptyEntry = (date: Date, settings?: any): DayEntry => {
   const defaultTasks = [
-    { id: "code", name: "Code", completed: false, minutes: 0 },
-    { id: "think", name: "Think", completed: false, minutes: 0 },
-    { id: "express", name: "Express", completed: false, minutes: 0 },
     { id: "move", name: "Move", completed: false, minutes: 0 },
+    { id: "nourish", name: "Nourish", completed: false, minutes: 0 },
+    { id: "zone", name: "Zone", completed: false, minutes: 0 },
+    { id: "document", name: "Document", completed: false, minutes: 0 },
   ];
   
   const tasks = settings?.mnzdConfigs ? settings.mnzdConfigs.map((config: any) => ({
@@ -55,10 +55,10 @@ const migrateEntry = (entry: any, settings?: any): DayEntry => {
     
     // Fallback to default mapping
     const taskMapping = [
-      { id: "code", name: "Code" },
-      { id: "think", name: "Think" },
-      { id: "express", name: "Express" },
-      { id: "move", name: "Move" }
+      { id: "move", name: "Move" },
+      { id: "nourish", name: "Nourish" },
+      { id: "zone", name: "Zone" },
+      { id: "document", name: "Document" }
     ];
     
     const newTask = taskMapping[index] || taskMapping[0];
@@ -149,7 +149,7 @@ export default function DayEditModal({
 
   const handleTaskToggle = (taskId: string) => {
     setEntry((prev) => {
-      if (!prev.tasks) return prev;
+      if (!prev || !prev.tasks) return prev;
       const task = prev.tasks.find(t => t.id === taskId);
       if (!task) return prev;
       
@@ -166,6 +166,7 @@ export default function DayEditModal({
         const mnzdHours = updatedTasks.reduce((sum, t) => sum + (t.minutes || 0) / 60, 0);
         return {
           ...prev,
+          date: prev.date || dateStr,
           tasks: updatedTasks,
           completed: updatedTasks.every((t) => t.completed),
           totalHours: Math.max(mnzdHours, prev.totalHours || 0)
@@ -183,6 +184,7 @@ export default function DayEditModal({
         const mnzdHours = updatedTasks.reduce((sum, t) => sum + (t.minutes || 0) / 60, 0);
         return {
           ...prev,
+          date: prev.date || dateStr,
           tasks: updatedTasks,
           completed: updatedTasks.every((t) => t.completed),
           totalHours: Math.max(mnzdHours, prev.totalHours || 0)
@@ -193,7 +195,7 @@ export default function DayEditModal({
 
   const handleTaskMinutes = (taskId: string, minutes: number) => {
     setEntry((prev) => {
-      if (!prev.tasks) return prev;
+      if (!prev || !prev.tasks) return prev;
       const config = settings.mnzdConfigs.find(c => c.id === taskId) || { minMinutes: 10 };
       const updatedTasks = prev.tasks.map((t) => {
         if (t.id === taskId) {
@@ -211,6 +213,7 @@ export default function DayEditModal({
       ) * 10) / 10;
       return {
         ...prev,
+        date: prev.date || dateStr,
         tasks: updatedTasks,
         totalHours: mnzdHours,
         completed: updatedTasks.every((t) => t.completed)
@@ -222,7 +225,8 @@ export default function DayEditModal({
     const mnzdHours = getMNZDHours();
     const roundedHours = Math.round(hours * 10) / 10;
     setEntry((prev) => ({
-      ...prev,
+      ...prev!,
+      date: prev?.date || dateStr,
       totalHours: isNaN(roundedHours) ? mnzdHours : Math.max(roundedHours, mnzdHours),
     }));
   };
@@ -431,7 +435,7 @@ export default function DayEditModal({
                 onChange={(e) => {
                   const value = e.target.value
                   if (value.length <= 300) {
-                    setEntry((prev) => ({ ...prev, note: value }))
+                    setEntry((prev) => ({ ...prev!, date: prev?.date || dateStr, note: value }))
                   }
                 }}
                 placeholder="Write a brief summary of your day in 2 paragraphs (max 300 characters)..."

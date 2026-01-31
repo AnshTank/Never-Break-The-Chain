@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserFromRequest } from '@/lib/jwt'
+import { authorizeRequest, createAuthErrorResponse } from '@/lib/auth-middleware'
 import { DatabaseService } from '@/lib/database'
 
 export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   try {
-    const user = getUserFromRequest(request)
-    
-    if (!user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Enhanced authorization with user existence check
+    const authResult = await authorizeRequest(request, { checkUserExists: true });
+    if (!authResult.success || !authResult.user) {
+      return createAuthErrorResponse(authResult);
     }
 
-    const settings = await DatabaseService.getUserSettings(user.email)
+    const { email } = authResult.user;
+    const settings = await DatabaseService.getUserSettings(email)
     
     return NextResponse.json(settings)
     
@@ -24,15 +25,16 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const user = getUserFromRequest(request)
-    
-    if (!user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Enhanced authorization with user existence check
+    const authResult = await authorizeRequest(request, { checkUserExists: true });
+    if (!authResult.success || !authResult.user) {
+      return createAuthErrorResponse(authResult);
     }
 
+    const { email } = authResult.user;
     const updates = await request.json()
     
-    await DatabaseService.updateUserSettings(user.email, updates)
+    await DatabaseService.updateUserSettings(email, updates)
     
     return NextResponse.json({ success: true })
     

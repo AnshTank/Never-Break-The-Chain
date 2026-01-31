@@ -11,43 +11,56 @@ interface DailyCheckInProps {
   };
 }
 
+interface Task {
+  id: string;
+  minutes: number;
+  completed?: boolean;
+}
+
+interface Config {
+  id: string;
+  name: string;
+  minMinutes: number;
+  color?: string;
+  description: string;
+}
+
+interface Progress {
+  tasks?: Task[];
+  totalHours?: number;
+}
+
 export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
-  // console.log('DailyCheckIn received preloadedData:', preloadedData);
-  
   const [showMNZDModal, setShowMNZDModal] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
-  const [localProgress, setLocalProgress] = useState<any>(preloadedData?.todayProgress || null);
+  const [localProgress, setLocalProgress] = useState<Progress | null>(preloadedData?.todayProgress || null);
   const [settings, setSettings] = useState<any>(preloadedData?.settings || null);
   const [loading, setLoading] = useState(!preloadedData?.settings);
   
-  // Memoize today's date string to prevent recalculation
   const todayStr = useMemo(() => {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   }, []);
   
   const handleCustomizeComplete = useCallback(() => {
-    setShowMNZDModal(false)
-    setIsCustomizing(false)
-  }, [])
+    setShowMNZDModal(false);
+    setIsCustomizing(false);
+  }, []);
   
   const handleCustomizeStart = useCallback(() => {
-    setIsCustomizing(true)
-  }, [])
+    setIsCustomizing(true);
+  }, []);
 
-  // Use local progress if available, otherwise use preloaded data
   const currentProgress = localProgress || preloadedData?.todayProgress;
   
-  // Memoize task calculations to prevent recalculation
   const { taskConfigs, completedTasks, todayCompleted, todayAllCompleted } = useMemo(() => {
-    // Always use preloaded settings if available, otherwise show loading
     if (!settings?.mnzdConfigs) {
-      return { taskConfigs: [], completedTasks: [], todayCompleted: 0, todayAllCompleted: false }
+      return { taskConfigs: [], completedTasks: [], todayCompleted: 0, todayAllCompleted: false };
     }
     
-    const taskConfigs = settings.mnzdConfigs;
-    const completedTasks = currentProgress?.tasks?.filter((task) => {
-      const config = taskConfigs.find((c) => c.id === task.id);
+    const taskConfigs: Config[] = settings.mnzdConfigs;
+    const completedTasks = currentProgress?.tasks?.filter((task: Task) => {
+      const config = taskConfigs.find((c: Config) => c.id === task.id);
       const taskMinutes = task?.minutes || 0;
       return taskMinutes >= (config?.minMinutes || 0);
     }) || [];
@@ -55,23 +68,22 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
     const todayCompleted = completedTasks.length;
     const todayAllCompleted = todayCompleted === taskConfigs.length;
     
-    return { taskConfigs, completedTasks, todayCompleted, todayAllCompleted }
-  }, [settings, currentProgress])
+    return { taskConfigs, completedTasks, todayCompleted, todayAllCompleted };
+  }, [settings, currentProgress]);
   
-  // Optimize event handlers with useCallback
   const handleProgressUpdate = useCallback(() => {
-    setLocalProgress(null); // Clear local state to use fresh data
+    setLocalProgress(null);
   }, []);
   
-  const handleMNZDProgressUpdate = useCallback(({ date, progress: updatedProgress }) => {
+  const handleMNZDProgressUpdate = useCallback(({ date, progress: updatedProgress }: { date: string; progress: Progress }) => {
     if (date === todayStr) {
       setLocalProgress(updatedProgress);
     }
   }, [todayStr]);
   
-  const handleTaskComplete = useCallback(({ date, taskId, completed }) => {
+  const handleTaskComplete = useCallback(({ date, taskId, completed }: { date: string; taskId: string; completed: boolean }) => {
     if (date === todayStr && currentProgress) {
-      const updatedTasks = currentProgress.tasks?.map((task: any) => 
+      const updatedTasks = currentProgress.tasks?.map((task: Task) => 
         task.id === taskId ? { ...task, completed } : task
       ) || [];
       
@@ -82,9 +94,8 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
     }
   }, [todayStr, currentProgress]);
   
-  // Listen for real-time updates with optimized dependencies
   useEffect(() => {
-    const unsubscribeSettings = mnzdEvents.onSettingsUpdate((newSettings) => {
+    const unsubscribeSettings = mnzdEvents.onSettingsUpdate((newSettings: any) => {
       setSettings(newSettings);
     });
 
@@ -101,7 +112,6 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
     };
   }, [handleMNZDProgressUpdate, handleTaskComplete, handleProgressUpdate]);
 
-  // Initialize with preloaded data immediately
   useEffect(() => {
     if (preloadedData?.settings) {
       setSettings(preloadedData.settings);
@@ -112,7 +122,6 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
     }
   }, [preloadedData]);
   
-  // Early return for loading states
   if (loading || !settings?.mnzdConfigs) {
     return (
       <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6 relative overflow-hidden">
@@ -160,7 +169,7 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  TODAY'S MNZD
+                  TODAY&apos;S MNZD
                 </span>
                 <button
                   onClick={() => setShowMNZDModal(true)}
@@ -201,8 +210,8 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-          {taskConfigs.map((config) => {
-            const task = currentProgress?.tasks?.find((t) => t.id === config.id);
+          {taskConfigs.map((config: Config) => {
+            const task = currentProgress?.tasks?.find((t: Task) => t.id === config.id);
             const taskMinutes = task?.minutes || 0;
             const isCompleted = taskMinutes >= config.minMinutes;
             
@@ -275,7 +284,7 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
           {todayAllCompleted && (
             <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 text-center">
               <div className="text-green-800 dark:text-green-200 font-semibold">
-                🎉 Today's MNZD Complete!
+                🎉 Today&apos;s MNZD Complete!
               </div>
             </div>
           )}
@@ -287,7 +296,6 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
         onClose={handleCustomizeComplete}
         onSaveStart={handleCustomizeStart}
       />
-      
     </>
   );
 }

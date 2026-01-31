@@ -54,7 +54,7 @@ export default function DayCell({ day, date, entry, isToday, onEntryChange }: Da
   // Calculate completion based on minutes vs minimum requirements
   let completedCount = 0
   if (actualEntry?.tasks && settings?.mnzdConfigs) {
-    completedCount = actualEntry.tasks.filter(task => {
+    completedCount = actualEntry.tasks.filter((task: any) => {
       const config = settings.mnzdConfigs.find(c => c.id === task.id)
       const minRequired = config?.minMinutes || 0
       return task.minutes >= minRequired

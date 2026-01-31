@@ -134,36 +134,36 @@ const themes: Theme[] = [
 
 const mnzdTasks = [
   {
-    id: "code",
-    name: "Code (Career)",
-    minMinutes: 20,
-    symbol: "{ }",
-    color: "#3b82f6",
-    description: "Build your future",
-  },
-  {
-    id: "think",
-    name: "Think (Problem-Solving)",
-    minMinutes: 10,
-    symbol: "∞",
-    color: "#10b981",
-    description: "Expand your mind",
-  },
-  {
-    id: "express",
-    name: "Express (Communication)",
-    minMinutes: 5,
-    symbol: "◊",
-    color: "#8b5cf6",
-    description: "Share your voice",
-  },
-  {
     id: "move",
-    name: "Move (Body)",
-    minMinutes: 10,
+    name: "Move (Physical)",
+    minMinutes: 30,
     symbol: "△",
+    color: "#8b5cf6",
+    description: "Physical activity and exercise",
+  },
+  {
+    id: "nourish",
+    name: "Nourish (Learning)",
+    minMinutes: 20,
+    symbol: "∞",
+    color: "#06b6d4",
+    description: "Learning and mental growth",
+  },
+  {
+    id: "zone",
+    name: "Zone (Focus)",
+    minMinutes: 45,
+    symbol: "◊",
     color: "#f59e0b",
-    description: "Strengthen yourself",
+    description: "Deep focused work time",
+  },
+  {
+    id: "document",
+    name: "Document (Writing)",
+    minMinutes: 15,
+    symbol: "{ }",
+    color: "#10b981",
+    description: "Writing and reflection",
   },
 ];
 
@@ -2034,7 +2034,7 @@ export default function TimerPage() {
                                 ? `linear-gradient(135deg, ${customAccentColor}20 0%, ${customAccentColor}10 100%)`
                                 : t.background
                               : "transparent",
-                          ringColor:
+                          borderColor:
                             currentTheme === index
                               ? index === 0
                                 ? customAccentColor
@@ -2109,7 +2109,7 @@ export default function TimerPage() {
                           backgroundSound === ""
                             ? `${theme.accent}40`
                             : "transparent",
-                        ringColor:
+                        borderColor:
                           backgroundSound === "" ? theme.accent : "transparent",
                       }}
                     >
@@ -2131,7 +2131,7 @@ export default function TimerPage() {
                             backgroundSound === sound.file
                               ? `${theme.accent}40`
                               : "transparent",
-                          ringColor:
+                          borderColor:
                             backgroundSound === sound.file
                               ? theme.accent
                               : "transparent",

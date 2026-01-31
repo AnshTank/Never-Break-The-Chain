@@ -1,30 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserFromRequest } from '@/lib/jwt'
+import { authorizeRequest, createAuthErrorResponse } from '@/lib/auth-middleware'
 import { DatabaseService } from '@/lib/database'
+import { validateRequest, validateQueryParams, progressUpdateSchema, progressQuerySchema } from '@/lib/validation'
 
 export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   try {
-    const user = getUserFromRequest(request)
-    
-    if (!user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Enhanced authorization with user existence check
+    const authResult = await authorizeRequest(request, { checkUserExists: true });
+    if (!authResult.success || !authResult.user) {
+      return createAuthErrorResponse(authResult);
     }
 
+    const { userId, email } = authResult.user;
     const { searchParams } = new URL(request.url)
-    const date = searchParams.get('date')
-    const startDate = searchParams.get('startDate')
-    const endDate = searchParams.get('endDate')
+    
+    // Validate query parameters
+    const queryValidation = validateQueryParams(progressQuerySchema, searchParams);
+    if (!queryValidation.success) {
+      return NextResponse.json({ error: queryValidation.error }, { status: 400 });
+    }
+    
+    const { date, startDate, endDate } = queryValidation.data;
 
     if (date) {
-      const progress = await DatabaseService.getDailyProgress(user.email, date)
+      const progress = await DatabaseService.getDailyProgress(email, date)
       return NextResponse.json(progress)
     } else if (startDate && endDate) {
-      const progress = await DatabaseService.getProgressRange(user.email, startDate, endDate)
+      const progress = await DatabaseService.getProgressRange(email, startDate, endDate)
       return NextResponse.json(progress)
-    } else {
-      return NextResponse.json({ error: 'Date or date range required' }, { status: 400 })
     }
     
   } catch (error) {
@@ -35,20 +40,24 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const user = getUserFromRequest(request)
-    
-    if (!user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Enhanced authorization with user existence check
+    const authResult = await authorizeRequest(request, { checkUserExists: true });
+    if (!authResult.success || !authResult.user) {
+      return createAuthErrorResponse(authResult);
     }
 
+    const { userId, email } = authResult.user;
     const body = await request.json()
-    const { date, updates } = body
     
-    if (!date || !updates) {
-      return NextResponse.json({ error: 'Date and updates are required' }, { status: 400 })
+    // Validate request body
+    const validation = validateRequest(progressUpdateSchema, body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
     
-    await DatabaseService.updateDailyProgress(user.email, date, updates)
+    const { date, updates } = validation.data;
+    
+    await DatabaseService.updateDailyProgress(email, date, updates)
     
     return NextResponse.json({ success: true })
     

@@ -145,36 +145,36 @@ const themes: Theme[] = [
 
 const mnzdTasks = [
   {
-    id: "code",
-    name: "Code (Career)",
-    minMinutes: 20,
-    symbol: "{ }",
-    color: "#3b82f6",
-    description: "Build your future",
-  },
-  {
-    id: "think",
-    name: "Think (Problem-Solving)",
-    minMinutes: 10,
-    symbol: "∞",
-    color: "#10b981",
-    description: "Expand your mind",
-  },
-  {
-    id: "express",
-    name: "Express (Communication)",
-    minMinutes: 5,
-    symbol: "◊",
-    color: "#8b5cf6",
-    description: "Share your voice",
-  },
-  {
     id: "move",
-    name: "Move (Body)",
-    minMinutes: 10,
+    name: "Move (Physical)",
+    minMinutes: 30,
     symbol: "△",
+    color: "#8b5cf6",
+    description: "Physical activity and exercise",
+  },
+  {
+    id: "nourish",
+    name: "Nourish (Learning)",
+    minMinutes: 20,
+    symbol: "∞",
+    color: "#06b6d4",
+    description: "Learning and mental growth",
+  },
+  {
+    id: "zone",
+    name: "Zone (Focus)",
+    minMinutes: 45,
+    symbol: "◊",
     color: "#f59e0b",
-    description: "Strengthen yourself",
+    description: "Deep focused work time",
+  },
+  {
+    id: "document",
+    name: "Document (Writing)",
+    minMinutes: 15,
+    symbol: "{ }",
+    color: "#10b981",
+    description: "Writing and reflection",
   },
 ];
 
@@ -860,7 +860,7 @@ export default function TimerPage() {
 
   // Background sound management with seamless looping
   useEffect(() => {
-    const setupAudio = (audioRef: React.RefObject<HTMLAudioElement>) => {
+    const setupAudio = (audioRef: React.RefObject<HTMLAudioElement | null>) => {
       if (audioRef.current) {
         audioRef.current.preload = "auto";
         audioRef.current.volume = bgSoundVolume;
@@ -885,9 +885,9 @@ export default function TimerPage() {
         };
 
         const handleEnded = () => {
-          if (backgroundSound) {
-            audioRef.current!.currentTime = 0;
-            audioRef.current!.play().catch(console.error);
+          if (backgroundSound && audioRef.current) {
+            audioRef.current.currentTime = 0;
+            audioRef.current.play().catch(console.error);
           }
         };
 
@@ -930,7 +930,62 @@ export default function TimerPage() {
         }
       });
     }
+
+    // Cleanup function to stop all audio when component unmounts or backgroundSound changes
+    return () => {
+      [bgAudioRef, bgAudioRef2].forEach((ref) => {
+        if (ref.current) {
+          ref.current.pause();
+          ref.current.currentTime = 0;
+          ref.current.src = '';
+        }
+      });
+    };
   }, [backgroundSound]);
+
+  // Comprehensive cleanup on component unmount - this ensures audio stops when leaving the timer route
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Stop all audio when page is about to unload
+      [bgAudioRef, bgAudioRef2, audioRef, notificationAudioRef].forEach((ref) => {
+        if (ref.current) {
+          ref.current.pause();
+          ref.current.currentTime = 0;
+          ref.current.src = '';
+        }
+      });
+    };
+
+    // Add event listener for page unload
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      // Remove event listener
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      
+      // Stop all audio when component unmounts (route change)
+      [bgAudioRef, bgAudioRef2, audioRef, notificationAudioRef].forEach((ref) => {
+        if (ref.current) {
+          ref.current.pause();
+          ref.current.currentTime = 0;
+          ref.current.src = '';
+          // Remove all event listeners
+          ref.current.removeEventListener('timeupdate', () => {});
+          ref.current.removeEventListener('ended', () => {});
+        }
+      });
+      
+      // Clear any beep intervals
+      if (beepInterval) {
+        clearInterval(beepInterval);
+      }
+      
+      // Clear timer interval
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
 
   // Background sound volume with immediate updates
   useEffect(() => {
@@ -1435,7 +1490,7 @@ export default function TimerPage() {
         } top-0 left-0 right-0 z-30 flex items-center justify-between p-4 md:p-8`}
       >
         <Link
-          href="/"
+          href="/dashboard"
           className={`${theme.text} hover:opacity-80 transition-all duration-300 font-medium text-base md:text-lg`}
         >
           ← Dashboard
@@ -2786,7 +2841,7 @@ export default function TimerPage() {
                                 ? `linear-gradient(135deg, ${customAccentColor}20 0%, ${customAccentColor}10 100%)`
                                 : t.background
                               : "transparent",
-                          ringColor:
+                          borderColor:
                             currentTheme === index
                               ? index === 0
                                 ? customAccentColor
@@ -2890,7 +2945,7 @@ export default function TimerPage() {
                           backgroundSound === ""
                             ? `${theme.accent}40`
                             : "transparent",
-                        ringColor:
+                        borderColor:
                           backgroundSound === "" ? theme.accent : "transparent",
                       }}
                     >
@@ -2928,7 +2983,7 @@ export default function TimerPage() {
                             backgroundSound === sound.file
                               ? `${theme.accent}40`
                               : "transparent",
-                          ringColor:
+                          borderColor:
                             backgroundSound === sound.file
                               ? theme.accent
                               : "transparent",
@@ -3099,7 +3154,7 @@ export default function TimerPage() {
                               notificationSound === sound.value
                                 ? `${theme.accent}40`
                                 : "transparent",
-                            ringColor:
+                            borderColor:
                               notificationSound === sound.value
                                 ? theme.accent
                                 : "transparent",

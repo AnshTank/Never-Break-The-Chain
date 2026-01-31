@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserFromRequest } from '@/lib/jwt'
+import { authorizeRequest, createAuthErrorResponse } from '@/lib/auth-middleware'
 import { connectToDatabase } from '@/lib/mongodb'
 import { ObjectId } from 'mongodb'
 
@@ -7,16 +7,17 @@ export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   try {
-    const user = getUserFromRequest(request)
-    
-    if (!user?.userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Enhanced authorization with user existence check
+    const authResult = await authorizeRequest(request, { checkUserExists: true });
+    if (!authResult.success || !authResult.user) {
+      return createAuthErrorResponse(authResult);
     }
 
+    const { userId } = authResult.user;
     const { db } = await connectToDatabase()
     const users = db.collection('users')
     const userData = await users.findOne(
-      { _id: new ObjectId(user.userId) },
+      { _id: new ObjectId(userId) },
       { projection: { email: 1, name: 1, isNewUser: 1, needsPasswordSetup: 1 } }
     )
     

@@ -2,8 +2,24 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { connectToDatabase } from '@/lib/mongodb'
 import { generateTokens } from '@/lib/jwt'
+import { checkRateLimit } from '@/lib/rate-limit'
+import { validateRequest, loginSchema } from '@/lib/validation'
 
 export const runtime = 'nodejs'
+
+// Get client IP address
+function getClientIP(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  const realIP = request.headers.get('x-real-ip');
+  
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+  if (realIP) {
+    return realIP;
+  }
+  return 'unknown';
+}
 
 // Input validation and sanitization
 function validateAndSanitizeInput(email: any, password: any): { email: string; password: string } | null {
@@ -27,18 +43,27 @@ function validateAndSanitizeInput(email: any, password: any): { email: string; p
 
 export async function POST(request: NextRequest) {
   try {
+    const clientIP = getClientIP(request);
     const body = await request.json()
-    const { email, password, rememberMe } = body
-
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 })
+    
+    // Input validation with Zod
+    const validation = validateRequest(loginSchema, body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
+    
+    const { email, password, rememberMe } = validation.data;
+    const sanitizedEmail = email.toLowerCase().trim();
 
-    // Validate and sanitize inputs to prevent NoSQL injection
-    const sanitizedEmail = email.trim().toLowerCase()
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(sanitizedEmail)) {
-      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 })
+    // Rate limiting check
+    const rateLimitResult = checkRateLimit(`login:${clientIP}:${sanitizedEmail}`);
+    if (!rateLimitResult.allowed) {
+      const resetTime = rateLimitResult.resetTime ? new Date(rateLimitResult.resetTime).toISOString() : undefined;
+      return NextResponse.json({ 
+        error: 'Too many login attempts. Please try again later.',
+        resetTime,
+        remainingAttempts: 0
+      }, { status: 429 });
     }
 
     const { db } = await connectToDatabase()
@@ -54,6 +79,36 @@ export async function POST(request: NextRequest) {
     if (!user.password || user.needsPasswordSetup) {
       // Allow OAuth users to login without password if they have oauthProvider
       if (!user.oauthProvider) {
+        // Check if email is verified
+        if (!user.emailVerified) {
+          // Send OTP for email verification
+          const { generateOTP, sendOTPEmail } = await import('@/lib/email-service');
+          const otp = generateOTP();
+          const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+          
+          // Update user with new OTP
+          await users.updateOne(
+            { email: sanitizedEmail },
+            { $set: { otp, otpExpiry } }
+          );
+          
+          // Send OTP email
+          const emailSent = await sendOTPEmail(sanitizedEmail, otp, 'verification');
+          
+          if (emailSent) {
+            return NextResponse.json({ 
+              message: 'Please verify your email to continue.',
+              email: sanitizedEmail,
+              needsVerification: true
+            }, { status: 200 })
+          } else {
+            return NextResponse.json({ 
+              error: 'Email service temporarily unavailable. This might be due to network issues or rate limiting. Please try again in a few minutes or contact support.',
+              emailFailed: true
+            }, { status: 503 })
+          }
+        }
+        
         return NextResponse.json({ 
           error: 'Account setup incomplete. Please check your email for setup instructions.',
           needsPasswordSetup: true,

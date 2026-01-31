@@ -23,7 +23,7 @@ export default function DayDetailsModal({ isOpen, onClose, date }: DayDetailsMod
   const { progress: entry, loading } = useDailyProgress(dateStr)
   const [isNotesExpanded, setIsNotesExpanded] = useState(false)
 
-  const completedTasks = entry?.tasks?.filter(t => t.completed).length || 0
+  const completedTasks = entry?.tasks?.filter((t: any) => t.completed).length || 0
   const totalTasks = entry?.tasks?.length || 4
 
   if (loading) {
@@ -93,7 +93,7 @@ export default function DayDetailsModal({ isOpen, onClose, date }: DayDetailsMod
                   {settings?.mnzdConfigs?.[0]?.name ? 'Custom' : 'MNZD'} Tasks
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {entry.tasks?.map((task, index) => {
+                  {entry.tasks?.map((task: any, index: number) => {
                     const config = settings?.mnzdConfigs?.find(c => c.id === task.id)
                     const taskName = config?.name || task.name || `Task ${index + 1}`
                     

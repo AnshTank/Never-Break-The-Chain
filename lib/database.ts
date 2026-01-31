@@ -128,7 +128,7 @@ export class DatabaseService {
       
       try {
         await db.collection<DailyProgress>('dailyProgress').insertOne(defaultProgress)
-        progress = defaultProgress
+        progress = defaultProgress as any
       } catch (err: any) {
         // If duplicate key error, fetch the existing document
         if (err.code === 11000) {

@@ -8,10 +8,10 @@ import JourneyGraph from "./journey-graph"
 import { useProgressData } from "@/hooks/use-progress-data"
 
 interface ProgressViewProps {
-  onDayEntry: (date: Date, entry: DayEntry) => void
+  onDayEntry?: (date: Date, entry: DayEntry) => void
 }
 
-export default function ProgressView({ onDayEntry }: ProgressViewProps) {
+export default function ProgressView({ onDayEntry = () => {} }: ProgressViewProps) {
   const [selectedMonth, setSelectedMonth] = useState(new Date())
   const [viewMode, setViewMode] = useState<"calendar" | "year" | "journey">("calendar")
   const { data: monthlyData, loading } = useProgressData(selectedMonth)

@@ -88,11 +88,24 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Bottom: Copyright */}
-        <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700 text-center">
-          <p className="text-xs text-slate-500 dark:text-slate-500">
-            © {new Date().getFullYear()} Never Break The Chain. All rights reserved.
-          </p>
+        {/* Bottom: Legal Links & Copyright */}
+        <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex flex-wrap justify-center gap-4 text-xs">
+              <a href="/terms" className="text-slate-500 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
+                Terms of Service
+              </a>
+              <a href="/privacy" className="text-slate-500 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
+                Privacy Policy
+              </a>
+              <a href="/contact" className="text-slate-500 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
+                Contact Support
+              </a>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-500">
+              © {new Date().getFullYear()} Never Break The Chain. All rights reserved.
+            </p>
+          </div>
         </div>
       </div>
     </footer>

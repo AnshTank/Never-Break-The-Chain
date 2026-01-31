@@ -6,7 +6,7 @@ import { ObjectId } from 'mongodb'
 
 export const runtime = 'nodejs'
 
-const publicPaths = ['/login', '/signup', '/forgot-password', '/delete-account', '/api/auth/login', '/api/auth/signup', '/api/auth/setup-password', '/api/auth/forgot-password', '/api/auth/delete-account', '/api/auth/resend-setup']
+const publicPaths = ['/', '/login', '/signup', '/forgot-password', '/delete-account', '/api/auth/login', '/api/auth/signup', '/api/auth/setup-password', '/api/auth/forgot-password', '/api/auth/delete-account', '/api/auth/resend-setup']
 const apiAuthPaths = ['/api/auth/refresh', '/api/auth/logout', '/api/auth/cleanup', '/api/progress', '/api/user', '/api/analytics', '/api/timer-data', '/api/settings']
 const welcomeRequiredPaths = ['/welcome']
 
@@ -42,11 +42,12 @@ export async function middleware(request: NextRequest) {
     if (refreshToken) {
       const refreshPayload = verifyRefreshToken(refreshToken)
       if (refreshPayload) {
-        // Generate new tokens
+        // Generate new tokens with remember me detection
+        const isLongLived = !!(refreshPayload.exp && (refreshPayload.exp - refreshPayload.iat!) > (100 * 24 * 60 * 60)) // More than 100 days means remember me was used
         const { accessToken, refreshToken: newRefreshToken, accessTokenMaxAge, refreshTokenMaxAge } = generateTokens({
           userId: refreshPayload.userId,
           email: refreshPayload.email
-        })
+        }, isLongLived)
         
         const response = NextResponse.next()
         
@@ -117,11 +118,15 @@ export async function middleware(request: NextRequest) {
   // Check if token is expiring soon and refresh proactively
   if (isTokenExpiringSoon(token)) {
     const refreshToken = request.cookies.get('refresh-token')?.value
-    if (refreshToken && verifyRefreshToken(refreshToken)) {
-      const { accessToken, refreshToken: newRefreshToken, accessTokenMaxAge, refreshTokenMaxAge } = generateTokens({
-        userId: payload.userId,
-        email: payload.email
-      })
+    if (refreshToken) {
+      const refreshPayload = verifyRefreshToken(refreshToken)
+      if (refreshPayload) {
+        // Detect remember me setting from refresh token expiration
+        const isLongLived = !!(refreshPayload.exp && (refreshPayload.exp - refreshPayload.iat!) > (100 * 24 * 60 * 60))
+        const { accessToken, refreshToken: newRefreshToken, accessTokenMaxAge, refreshTokenMaxAge } = generateTokens({
+          userId: payload.userId,
+          email: payload.email
+        }, isLongLived)
       
       const response = NextResponse.next()
       
@@ -140,11 +145,12 @@ export async function middleware(request: NextRequest) {
         maxAge: refreshTokenMaxAge,
         path: '/'
       })
-      
-      response.headers.set('x-user-id', payload.userId)
-      response.headers.set('x-user-email', payload.email)
-      
-      return response
+        
+        response.headers.set('x-user-id', payload.userId)
+        response.headers.set('x-user-email', payload.email)
+        
+        return response
+      }
     }
   }
   

@@ -24,18 +24,18 @@ export default function ConditionalFooter() {
         const loadingElement = document.querySelector('[data-loading="true"]');
         setIsLoading(!!loadingElement);
       };
-      
+
       checkLoading();
-      
+
       // Use MutationObserver to watch for DOM changes
       const observer = new MutationObserver(checkLoading);
       observer.observe(document.body, {
         childList: true,
         subtree: true,
         attributes: true,
-        attributeFilter: ['data-loading']
+        attributeFilter: ["data-loading"],
       });
-      
+
       return () => observer.disconnect();
     } else {
       setIsLoading(false);

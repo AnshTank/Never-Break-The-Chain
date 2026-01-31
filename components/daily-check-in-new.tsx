@@ -25,7 +25,7 @@ export default function DailyCheckIn() {
   }
 
   const taskConfigs = settings.mnzdConfigs;
-  const completedTasks = progress?.tasks?.filter(task => {
+  const completedTasks = progress?.tasks?.filter((task: any) => {
     const config = taskConfigs.find(c => c.id === task.id);
     return task.minutes >= (config?.minMinutes || 0);
   }) || [];
@@ -64,7 +64,7 @@ export default function DailyCheckIn() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           {taskConfigs.map((config) => {
-            const task = progress?.tasks?.find(t => t.id === config.id);
+            const task = progress?.tasks?.find((t: any) => t.id === config.id);
             const isCompleted = task && task.minutes >= config.minMinutes;
 
             return (

@@ -6,7 +6,14 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { MNZDConfig } from "@/lib/types";
-import { DEFAULT_MNZD_CONFIGS } from "@/lib/models";
+// import { DEFAULT_MNZD_CONFIGS } from "@/lib/models";
+// Temporarily define default configs inline
+const DEFAULT_MNZD_CONFIGS = [
+  { id: "move", name: "Move", minMinutes: 30, description: "Physical activity", color: "#8b5cf6" },
+  { id: "nourish", name: "Nourish", minMinutes: 20, description: "Learning", color: "#06b6d4" },
+  { id: "zone", name: "Zone", minMinutes: 45, description: "Deep work", color: "#f59e0b" },
+  { id: "document", name: "Document", minMinutes: 15, description: "Writing", color: "#10b981" }
+];
 
 interface WelcomeFlowProps {
   isNewUser: boolean;
@@ -15,7 +22,7 @@ interface WelcomeFlowProps {
 
 export default function WelcomeFlow({ isNewUser, onComplete }: WelcomeFlowProps) {
   const [step, setStep] = useState<"info" | "customize" | "complete">("info");
-  const [tempConfigs, setTempConfigs] = useState<MNZDConfig[]>(DEFAULT_MNZD_CONFIGS);
+  const [tempConfigs, setTempConfigs] = useState<any[]>(DEFAULT_MNZD_CONFIGS);
 
   if (!isNewUser) return null;
 
@@ -125,7 +132,7 @@ export default function WelcomeFlow({ isNewUser, onComplete }: WelcomeFlowProps)
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
                       <span className="text-sm font-bold text-primary">
-                        {config.id === "code" ? "💻" : config.id === "think" ? "🧠" : config.id === "express" ? "✍️" : "🏃"}
+                        {config.id === "move" ? "🏃" : config.id === "nourish" ? "🧠" : config.id === "zone" ? "🎯" : "📝"}
                       </span>
                     </div>
                     <Label className="text-base font-semibold">

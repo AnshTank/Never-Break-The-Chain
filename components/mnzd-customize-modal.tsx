@@ -26,7 +26,7 @@ export default function MNZDCustomizeModal({ isOpen, onClose, onSaveStart }: MNZ
     }
   }, [settings])
 
-  const updateConfig = (id: string, field: keyof MNZDConfig, value: string | number) => {
+  const updateConfig = (id: string, field: keyof MNZDConfig | 'color', value: string | number) => {
     setConfigs(prev => prev.map(config => 
       config.id === id ? { ...config, [field]: value } : config
     ))
@@ -64,7 +64,7 @@ export default function MNZDCustomizeModal({ isOpen, onClose, onSaveStart }: MNZ
               <div className="flex items-center gap-3">
                 <div 
                   className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
-                  style={{ backgroundColor: config.color || '#3b82f6' }}
+                  style={{ backgroundColor: (config as any).color || '#3b82f6' }}
                 >
                   {config.id.charAt(0).toUpperCase()}
                 </div>
@@ -113,13 +113,13 @@ export default function MNZDCustomizeModal({ isOpen, onClose, onSaveStart }: MNZ
                   <Input
                     id={`${config.id}-color`}
                     type="color"
-                    value={config.color || '#3b82f6'}
+                    value={(config as any).color || '#3b82f6'}
                     onChange={(e) => updateConfig(config.id, 'color', e.target.value)}
                     className="w-16 h-10 cursor-pointer"
                   />
                   <div 
                     className="flex-1 h-10 rounded-lg border"
-                    style={{ backgroundColor: config.color || '#3b82f6' }}
+                    style={{ backgroundColor: (config as any).color || '#3b82f6' }}
                   />
                 </div>
               </div>

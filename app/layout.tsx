@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
+import { Toaster } from "sonner"
 import AuthProvider from "../components/auth-provider"
 import ConditionalFooter from "../components/conditional-footer"
 import "./globals.css"
@@ -29,15 +30,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`font-sans antialiased`}>
+      <body className={`font-sans antialiased m-0 p-0`}>
         <AuthProvider>
-          <div className="min-h-screen flex flex-col">
-            <main className="flex-1">
+          <div className="min-h-screen">
+            <main className="w-full">
               {children}
             </main>
             <ConditionalFooter />
           </div>
         </AuthProvider>
+        <Toaster richColors position="top-center" />
         <Analytics />
       </body>
     </html>
