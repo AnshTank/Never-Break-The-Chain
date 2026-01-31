@@ -64,9 +64,9 @@ export default function PrivacyPolicy() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 text-amber-600 hover:text-amber-800 transition-colors">
+          <Link href="/dashboard" className="inline-flex items-center gap-2 text-amber-600 hover:text-amber-800 transition-colors">
             <ArrowLeft className="w-4 h-4" />
-            Back to Home
+            Back to Dashboard
           </Link>
         </div>
 
@@ -152,8 +152,8 @@ export default function PrivacyPolicy() {
               <a href="/contact" className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
                 Privacy Questions?
               </a>
-              <Link href="/" className="inline-flex items-center gap-2 bg-white text-blue-600 border border-blue-200 px-6 py-3 rounded-lg font-medium hover:bg-blue-50 transition-colors">
-                Start Building Habits
+              <Link href="/dashboard" className="inline-flex items-center gap-2 bg-white text-blue-600 border border-blue-200 px-6 py-3 rounded-lg font-medium hover:bg-blue-50 transition-colors">
+                Go to Dashboard
               </Link>
             </div>
           </div>

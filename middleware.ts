@@ -6,15 +6,46 @@ import { ObjectId } from 'mongodb'
 
 export const runtime = 'nodejs'
 
-const publicPaths = ['/', '/login', '/signup', '/forgot-password', '/delete-account', '/api/auth/login', '/api/auth/signup', '/api/auth/setup-password', '/api/auth/forgot-password', '/api/auth/delete-account', '/api/auth/resend-setup']
+const publicPaths = ['/login', '/signup', '/forgot-password', '/delete-account', '/api/auth/login', '/api/auth/signup', '/api/auth/setup-password', '/api/auth/forgot-password', '/api/auth/delete-account', '/api/auth/resend-setup']
 const apiAuthPaths = ['/api/auth/refresh', '/api/auth/logout', '/api/auth/cleanup', '/api/progress', '/api/user', '/api/analytics', '/api/timer-data', '/api/settings']
 const welcomeRequiredPaths = ['/welcome']
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   
-  // Allow public paths
+  // Check for authentication token first
+  const token = request.cookies.get('auth-token')?.value || 
+                request.headers.get('authorization')?.replace('Bearer ', '')
+  
+  // If user is authenticated and on home page, redirect to dashboard
+  if (pathname === '/' && token) {
+    const payload = verifyToken(token)
+    if (payload) {
+      // Check if user needs welcome flow
+      try {
+        const { db } = await connectToDatabase()
+        const users = db.collection('users')
+        const user = await users.findOne(
+          { _id: new ObjectId(payload.userId) },
+          { projection: { isNewUser: 1, needsPasswordSetup: 1, password: 1 } }
+        )
+        
+        if (user && !user.isNewUser && !user.needsPasswordSetup && user.password) {
+          return NextResponse.redirect(new URL('/dashboard', request.url))
+        }
+      } catch (error) {
+        console.error('Error checking user status:', error)
+      }
+    }
+  }
+  
+  // Allow public paths (excluding home page which is handled above)
   if (publicPaths.some(path => pathname.startsWith(path))) {
+    return NextResponse.next()
+  }
+  
+  // Allow home page for unauthenticated users
+  if (pathname === '/') {
     return NextResponse.next()
   }
   
@@ -23,9 +54,7 @@ export async function middleware(request: NextRequest) {
     // These endpoints need authentication, so continue with token verification
   }
   
-  // Check for authentication token
-  const token = request.cookies.get('auth-token')?.value || 
-                request.headers.get('authorization')?.replace('Bearer ', '')
+  // Token already checked above for home page redirect
   
   if (!token) {
     if (pathname.startsWith('/api/')) {

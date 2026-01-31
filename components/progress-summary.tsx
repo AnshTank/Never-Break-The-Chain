@@ -28,7 +28,7 @@ export default function ProgressSummary({ currentMonth }: ProgressSummaryProps) 
   // Optimize refresh handler with useCallback
   const handleRefresh = useCallback(async () => {
     if (currentMonth) {
-      await refetch(currentMonth, true) // Force refresh
+      await refetch(currentMonth) // Refresh
     }
   }, [refetch, currentMonth])
 
@@ -36,6 +36,10 @@ export default function ProgressSummary({ currentMonth }: ProgressSummaryProps) 
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false
+      // Force initial fetch on mount
+      if (currentMonth) {
+        refetch(currentMonth)
+      }
       return
     }
     
@@ -45,7 +49,7 @@ export default function ProgressSummary({ currentMonth }: ProgressSummaryProps) 
         refetch(currentMonth)
       }
     }
-  }, [monthKey])
+  }, [monthKey, refetch, currentMonth])
 
   if (loading || !analytics) {
     return (

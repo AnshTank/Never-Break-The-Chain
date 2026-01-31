@@ -12,6 +12,15 @@ export interface UserProgress {
   };
 }
 
+// Welcome messages for new users
+const welcomeMessages = [
+  "🎉 Welcome to your transformation journey! Your first chain link starts now! ✨",
+  "🚀 Amazing! You've just taken the most important step - starting! Let's build something incredible together! 💎",
+  "🌟 Your future self is already thanking you! Ready to never break the chain? 🔗",
+  "💪 Welcome aboard, chain builder! Every expert was once a beginner - your journey starts today! 🎯",
+  "🔥 Fantastic! You're now part of an exclusive club of people who actually take action! Let's go! ⚡"
+];
+
 // Morning Motivational Messages (7 AM)
 const morningMessages = {
   fresh: [
@@ -249,6 +258,25 @@ export class NotificationService {
     }
 
     return null;
+  }
+
+  // Send welcome notification for new users
+  static async sendWelcomeNotification(): Promise<void> {
+    if (typeof window === "undefined") return;
+
+    if (await this.requestPermission()) {
+      const message = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
+      
+      // Send welcome notification immediately
+      new Notification("🎆 Never Break The Chain", {
+        body: message,
+        icon: "/favicon.ico",
+        badge: "/favicon.ico",
+        tag: "welcome-message",
+        requireInteraction: true, // Keep it visible longer
+        silent: false,
+      });
+    }
   }
 
   // Browser Notification API

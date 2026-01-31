@@ -51,9 +51,9 @@ export default function TermsOfService() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 py-12 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 text-amber-600 hover:text-amber-800 transition-colors">
+          <Link href="/dashboard" className="inline-flex items-center gap-2 text-amber-600 hover:text-amber-800 transition-colors">
             <ArrowLeft className="w-4 h-4" />
-            Back to Home
+            Back to Dashboard
           </Link>
         </div>
 

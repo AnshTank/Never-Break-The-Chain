@@ -9,6 +9,7 @@ import DailyCheckIn from "@/components/daily-check-in";
 import ProgressSummary from "@/components/progress-summary";
 import ProgressView from "@/components/progress-view";
 import CoolLoading from "@/components/cool-loading";
+import MNZDInfoSection from "@/components/mnzd-info-section";
 import { GlobalStateProvider } from "@/lib/global-state";
 
 export default function Home() {
@@ -67,7 +68,10 @@ export default function Home() {
         <main className="mx-auto max-w-6xl px-2 sm:px-4 py-2 sm:py-4 md:py-6">
           <Header />
 
-          <div className="mt-4 sm:mt-6 space-y-4 sm:space-y-6">
+          {/* MNZD Info Section */}
+          <MNZDInfoSection />
+
+          <div className="space-y-4 sm:space-y-6">
             {/* Enhanced Tab Navigation */}
             <div className="relative">
               <div className="flex gap-2 sm:gap-8 border-b border-slate-200 dark:border-slate-700 overflow-x-auto">

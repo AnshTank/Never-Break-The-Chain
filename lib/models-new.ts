@@ -68,16 +68,16 @@ export interface UserSettings {
 
 export const DEFAULT_MNZD_CONFIGS: MNZDConfig[] = [
   {
-    id: "move",
-    name: "Move",
-    description: "Physical activity and exercise",
+    id: "meditation",
+    name: "Meditation",
+    description: "Mindfulness and mental clarity",
     minMinutes: 30,
     color: "#8b5cf6",
   },
   {
-    id: "nourish",
-    name: "Nourish",
-    description: "Learning and mental growth",
+    id: "nutrition",
+    name: "Nutrition",
+    description: "Learning and knowledge growth",
     minMinutes: 20,
     color: "#06b6d4",
   },
@@ -89,9 +89,9 @@ export const DEFAULT_MNZD_CONFIGS: MNZDConfig[] = [
     color: "#f59e0b",
   },
   {
-    id: "document",
-    name: "Document",
-    description: "Writing and reflection",
+    id: "discipline",
+    name: "Discipline",
+    description: "Focused work and productivity",
     minMinutes: 15,
     color: "#10b981",
   },

@@ -826,6 +826,30 @@ const TestimonialsSection = () => {
 
 // Motivational CTA Section
 const MotivationalSection = () => {
+  const sparkleArray = Array.from({ length: 8 });
+  const stats = [
+    {
+      value: "37×",
+      label: "Better in 365 days",
+      icon: TrendingUp,
+      description: "Compound growth effect",
+      color: "from-emerald-400 to-teal-400",
+    },
+    {
+      value: "90%",
+      label: "See results in 30 days",
+      icon: Target,
+      description: "Proven success rate",
+      color: "from-blue-400 to-indigo-400",
+    },
+    {
+      value: "180+",
+      label: "Hours of growth yearly",
+      icon: Clock,
+      description: "Just 30 min daily",
+      color: "from-purple-400 to-pink-400",
+    },
+  ];
   return (
     <section id="start-today" className="relative py-20 overflow-hidden">
       {/* Creative Background */}
@@ -965,46 +989,40 @@ const MotivationalSection = () => {
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-8">
               <motion.div
                 whileHover={{
-                  x: [0, -2, 2, -2, 2, 0],
+                  x: [0, -1, 1, -1, 1, 0],
                 }}
                 whileTap={{ scale: 0.95 }}
                 transition={{
-                  x: { duration: 0.3, ease: "easeInOut" },
+                  x: { duration: 0.4, ease: "easeInOut" },
                 }}
-                className="relative group perspective-1000"
+                className="relative group"
               >
-                <Link href="/signup" className="relative overflow-hidden">
+                <Link href="/signup" className="relative">
                   {/* Main button */}
-                  <div className="relative px-8 py-4 bg-white text-[#0070A0] font-black text-lg rounded-2xl shadow-2xl flex items-center gap-3 transition-all duration-300 group-hover:shadow-[#0070A0]/50 group-hover:shadow-2xl">
-                    {/* Animated background layers */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-gray-50 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl" />
-
-                    {/* Ripple effect */}
-                    <div className="absolute inset-0 rounded-full">
-                      <div className="absolute inset-0 bg-white/20 rounded-full scale-0 group-hover:scale-150 transition-transform duration-700 ease-out" />
-                      <div className="absolute inset-0 bg-white/10 rounded-full scale-0 group-hover:scale-125 transition-transform duration-500 ease-out delay-100" />
-                    </div>
-
-                    {/* Sparkle particles */}
+                  <div className="relative px-8 py-4 bg-white text-[#0070A0] font-black text-lg rounded-2xl shadow-2xl flex items-center gap-3 transition-all duration-300 group-hover:shadow-xl overflow-hidden">
+                    {/* Particle effects on hover */}
                     <div className="absolute inset-0 pointer-events-none">
-                      {Array.from({ length: 8 }).map((_, i) => (
+                      {sparkleArray.map((_, i) => (
                         <motion.div
                           key={i}
-                          className="absolute w-1 h-1 bg-[#0070A0] rounded-full"
+                          className="absolute w-2 h-2 bg-[#0070A0] rounded-full opacity-0 group-hover:opacity-100"
                           style={{
-                            left: `${20 + i * 10}%`,
-                            top: `${30 + (i % 2) * 40}%`,
+                            left: `${15 + i * 8}%`,
+                            top: `${20 + (i % 3) * 20}%`,
                           }}
-                          animate={{
-                            scale: [0, 1, 0],
-                            opacity: [0, 1, 0],
-                            rotate: [0, 180, 360],
+                          variants={{
+                            hover: {
+                              scale: [0, 1.2, 0],
+                              y: [0, -20, -40],
+                              opacity: [0, 1, 0],
+                            }
                           }}
+                          animate="hover"
                           transition={{
-                            duration: 1.5,
+                            duration: 0.8,
                             delay: i * 0.1,
                             repeat: Infinity,
-                            repeatDelay: 2,
+                            repeatDelay: 1.5,
                           }}
                         />
                       ))}
@@ -1013,39 +1031,14 @@ const MotivationalSection = () => {
                     {/* Content */}
                     <motion.div
                       className="relative z-10 flex items-center gap-3"
-                      whileHover={{ x: 2 }}
+                      whileHover={{ scale: 1.02 }}
                       transition={{ type: "spring", stiffness: 400 }}
                     >
-                      <motion.div
-                        animate={{ rotate: [0, 15, -15, 0] }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                      >
-                        <Zap className="w-6 h-6" />
-                      </motion.div>
+                      <Zap className="w-6 h-6" />
                       <span>Start Your Chain Now</span>
-                      <motion.div
-                        className="group-hover:translate-x-1 transition-transform duration-300"
-                        animate={{ x: [0, 3, 0] }}
-                        transition={{
-                          duration: 1.5,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                      >
-                        <ArrowRight className="w-6 h-6" />
-                      </motion.div>
+                      <ArrowRight className="w-6 h-6" />
                     </motion.div>
                   </div>
-
-                  {/* Glow effect */}
-                  <div className="absolute inset-0 bg-white/50 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 scale-110" />
-
-                  {/* Border animation */}
-                  <div className="absolute inset-0 rounded-2xl border-2 border-transparent group-hover:border-white/30 transition-all duration-300" />
                 </Link>
               </motion.div>
 
@@ -1066,29 +1059,7 @@ const MotivationalSection = () => {
             transition={{ delay: 0.8, duration: 0.8 }}
             className="grid grid-cols-1 md:grid-cols-3 gap-8"
           >
-            {[
-              {
-                value: "37×",
-                label: "Better in 365 days",
-                icon: TrendingUp,
-                description: "Compound growth effect",
-                color: "from-emerald-400 to-teal-400",
-              },
-              {
-                value: "90%",
-                label: "See results in 30 days",
-                icon: Target,
-                description: "Proven success rate",
-                color: "from-blue-400 to-indigo-400",
-              },
-              {
-                value: "180+",
-                label: "Hours of growth yearly",
-                icon: Clock,
-                description: "Just 30 min daily",
-                color: "from-purple-400 to-pink-400",
-              },
-            ].map((stat, index) => (
+            {stats.map((stat, index) => (
               <motion.div
                 key={stat.label}
                 initial={{ opacity: 0, y: 30, scale: 0.9 }}
@@ -1145,7 +1116,6 @@ const MotivationalSection = () => {
   );
 };
 
-// Footer
 const Footer = () => {
   return <></>;
 };

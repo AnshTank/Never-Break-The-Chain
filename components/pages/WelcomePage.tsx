@@ -10,6 +10,8 @@ import {
   BarChart3, Award, Flame
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNotifications } from '@/lib/notifications/use-notifications';
+import NotificationService from '@/lib/notifications/notification-service';
 import TermsAcceptance from '@/components/TermsAcceptance';
 
 // Types
@@ -22,10 +24,10 @@ interface MNZDConfig {
 }
 
 const defaultMNZDConfigs: MNZDConfig[] = [
-  { id: 'move', name: 'Move', description: 'Physical activity and health', minMinutes: 25, color: '#10b981' },
-  { id: 'nourish', name: 'Nourish', description: 'Learning and mental growth', minMinutes: 20, color: '#8b5cf6' },
+  { id: 'meditation', name: 'Meditation', description: 'Mindfulness and mental clarity', minMinutes: 25, color: '#10b981' },
+  { id: 'nutrition', name: 'Nutrition', description: 'Learning and knowledge growth', minMinutes: 20, color: '#8b5cf6' },
   { id: 'zone', name: 'Zone', description: 'Deep focus and flow state', minMinutes: 30, color: '#3b82f6' },
-  { id: 'document', name: 'Document', description: 'Capture wisdom and insights', minMinutes: 15, color: '#f97316' }
+  { id: 'discipline', name: 'Discipline', description: 'Focused work and productivity', minMinutes: 15, color: '#f97316' }
 ];
 
 // Phase configuration
@@ -162,6 +164,7 @@ const BubbleEffect = ({ seed = 0 }: { seed?: number }) => {
 
 const WelcomePage = () => {
   const router = useRouter();
+  const { enableNotifications, scheduleSmartNotifications, sendWelcomeNotification } = useNotifications();
   const [currentPhase, setCurrentPhase] = useState(0);
   const [completedPhases, setCompletedPhases] = useState<number[]>([]);
   const [unlockedPhases, setUnlockedPhases] = useState<number[]>([0]); // Track unlocked phases
@@ -533,7 +536,46 @@ const WelcomePage = () => {
       });
 
       if (response.ok) {
-        // Clear saved MNZD configs from localStorage only
+        // Save final MNZD configs to database
+        try {
+          await fetch('/api/user/mnzd-config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ mnzdConfigs }),
+          });
+        } catch (error) {
+          console.error('Failed to save MNZD configs to database:', error);
+          // Continue with setup even if MNZD config fails
+        }
+        
+        // Request notification permissions and setup smart notifications
+        try {
+          const granted = await enableNotifications();
+          if (granted) {
+            // Send immediate welcome notification
+            await sendWelcomeNotification();
+            
+            // Schedule smart notifications with user progress
+            const userProgress = {
+              completed: 0,
+              streak: 1,
+              timeOfDay: 'morning' as const,
+              patterns: {
+                usualCompletionTime: '18:00',
+                strongestPillar: mnzdConfigs[0]?.name || 'Focus',
+                weakestPillar: mnzdConfigs[mnzdConfigs.length - 1]?.name || 'Growth',
+                weekdayPerformance: 0.7,
+                weekendPerformance: 0.6
+              }
+            };
+            scheduleSmartNotifications(userProgress);
+          }
+        } catch (error) {
+          console.log('Notification setup skipped:', error);
+        }
+        
+        // Clear saved MNZD configs from localStorage
         localStorage.removeItem('welcomeMNZDConfigs');
         setShowPasswordModal(false);
         toast.success('Welcome to your journey!');
@@ -1006,10 +1048,10 @@ const WelcomePage = () => {
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
               {[
-                { letter: 'M', name: 'Move', desc: 'Physical Foundation', icon: Activity, color: '#10b981', benefit: 'Exercise grows new brain cells' },
-                { letter: 'N', name: 'Nourish', desc: 'Mental Growth', icon: BookOpen, color: '#8b5cf6', benefit: '180+ hours of learning/year' },
+                { letter: 'M', name: 'Meditation', desc: 'Mindfulness Foundation', icon: Activity, color: '#10b981', benefit: 'Mental clarity and emotional balance' },
+                { letter: 'N', name: 'Nutrition', desc: 'Knowledge Growth', icon: BookOpen, color: '#8b5cf6', benefit: '180+ hours of learning/year' },
                 { letter: 'Z', name: 'Zone', desc: 'Deep Focus', icon: Target, color: '#3b82f6', benefit: 'Sustained attention = breakthroughs' },
-                { letter: 'D', name: 'Document', desc: 'Capture Wisdom', icon: PenTool, color: '#f97316', benefit: 'Written thoughts = future resources' }
+                { letter: 'D', name: 'Discipline', desc: 'Focused Work', icon: PenTool, color: '#f97316', benefit: 'Consistent action builds success' }
               ].map((pillar, idx) => (
                 <motion.div
                   key={pillar.letter}

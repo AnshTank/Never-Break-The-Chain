@@ -9,24 +9,7 @@ export default function Home() {
   const [isScrolled, setIsScrolled] = useState(false)
   const router = useRouter()
 
-  // Check if user is authenticated and redirect to dashboard
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/user', {
-          method: 'GET',
-          credentials: 'include'
-        })
-        if (response.ok) {
-          // User is authenticated, redirect to dashboard
-          router.replace('/dashboard')
-        }
-      } catch (error) {
-        // User is not authenticated, stay on landing page
-      }
-    }
-    checkAuth()
-  }, [router])
+
 
   useEffect(() => {
     const handleScroll = () => {

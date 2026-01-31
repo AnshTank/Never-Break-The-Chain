@@ -37,3 +37,42 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function PUT(request: NextRequest) {
+  try {
+    const authResult = await authorizeRequest(request, { checkUserExists: true });
+    if (!authResult.success || !authResult.user) {
+      return createAuthErrorResponse(authResult);
+    }
+
+    const { userId } = authResult.user;
+    const { name } = await request.json()
+    
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+    }
+
+    const { db } = await connectToDatabase()
+    const users = db.collection('users')
+    
+    const result = await users.updateOne(
+      { _id: new ObjectId(userId) },
+      { 
+        $set: { 
+          name: name.trim(),
+          updatedAt: new Date()
+        }
+      }
+    )
+    
+    if (result.matchedCount === 0) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+    
+    return NextResponse.json({ success: true, message: 'Profile updated successfully' })
+    
+  } catch (error) {
+    console.error('Error updating user profile:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

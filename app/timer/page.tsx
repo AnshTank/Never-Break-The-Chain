@@ -30,10 +30,10 @@ interface Stats {
   todaySessions: number;
   totalHours: number;
   mnzdProgress: {
-    code: number;
-    think: number;
-    express: number;
-    move: number;
+    meditation: number;
+    nutrition: number;
+    zone: number;
+    discipline: number;
   };
 }
 
@@ -145,20 +145,20 @@ const themes: Theme[] = [
 
 const mnzdTasks = [
   {
-    id: "move",
-    name: "Move (Physical)",
+    id: "meditation",
+    name: "Meditation (Mindfulness)",
     minMinutes: 30,
     symbol: "△",
     color: "#8b5cf6",
-    description: "Physical activity and exercise",
+    description: "Mindfulness and mental clarity",
   },
   {
-    id: "nourish",
-    name: "Nourish (Learning)",
+    id: "nutrition",
+    name: "Nutrition (Learning)",
     minMinutes: 20,
     symbol: "∞",
     color: "#06b6d4",
-    description: "Learning and mental growth",
+    description: "Learning and knowledge growth",
   },
   {
     id: "zone",
@@ -169,12 +169,12 @@ const mnzdTasks = [
     description: "Deep focused work time",
   },
   {
-    id: "document",
-    name: "Document (Writing)",
+    id: "discipline",
+    name: "Discipline (Work)",
     minMinutes: 15,
     symbol: "{ }",
     color: "#10b981",
-    description: "Writing and reflection",
+    description: "Focused work and productivity",
   },
 ];
 
@@ -202,7 +202,7 @@ export default function TimerPage() {
     todayMinutes: 0,
     todaySessions: 0,
     totalHours: 0,
-    mnzdProgress: { code: 0, think: 0, express: 0, move: 0 },
+    mnzdProgress: { meditation: 0, nutrition: 0, zone: 0, discipline: 0 },
   });
   const [mnzdConfigs, setMnzdConfigs] = useState<MNZDConfig[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -809,7 +809,7 @@ export default function TimerPage() {
         const response = await fetch(`/api/progress?date=${today}`);
         if (response.ok) {
           const progress = await response.json();
-          const mnzdProgress = { code: 0, think: 0, express: 0, move: 0 };
+          const mnzdProgress = { meditation: 0, nutrition: 0, zone: 0, discipline: 0 };
 
           progress.tasks?.forEach((task: any) => {
             if (mnzdProgress.hasOwnProperty(task.taskId)) {
@@ -1953,15 +1953,9 @@ export default function TimerPage() {
                   </div>
                   <div className="grid grid-cols-1 gap-4">
                     {mnzdConfigs.map((config) => {
-                      const progress =
-                        stats.mnzdProgress[
-                          config.id as keyof typeof stats.mnzdProgress
-                        ];
+                      const progress = stats.mnzdProgress[config.id as keyof typeof stats.mnzdProgress] || 0;
                       const isComplete = progress >= config.minMinutes;
-                      const progressPercent = Math.min(
-                        (progress / config.minMinutes) * 100,
-                        100
-                      );
+                      const progressPercent = Math.min((progress / config.minMinutes) * 100, 100);
                       const mnzdTask = mnzdTasks.find(
                         (t) => t.id === config.id
                       );
@@ -2420,14 +2414,8 @@ export default function TimerPage() {
                   </h3>
                   <div className="grid grid-cols-2 gap-3">
                     {mnzdConfigs.map((config) => {
-                      const progress =
-                        stats.mnzdProgress[
-                          config.id as keyof typeof stats.mnzdProgress
-                        ];
-                      const progressPercent = Math.min(
-                        (progress / config.minMinutes) * 100,
-                        100
-                      );
+                      const progress = stats.mnzdProgress[config.id as keyof typeof stats.mnzdProgress] || 0;
+                      const progressPercent = Math.min((progress / config.minMinutes) * 100, 100);
                       const isComplete = progress >= config.minMinutes;
                       const mnzdTask = mnzdTasks.find(
                         (t) => t.id === config.id

@@ -51,6 +51,16 @@ export const useNotifications = () => {
     }
   };
 
+  const sendWelcomeNotification = async () => {
+    if (isEnabled && isClient) {
+      try {
+        await NotificationService.sendWelcomeNotification();
+      } catch (error) {
+        console.error('Failed to send welcome notification:', error);
+      }
+    }
+  };
+
   const sendTestNotification = async () => {
     if (isEnabled && isClient) {
       await NotificationService.sendNotification(
@@ -65,6 +75,7 @@ export const useNotifications = () => {
     permission,
     enableNotifications,
     scheduleSmartNotifications,
+    sendWelcomeNotification,
     sendTestNotification,
     isClient
   };
