@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
           // Update user with new OTP
           await users.updateOne(
             { email: sanitizedEmail },
-            { $set: { otp, otpExpiry } }
+            { $set: { otpCode: otp, otpExpires: otpExpiry } }
           );
           
           // Send OTP email

@@ -107,8 +107,8 @@ export async function POST(request: NextRequest) {
           { email: sanitizedEmail },
           { 
             $set: { 
-              otp, 
-              otpExpiry,
+              otpCode: otp, 
+              otpExpires: otpExpiry,
               name: sanitizedName // Update name if provided
             } 
           }
@@ -144,8 +144,8 @@ export async function POST(request: NextRequest) {
       emailVerified: false, // Require email verification
       isNewUser: true,
       needsPasswordSetup: true,
-      otp,
-      otpExpiry,
+      otpCode: otp,
+      otpExpires: otpExpiry,
       createdAt: new Date(),
     })
 
