@@ -40,6 +40,16 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  useEffect(() => {
+    // Cleanup overflow when modal closes
+    if (!showNotificationModal) {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [showNotificationModal])
+
   const handleLogout = async () => {
     await logout()
   }
@@ -52,6 +62,8 @@ export default function Header() {
   const handleNotificationSettings = () => {
     setShowUserMenu(false)
     setShowNotificationModal(true)
+    // Prevent background scrolling
+    document.body.style.overflow = 'hidden'
   }
 
   return (
@@ -132,7 +144,7 @@ export default function Header() {
               </button>
             </div>
             <div className="p-6">
-              <NotificationSettings />
+              <NotificationSettings onDisableNotifications={() => setShowNotificationModal(false)} />
             </div>
           </div>
         </div>

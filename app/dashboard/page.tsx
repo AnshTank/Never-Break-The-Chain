@@ -21,7 +21,7 @@ export default function Home() {
     "calendar"
   );
   const [loadedData, setLoadedData] = useState<any>({});
-  const { scheduleSmartNotifications, isEnabled } = useNotifications();
+  const { scheduleSmartNotifications, isEnabled, sendWelcomeNotification } = useNotifications();
 
   // Memoize current month to prevent unnecessary re-renders
   const today = useMemo(() => new Date(), []);
@@ -67,8 +67,15 @@ export default function Home() {
         }
       };
       scheduleSmartNotifications(userProgress);
+      
+      // Send welcome notification for new users (streak = 0 or 1)
+      if (data.currentStreak <= 1) {
+        setTimeout(() => {
+          sendWelcomeNotification();
+        }, 2000); // Delay to ensure dashboard is loaded
+      }
     }
-  }, [isEnabled, scheduleSmartNotifications]);
+  }, [isEnabled, scheduleSmartNotifications, sendWelcomeNotification]);
 
   // Early return for loading states - no duplicate API calls
   if (isLoading) {
@@ -178,9 +185,6 @@ export default function Home() {
 
                 {/* Daily Check-in */}
                 <DailyCheckIn preloadedData={loadedData} />
-
-                {/* Notification Settings */}
-                <NotificationSettings />
 
                 {/* Current Month Calendar */}
                 <div className="space-y-4">

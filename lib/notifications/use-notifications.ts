@@ -49,13 +49,13 @@ export const useNotifications = () => {
   };
 
   const scheduleSmartNotifications = async (userProgress: UserProgress) => {
-    if (isEnabled && isClient) {
+    if (isEnabled && isClient && isWebsiteNotificationsEnabled()) {
       NotificationService.scheduleNotifications(userProgress);
     }
   };
 
   const sendWelcomeNotification = async () => {
-    if (isEnabled && isClient) {
+    if (isEnabled && isClient && isWebsiteNotificationsEnabled()) {
       try {
         await NotificationService.sendWelcomeNotification();
       } catch (error) {
@@ -65,11 +65,22 @@ export const useNotifications = () => {
   };
 
   const sendTestNotification = async () => {
-    if (isEnabled && isClient) {
+    if (isEnabled && isClient && isWebsiteNotificationsEnabled()) {
       await NotificationService.sendNotification(
         '🔗 Test Notification',
         'Your smart notifications are working perfectly! 🎉'
       );
+    }
+  };
+
+  const isWebsiteNotificationsEnabled = (): boolean => {
+    if (typeof window === 'undefined') return true;
+    return localStorage.getItem('websiteNotificationsDisabled') !== 'true';
+  };
+
+  const disableWebsiteNotifications = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('websiteNotificationsDisabled', 'true');
     }
   };
 
@@ -80,6 +91,8 @@ export const useNotifications = () => {
     scheduleSmartNotifications,
     sendWelcomeNotification,
     sendTestNotification,
+    isWebsiteNotificationsEnabled,
+    disableWebsiteNotifications,
     isClient
   };
 };

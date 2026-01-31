@@ -1,19 +1,28 @@
 'use client'
 
-import { useState } from 'react';
-import { Bell, BellOff, TestTube, Sparkles } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Bell, BellOff, TestTube, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNotifications } from '@/lib/notifications/use-notifications';
 import { toast } from 'sonner';
 
-export default function NotificationSettings() {
-  const { isEnabled, permission, enableNotifications, sendTestNotification } = useNotifications();
+interface NotificationSettingsProps {
+  onDisableNotifications?: () => void;
+}
+
+export default function NotificationSettings({ onDisableNotifications }: NotificationSettingsProps) {
+  const { isEnabled, permission, enableNotifications, sendTestNotification, disableWebsiteNotifications, isWebsiteNotificationsEnabled } = useNotifications();
   const [isLoading, setIsLoading] = useState(false);
+  const [websiteEnabled, setWebsiteEnabled] = useState(true);
+
+  useEffect(() => {
+    setWebsiteEnabled(isWebsiteNotificationsEnabled());
+  }, [isWebsiteNotificationsEnabled]);
 
   const handleToggleNotifications = async () => {
     if (isEnabled) {
-      // Can't programmatically disable, show instructions
-      toast.info('To disable notifications, click the 🔒 icon in your browser address bar and change notification settings.');
+      // Can't programmatically disable browser notifications, show instructions
+      toast.info('To disable browser notifications, click the 🔒 icon in your browser address bar and change notification settings.');
       return;
     }
     
@@ -32,7 +41,25 @@ export default function NotificationSettings() {
     }
   };
 
+  const handleToggleWebsiteNotifications = () => {
+    if (websiteEnabled) {
+      disableWebsiteNotifications();
+      setWebsiteEnabled(false);
+      toast.success('Website notifications disabled');
+      onDisableNotifications?.();
+    } else {
+      // Re-enable website notifications
+      localStorage.removeItem('websiteNotificationsDisabled');
+      setWebsiteEnabled(true);
+      toast.success('Website notifications enabled');
+    }
+  };
+
   const handleTestNotification = async () => {
+    if (!websiteEnabled) {
+      toast.error('Website notifications are disabled');
+      return;
+    }
     try {
       await sendTestNotification();
       toast.success('Test notification sent!');
@@ -91,9 +118,30 @@ export default function NotificationSettings() {
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${isEnabled ? 'bg-green-500' : 'bg-gray-400'}`} />
             <span className="text-sm font-medium">
-              {isEnabled ? 'Enabled' : 'Disabled'}
+              Browser: {isEnabled ? 'Enabled' : 'Disabled'}
             </span>
           </div>
+        </div>
+        
+        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${websiteEnabled ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span className="text-sm font-medium">
+              Website: {websiteEnabled ? 'Enabled' : 'Disabled'}
+            </span>
+          </div>
+          <Button
+            onClick={handleToggleWebsiteNotifications}
+            variant="outline"
+            size="sm"
+            className={websiteEnabled ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'}
+          >
+            {websiteEnabled ? (
+              <><X className="w-3 h-3 mr-1" /> Disable</>
+            ) : (
+              <><Bell className="w-3 h-3 mr-1" /> Enable</>
+            )}
+          </Button>
         </div>
 
         <div className="flex gap-3">
@@ -112,10 +160,10 @@ export default function NotificationSettings() {
             ) : (
               <Bell className="w-4 h-4 mr-2" />
             )}
-            {isEnabled ? 'Manage Settings' : 'Enable Notifications'}
+            {isEnabled ? 'Manage Browser Settings' : 'Enable Browser Notifications'}
           </Button>
           
-          {isEnabled && (
+          {isEnabled && websiteEnabled && (
             <Button
               onClick={handleTestNotification}
               variant="outline"
