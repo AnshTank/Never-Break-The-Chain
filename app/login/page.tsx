@@ -362,6 +362,12 @@ function LoginForm() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
         >
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-slate-600 text-sm hover:text-slate-800 hover:underline transition-all duration-300 cursor-pointer mb-4"
+          >
+            ← Back to Home
+          </Link>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent tracking-tight mb-2 transition-all duration-300 hover:from-amber-800 hover:to-orange-700">
             🔗 NEVER BREAK THE CHAIN
           </h1>
