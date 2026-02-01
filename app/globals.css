@@ -4,6 +4,20 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* Vintage Sketch Theme Colors */
+  --ink-blue: 210 55% 23%;
+  --faded-blue: 214 38% 47%;
+  --pencil-gray: 220 9% 46%;
+  --paper-cream: 40 33% 93%;
+  --paper-sepia: 36 32% 85%;
+  --ink-splash: 210 60% 13%;
+  --highlight-blue: 209 48% 65%;
+  --sketch-brown: 30 23% 44%;
+  --ruler-red: 6 57% 49%;
+  --charcoal: 218 18% 23%;
+  --graphite: 215 14% 34%;
+  --eraser-pink: 0 50% 94%;
+
   /* Warm, muted palette for calm journal-like feel */
   --background: oklch(0.98 0.005 60);
   --foreground: oklch(0.25 0.02 60);
@@ -39,6 +53,42 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Vintage Color Palette */
+  --vintage-parchment: #f4f1e8;
+  --vintage-parchment-light: #faf8f3;
+  --vintage-parchment-dark: #ede8d3;
+  --vintage-ink-dark: #2c1810;
+  --vintage-ink-medium: #4a3728;
+  --vintage-ink-light: #6b5b4f;
+  --vintage-sepia: #8b4513;
+  --vintage-sepia-light: #cd853f;
+  --vintage-gold: #daa520;
+  --vintage-gold-light: #f4d03f;
+  --vintage-copper: #b87333;
+  --vintage-bronze: #cd7f32;
+  
+  /* Vintage Accent Colors */
+  --vintage-sapphire: #1e3a8a;
+  --vintage-emerald: #065f46;
+  --vintage-amber: #d97706;
+  --vintage-ruby: #991b1b;
+  
+  /* Enhanced Gradients */
+  --vintage-paper-gradient: linear-gradient(135deg, var(--vintage-parchment-light) 0%, var(--vintage-parchment) 35%, var(--vintage-parchment-dark) 100%);
+  --vintage-ink-gradient: linear-gradient(135deg, var(--vintage-ink-dark) 0%, var(--vintage-ink-medium) 50%, var(--vintage-ink-light) 100%);
+  --vintage-gold-gradient: linear-gradient(135deg, var(--vintage-gold) 0%, var(--vintage-gold-light) 50%, var(--vintage-copper) 100%);
+  
+  /* Typography */
+  --vintage-font-serif: 'Times New Roman', 'Georgia', serif;
+  --vintage-font-script: 'Brush Script MT', cursive;
+  
+  /* Animation Performance Variables */
+  --animation-duration-fast: 200ms;
+  --animation-duration-normal: 300ms;
+  --animation-duration-slow: 500ms;
+  --animation-easing: cubic-bezier(0.4, 0, 0.2, 1);
+  --animation-easing-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 .dark {
@@ -116,19 +166,95 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
+@layer components {
+  .sketch-card {
+    @apply relative bg-[hsl(var(--paper-cream))] border-2 border-[hsl(var(--ink-blue))] p-8;
+    box-shadow: 4px 4px 0 hsl(var(--ink-blue));
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
-  body {
-    @apply bg-background text-foreground;
+
+  .sketch-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 8px 8px 0 hsl(var(--ink-blue));
   }
+
+  .sketch-button {
+    @apply inline-flex items-center justify-center px-6 py-3 bg-[hsl(var(--ink-blue))] text-[hsl(var(--paper-cream))] font-medium border-2 border-[hsl(var(--ink-blue))] transition-all duration-200;
+    font-family: var(--font-caveat), cursive;
+    font-size: 1.25rem;
+    box-shadow: 3px 3px 0 hsl(var(--ink-blue));
+  }
+
+  .sketch-button:hover {
+    @apply bg-[hsl(var(--faded-blue))];
+    transform: translate(-1px, -1px);
+    box-shadow: 5px 5px 0 hsl(var(--ink-blue));
+  }
+
+  .sketch-button:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 hsl(var(--ink-blue));
+  }
+
+  .handwritten {
+    font-family: var(--font-caveat), cursive;
+  }
+
+  .font-handwritten {
+    font-family: var(--font-caveat), cursive;
+  }
+
+  .typewriter {
+    font-family: var(--font-space-mono), monospace;
+  }
+
+  .serif-text {
+    font-family: var(--font-merriweather), serif;
+  }
+
+  .font-serif {
+    font-family: var(--font-merriweather), serif;
+  }
+
+  .font-mono {
+    font-family: var(--font-space-mono), monospace;
+  }
+
+  .shadow-sketch {
+    box-shadow: 4px 4px 0 hsl(var(--ink-blue));
+  }
+
+  .shadow-sketch-lg {
+    box-shadow: 8px 8px 0 hsl(var(--ink-blue));
+  }
+
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-merriweather), serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-caveat), cursive;
+    font-weight: 600;
+    text-rendering: geometricPrecision;
+    word-spacing: 0.1em;
+    overflow: visible;
+  }
+
+  code, pre {
+    font-family: var(--font-space-mono), monospace;
   }
 
   /* Custom scrollbar for main website */

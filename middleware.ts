@@ -6,7 +6,7 @@ import { ObjectId } from 'mongodb'
 
 export const runtime = 'nodejs'
 
-const publicPaths = ['/login', '/signup', '/forgot-password', '/delete-account', '/terms', '/privacy', '/contact', '/feedback', '/api/auth/login', '/api/auth/signup', '/api/auth/setup-password', '/api/auth/forgot-password', '/api/auth/delete-account', '/api/auth/resend-setup', '/api/auth/verify-otp', '/api/auth/send-otp', '/api/auth/complete-signup', '/api/auth/reset-password', '/api/contact', '/api/feedback']
+const publicPaths = ['/about', '/login', '/signup', '/forgot-password', '/delete-account', '/terms', '/privacy', '/contact', '/feedback', '/api/auth/login', '/api/auth/signup', '/api/auth/setup-password', '/api/auth/forgot-password', '/api/auth/delete-account', '/api/auth/resend-setup', '/api/auth/verify-otp', '/api/auth/send-otp', '/api/auth/complete-signup', '/api/auth/reset-password', '/api/contact', '/api/feedback', '/api/about-contact', '/about-contact']
 const apiAuthPaths = ['/api/auth/refresh', '/api/auth/logout', '/api/auth/cleanup', '/api/progress', '/api/user', '/api/analytics', '/api/timer-data', '/api/settings']
 const welcomeRequiredPaths = ['/welcome']
 

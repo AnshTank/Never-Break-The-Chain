@@ -1,0 +1,59 @@
+{
+  "name": "Never Break The Chain - MNZD Habit Tracker by Ansh Tank",
+  "short_name": "Never Break Chain",
+  "description": "Professional habit tracking app by Ansh Tank. Transform your life with MNZD methodology - Meditation, Nutrition, Zone (Exercise), and Discipline. Built with Next.js, TypeScript, and MongoDB.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "categories": ["health", "productivity", "lifestyle", "education"],
+  "lang": "en",
+  "dir": "ltr",
+  "scope": "/",
+  "id": "never-break-chain-ansh-tank",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/og-image.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Never Break The Chain Dashboard by Ansh Tank"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View your MNZD progress",
+      "url": "/dashboard",
+      "icons": [{ "src": "/favicon.svg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Analytics",
+      "short_name": "Analytics",
+      "description": "View detailed analytics",
+      "url": "/analytics",
+      "icons": [{ "src": "/favicon.svg", "sizes": "96x96" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "developer": {
+    "name": "Ansh Tank",
+    "url": "https://github.com/AnshTank"
+  }
+}

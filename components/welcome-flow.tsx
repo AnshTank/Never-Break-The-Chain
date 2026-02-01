@@ -6,6 +6,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { MNZDConfig } from "@/lib/types";
+import NotificationPermissionStep from "./NotificationPermissionStep";
 // import { DEFAULT_MNZD_CONFIGS } from "@/lib/models";
 // Temporarily define default configs inline
 const DEFAULT_MNZD_CONFIGS = [
@@ -21,7 +22,7 @@ interface WelcomeFlowProps {
 }
 
 export default function WelcomeFlow({ isNewUser, onComplete }: WelcomeFlowProps) {
-  const [step, setStep] = useState<"info" | "customize" | "complete">("info");
+  const [step, setStep] = useState<"info" | "customize" | "notifications" | "complete">("info");
   const [tempConfigs, setTempConfigs] = useState<any[]>(DEFAULT_MNZD_CONFIGS);
 
   if (!isNewUser) return null;
@@ -187,11 +188,23 @@ export default function WelcomeFlow({ isNewUser, onComplete }: WelcomeFlowProps)
                 <Button variant="outline" onClick={() => setStep("info")} className="flex-1">
                   Back
                 </Button>
-                <Button onClick={handleComplete} className="flex-1">
-                  Start My Journey
+                <Button onClick={() => setStep("notifications")} className="flex-1">
+                  Continue
                 </Button>
               </div>
             </div>
+          </>
+        )}
+
+        {step === "notifications" && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-2xl">Enable Smart Notifications</DialogTitle>
+            </DialogHeader>
+            <NotificationPermissionStep
+              onComplete={handleComplete}
+              onSkip={handleComplete}
+            />
           </>
         )}
       </DialogContent>

@@ -26,6 +26,12 @@ export default function NotificationSettings({ onDisableNotifications }: Notific
       return;
     }
     
+    // Check if permission is denied
+    if (permission === 'denied') {
+      toast.error('Notifications are blocked. Please click the 🔒 icon in your browser address bar and allow notifications.');
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const granted = await enableNotifications();

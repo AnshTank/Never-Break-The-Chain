@@ -14,6 +14,7 @@ export default function ConditionalFooter() {
     "/forgot-password",
     "/delete-account",
     "/timer",
+    "/about",
   ];
   const isAuthPage = authPages.includes(pathname);
 

@@ -1,0 +1,11 @@
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="180" height="180" rx="40" fill="#ffffff"/>
+  <g transform="translate(30, 30)">
+    <!-- Chain Link 1 -->
+    <ellipse cx="45" cy="45" rx="20" ry="30" stroke="#3b82f6" stroke-width="8" fill="none" transform="rotate(-45 45 45)"/>
+    <!-- Chain Link 2 -->
+    <ellipse cx="75" cy="75" rx="20" ry="30" stroke="#3b82f6" stroke-width="8" fill="none" transform="rotate(45 75 75)"/>
+    <!-- Connecting elements -->
+    <circle cx="60" cy="60" r="4" fill="#3b82f6"/>
+  </g>
+</svg>

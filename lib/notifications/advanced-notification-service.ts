@@ -1,4 +1,4 @@
-// Intelligent Notification System
+// Advanced Intelligent Notification System with Inactivity Detection
 export interface UserProgress {
   completed: number; // 0-4 MNZD tasks completed
   streak: number;
@@ -10,6 +10,14 @@ export interface UserProgress {
     weekdayPerformance: number;
     weekendPerformance: number;
   };
+}
+
+export interface ActivityData {
+  lastActivity: number;
+  sessionStart: number;
+  totalActiveTime: number;
+  inactivityStreak: number;
+  dailyActiveTime: number;
 }
 
 // Welcome messages for new users
@@ -63,7 +71,7 @@ const eveningMessages = {
     "💎 Solid foundation with 2/4! Let's build higher! 🏗️",
   ],
   oneComplete: [
-    "🌱 Every journey starts with one step! 1/4 is progress! 🚶‍♂️",
+    "🌱 Every journey starts with one step! 1/4 is progress! 🚶♂️",
     "💪 Your {strongest} pillar is solid! Time to strengthen the others! 🏗️",
     "⭐ 1 down, 3 to go! Small wins lead to big victories! 🎯",
     "🔥 You showed up! That's what separates winners from wishers! 🏆",
@@ -78,71 +86,121 @@ const eveningMessages = {
   ],
 };
 
-// Random Smart Reminders (throughout the day)
-const randomReminders = {
-  gentle: [
-    "🌟 Quick check-in: How's your MNZD progress today? Small steps count! 👣",
-    "💡 Friendly reminder: Your future self will thank you for today's efforts! ✨",
-    "🎯 Just a nudge: Which MNZD pillar could use some love right now? 💝",
-    "⚡ Power moment: 5 minutes of progress beats zero minutes of perfection! 🚀",
-    "🌱 Growth check: Every small action is building your stronger tomorrow! 💪",
-  ],
-  motivational: [
-    "🔥 Your chain is waiting! Which pillar will you strengthen next? 💎",
-    "🏆 Champions show up even when they don't feel like it. That's you! 👑",
-    "⭐ Plot twist: Today's the day you surprise yourself with progress! 🎭",
-    "🚀 Momentum builder: One MNZD task can shift your entire day! ⚡",
-    "💪 Strength reminder: You've overcome 100% of your tough days so far! 🌟",
-  ],
-  encouraging: [
-    "🤗 No pressure, just possibility: What feels achievable right now? 🌈",
-    "💝 Self-care reminder: Progress over perfection, always! 🌸",
-    "🌅 Fresh perspective: Every moment is a new chance to begin! ✨",
-    "🎨 Creative nudge: How can you make MNZD fun today? 🎪",
-    "🌊 Flow state: Sometimes the best progress happens naturally! 🍃",
-  ],
-};
-
-// Inactivity-based messages
+// Advanced Inactivity Messages with Smart Timing
 const inactivityMessages = {
-  short: [
-    // 2-3 hours inactive
-    "👋 Just checking in! Your MNZD journey is still calling! 📞",
-    "🌟 Gentle reminder: Small progress is still progress! 🐣",
-    "💡 Quick thought: Which pillar feels most doable right now? 🤔",
-  ],
-  medium: [
-    // 4-6 hours inactive
-    "🔔 Friendly nudge: Your chain misses you! Ready to reconnect? 🔗",
-    "⏰ Time check: A few minutes of MNZD can energize your day! ⚡",
-    "🎯 Opportunity alert: Perfect moment for a quick win! 🏹",
-  ],
-  long: [
-    // 6+ hours inactive
-    "🌅 New chapter: Every moment is a fresh start for your habits! 📖",
-    "💪 Comeback time: You've got this - one step at a time! 🚶‍♂️",
-    "🔄 Reset mode: Today still has potential for progress! 🌟",
-  ],
+  gentle: {
+    // 30 minutes - 2 hours
+    messages: [
+      "👋 Quick check-in! Your MNZD journey is still calling! 📞",
+      "🌟 Gentle reminder: Small progress is still progress! 🐣",
+      "💡 Quick thought: Which pillar feels most doable right now? 🤔",
+      "⚡ 5-minute power move: Pick one MNZD task and crush it! 💪",
+      "🎯 Micro-win opportunity: What's the smallest step you can take? 👣",
+    ],
+    interval: { min: 30, max: 120 } // 30 min to 2 hours
+  },
+  encouraging: {
+    // 2-4 hours
+    messages: [
+      "🔔 Friendly nudge: Your chain misses you! Ready to reconnect? 🔗",
+      "⏰ Time check: A few minutes of MNZD can energize your day! ⚡",
+      "🎯 Opportunity alert: Perfect moment for a quick win! 🏹",
+      "🌱 Growth moment: Even 10 minutes counts toward your goals! 📈",
+      "💝 Self-care reminder: Your future self will thank you! 🙏",
+    ],
+    interval: { min: 120, max: 240 } // 2-4 hours
+  },
+  motivational: {
+    // 4-8 hours
+    messages: [
+      "🔥 Your chain is waiting! Which pillar will you strengthen next? 💎",
+      "🏆 Champions show up even when they don't feel like it. That's you! 👑",
+      "⭐ Plot twist: Today's the day you surprise yourself with progress! 🎭",
+      "🚀 Momentum builder: One MNZD task can shift your entire day! ⚡",
+      "💪 Strength reminder: You've overcome 100% of your tough days so far! 🌟",
+    ],
+    interval: { min: 240, max: 480 } // 4-8 hours
+  },
+  comeback: {
+    // 8+ hours
+    messages: [
+      "🌅 New chapter: Every moment is a fresh start for your habits! 📖",
+      "💪 Comeback time: You've got this - one step at a time! 🚶♂️",
+      "🔄 Reset mode: Today still has potential for progress! 🌟",
+      "🎯 Fresh perspective: What feels achievable right now? 🌈",
+      "⚡ Restart energy: Your chain is ready for its next link! 🔗",
+    ],
+    interval: { min: 480, max: 1440 } // 8-24 hours
+  }
 };
 
-// Pattern-based messages (this was missing in the original code)
+// Smart contextual messages based on time of day
+const contextualMessages = {
+  morning: [
+    "🌅 Morning energy boost: Start with your strongest MNZD pillar! ☕",
+    "🔥 Morning momentum: Which habit will set the tone for your day? 🎯",
+    "⚡ Fresh start energy: Your morning choices shape your entire day! 🌟",
+  ],
+  afternoon: [
+    "☀️ Midday check-in: How's your MNZD progress looking? 📊",
+    "🎯 Afternoon opportunity: Perfect time for a productivity boost! ⚡",
+    "💪 Power hour: Use this energy surge for your habits! 🚀",
+  ],
+  evening: [
+    "🌆 Evening reflection: What MNZD wins can you celebrate today? 🎉",
+    "🔥 Golden hour: Perfect time to complete your remaining pillars! ✨",
+    "🎯 Day's end approach: Finish strong with your habits! 💪",
+  ],
+  night: [
+    "🌙 Night owl mode: Even small progress counts! 🦉",
+    "⭐ Late night opportunity: Quick MNZD check before bed? 😴",
+    "💫 Peaceful moment: End your day with intention! 🧘♂️",
+  ]
+};
+
+// Pattern-based messages
 const patternMessages = {
   weekendWarrior: "🎉 Weekend warrior detected! You crush it on weekends! 💪",
   weekdayChamp: "💼 Weekday champion! Your work-life balance is inspiring! ⚖️",
-  morningPerson:
-    "🌅 Early bird catches the worm! Your morning game is strong! ☕",
+  morningPerson: "🌅 Early bird catches the worm! Your morning game is strong! ☕",
   nightOwl: "🦉 Night owl productivity! You shine when others sleep! 🌙",
   consistentStar: "⭐ Mr./Ms. Consistent! Your steady rhythm is beautiful! 🎵",
   comebackKing: "👑 Comeback royalty! You bounce back like a champion! 🏀",
 };
 
-// Smart Notification Logic
+// Advanced Smart Notification Logic
 export class NotificationService {
-  private static lastActivity: number = Date.now();
-  private static randomNotificationTimer: NodeJS.Timeout | null = null;
+  private static activityData: ActivityData = {
+    lastActivity: Date.now(),
+    sessionStart: Date.now(),
+    totalActiveTime: 0,
+    inactivityStreak: 0,
+    dailyActiveTime: 0
+  };
+  
+  private static inactivityTimer: NodeJS.Timeout | null = null;
+  private static dailyResetTimer: NodeJS.Timeout | null = null;
   private static serviceWorkerRegistration: ServiceWorkerRegistration | null = null;
+  private static isInitialized = false;
 
-  // Initialize service worker for push notifications
+  // Initialize the advanced notification system
+  static async initialize(): Promise<void> {
+    if (this.isInitialized || typeof window === 'undefined') return;
+    
+    try {
+      await this.initializeServiceWorker();
+      this.setupActivityTracking();
+      this.startInactivityMonitoring();
+      this.scheduleDailyReset();
+      this.isInitialized = true;
+      
+      console.log('Advanced Notification System initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize notification system:', error);
+    }
+  }
+
+  // Initialize service worker for persistent notifications
   static async initializeServiceWorker(): Promise<void> {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
       console.log('Service Worker not supported');
@@ -150,72 +208,178 @@ export class NotificationService {
     }
 
     try {
-      const registration = await navigator.serviceWorker.register('/sw.js');
-      this.serviceWorkerRegistration = registration;
-      console.log('Service Worker registered successfully:', registration);
+      // Unregister any existing service workers first
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const registration of registrations) {
+        await registration.unregister();
+      }
       
-      // Request notification permission when SW is ready
+      // Register new service worker with proper path
+      const registration = await navigator.serviceWorker.register('/sw.js', {
+        scope: '/',
+        updateViaCache: 'none'
+      });
+      
+      this.serviceWorkerRegistration = registration;
+      console.log('Service Worker registered successfully');
+      
+      // Wait for service worker to be ready
+      await navigator.serviceWorker.ready;
+      
       await this.requestPermission();
     } catch (error) {
       console.error('Service Worker registration failed:', error);
+      // Continue without service worker
     }
   }
 
-  // Track user activity
-  static updateActivity(): void {
-    this.lastActivity = Date.now();
-  }
+  // Setup comprehensive activity tracking
+  static setupActivityTracking(): void {
+    if (typeof window === 'undefined') return;
 
-  // Get random reminder based on inactivity duration
-  static getRandomReminder(inactiveHours: number): string {
-    if (inactiveHours < 3) {
-      const messages = [
-        ...randomReminders.gentle,
-        ...randomReminders.encouraging,
-      ];
-      return messages[Math.floor(Math.random() * messages.length)];
-    } else if (inactiveHours < 6) {
-      const messages = [
-        ...randomReminders.motivational,
-        ...inactivityMessages.medium,
-      ];
-      return messages[Math.floor(Math.random() * messages.length)];
-    } else {
-      const messages = [
-        ...randomReminders.motivational,
-        ...inactivityMessages.long,
-      ];
-      return messages[Math.floor(Math.random() * messages.length)];
-    }
-  }
-
-  // Start smart random notifications
-  static startSmartReminders(): void {
-    if (this.randomNotificationTimer) return;
-
-    const checkInactivity = () => {
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    
+    const updateActivity = () => {
       const now = Date.now();
-      const inactiveTime = now - this.lastActivity;
-      const inactiveHours = inactiveTime / (1000 * 60 * 60);
-
-      // Send random notification if inactive for 2+ hours
-      if (inactiveHours >= 2) {
-        const message = this.getRandomReminder(inactiveHours);
-        this.sendNotification("🔗 Gentle Reminder", message);
-        // Reset activity to avoid spam
-        this.lastActivity = now;
+      const timeSinceLastActivity = now - this.activityData.lastActivity;
+      
+      // Only count as active time if less than 5 minutes since last activity
+      if (timeSinceLastActivity < 5 * 60 * 1000) {
+        this.activityData.totalActiveTime += timeSinceLastActivity;
+        this.activityData.dailyActiveTime += timeSinceLastActivity;
       }
-
-      // Random interval between 1-4 hours
-      const nextCheck = Math.random() * 3 * 60 * 60 * 1000 + 60 * 60 * 1000;
-      this.randomNotificationTimer = setTimeout(checkInactivity, nextCheck);
+      
+      this.activityData.lastActivity = now;
+      this.activityData.inactivityStreak = 0;
+      
+      // Reset inactivity timer
+      this.resetInactivityTimer();
     };
 
-    // Start first check after 2 hours
-    this.randomNotificationTimer = setTimeout(
-      checkInactivity,
-      2 * 60 * 60 * 1000,
-    );
+    events.forEach(event => {
+      document.addEventListener(event, updateActivity, { passive: true });
+    });
+
+    // Track page visibility changes
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        updateActivity();
+      }
+    });
+  }
+
+  // Advanced inactivity monitoring with smart intervals
+  static startInactivityMonitoring(): void {
+    this.resetInactivityTimer();
+  }
+
+  private static resetInactivityTimer(): void {
+    if (this.inactivityTimer) {
+      clearTimeout(this.inactivityTimer);
+    }
+
+    // Start with gentle reminders after 30 minutes
+    this.inactivityTimer = setTimeout(() => {
+      this.handleInactivity();
+    }, 30 * 60 * 1000); // 30 minutes
+  }
+
+  private static handleInactivity(): void {
+    const now = Date.now();
+    const inactiveMinutes = (now - this.activityData.lastActivity) / (1000 * 60);
+    
+    this.activityData.inactivityStreak++;
+    
+    let messageCategory: keyof typeof inactivityMessages;
+    let nextCheckInterval: number;
+
+    if (inactiveMinutes < 120) {
+      messageCategory = 'gentle';
+      nextCheckInterval = 45 * 60 * 1000; // Check again in 45 minutes
+    } else if (inactiveMinutes < 240) {
+      messageCategory = 'encouraging';
+      nextCheckInterval = 60 * 60 * 1000; // Check again in 1 hour
+    } else if (inactiveMinutes < 480) {
+      messageCategory = 'motivational';
+      nextCheckInterval = 90 * 60 * 1000; // Check again in 1.5 hours
+    } else {
+      messageCategory = 'comeback';
+      nextCheckInterval = 120 * 60 * 1000; // Check again in 2 hours
+    }
+
+    // Add contextual timing
+    const contextualMessage = this.getContextualMessage();
+    const inactivityMessage = this.getInactivityMessage(messageCategory);
+    
+    // Alternate between contextual and inactivity messages
+    const message = this.activityData.inactivityStreak % 2 === 1 ? contextualMessage : inactivityMessage;
+    
+    this.sendNotification("🔗 Gentle Reminder", message);
+    
+    // Schedule next check with exponential backoff (max 4 hours)
+    const maxInterval = 4 * 60 * 60 * 1000;
+    const adjustedInterval = Math.min(nextCheckInterval * Math.pow(1.2, this.activityData.inactivityStreak - 1), maxInterval);
+    
+    this.inactivityTimer = setTimeout(() => {
+      this.handleInactivity();
+    }, adjustedInterval);
+  }
+
+  private static getInactivityMessage(category: keyof typeof inactivityMessages): string {
+    const messages = inactivityMessages[category].messages;
+    return messages[Math.floor(Math.random() * messages.length)];
+  }
+
+  private static getContextualMessage(): string {
+    const hour = new Date().getHours();
+    let timeCategory: keyof typeof contextualMessages;
+    
+    if (hour >= 5 && hour < 12) timeCategory = 'morning';
+    else if (hour >= 12 && hour < 17) timeCategory = 'afternoon';
+    else if (hour >= 17 && hour < 22) timeCategory = 'evening';
+    else timeCategory = 'night';
+    
+    const messages = contextualMessages[timeCategory];
+    return messages[Math.floor(Math.random() * messages.length)];
+  }
+
+  // Schedule daily reset at midnight
+  private static scheduleDailyReset(): void {
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    
+    const msUntilMidnight = tomorrow.getTime() - now.getTime();
+    
+    this.dailyResetTimer = setTimeout(() => {
+      this.resetDailyStats();
+      this.scheduleDailyReset(); // Schedule next reset
+    }, msUntilMidnight);
+  }
+
+  private static resetDailyStats(): void {
+    this.activityData.dailyActiveTime = 0;
+    this.activityData.sessionStart = Date.now();
+    console.log('Daily activity stats reset');
+  }
+
+  // Get activity insights
+  static getActivityInsights(): {
+    dailyActiveMinutes: number;
+    sessionActiveMinutes: number;
+    inactivityStreak: number;
+    isActiveUser: boolean;
+  } {
+    const now = Date.now();
+    const sessionTime = now - this.activityData.sessionStart;
+    
+    return {
+      dailyActiveMinutes: Math.round(this.activityData.dailyActiveTime / (1000 * 60)),
+      sessionActiveMinutes: Math.round(this.activityData.totalActiveTime / (1000 * 60)),
+      inactivityStreak: this.activityData.inactivityStreak,
+      isActiveUser: (now - this.activityData.lastActivity) < 30 * 60 * 1000 // Active if last activity < 30 min
+    };
   }
 
   static generateMorningMessage(progress: UserProgress): string {
@@ -320,24 +484,8 @@ export class NotificationService {
       return true;
     }
 
-    if (Notification.permission === "denied") {
-      return false;
-    }
-
-    try {
-      // Force the browser's native permission dialog
-      const permission = await new Promise<NotificationPermission>((resolve) => {
-        // Use the callback version to ensure compatibility
-        const result = Notification.requestPermission((permission) => {
-          resolve(permission);
-        });
-        
-        // Handle promise-based version for modern browsers
-        if (result && typeof result.then === 'function') {
-          result.then(resolve);
-        }
-      });
-      
+    if (Notification.permission !== "denied") {
+      const permission = await Notification.requestPermission();
       if (permission === "granted") {
         // Initialize service worker after permission granted
         if (!this.serviceWorkerRegistration) {
@@ -345,8 +493,6 @@ export class NotificationService {
         }
         return true;
       }
-    } catch (error) {
-      console.error('Error requesting notification permission:', error);
     }
 
     return false;
@@ -358,6 +504,12 @@ export class NotificationService {
     icon?: string,
   ): Promise<void> {
     if (typeof window === "undefined") return;
+
+    // Check if website notifications are disabled
+    if (localStorage.getItem('websiteNotificationsDisabled') === 'true') {
+      console.log('Website notifications disabled, skipping notification');
+      return;
+    }
 
     if (await this.requestPermission()) {
       // Use Service Worker for better notification support
@@ -402,10 +554,15 @@ export class NotificationService {
     }
   }
 
-  // Schedule notifications using browser's built-in scheduling
+  // Enhanced scheduling with smart timing
   static scheduleNotifications(progress: UserProgress): void {
-    // Start smart random reminders
-    this.startSmartReminders();
+    if (typeof window === 'undefined') {
+      console.log('Skipping notification scheduling on server side');
+      return;
+    }
+
+    // Initialize the advanced system
+    this.initialize();
 
     // Check if it's time for morning notification (7 AM)
     const now = new Date();
@@ -456,6 +613,22 @@ export class NotificationService {
         this.sendNotification("🔗 Never Break The Chain", message);
       }, delay);
     }
+  }
+
+  // Cleanup method
+  static cleanup(): void {
+    if (typeof window === 'undefined') return;
+    
+    if (this.inactivityTimer) {
+      clearTimeout(this.inactivityTimer);
+      this.inactivityTimer = null;
+    }
+    if (this.dailyResetTimer) {
+      clearTimeout(this.dailyResetTimer);
+      this.dailyResetTimer = null;
+    }
+    this.isInitialized = false;
+    console.log('Notification system cleaned up');
   }
 }
 

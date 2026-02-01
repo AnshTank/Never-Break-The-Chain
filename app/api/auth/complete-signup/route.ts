@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { generateTokens } from '@/lib/jwt';
+import { sendNewUserNotification } from '@/lib/email-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,6 +44,18 @@ export async function POST(request: NextRequest) {
         { error: 'Email not verified' },
         { status: 400 }
       );
+    }
+
+    // Send new user notification to admin
+    try {
+      await sendNewUserNotification(
+        user.name || user.email.split('@')[0],
+        user.email,
+        new Date()
+      );
+    } catch (notificationError) {
+      console.error('Failed to send new user notification:', notificationError);
+      // Don't fail the signup process if notification fails
     }
 
     // Generate tokens for login

@@ -22,9 +22,6 @@ import {
   CheckCircle,
 } from "lucide-react";
 
-// Detect mobile device
-const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-
 // Simplified animation variants for better performance
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 20 },
@@ -84,17 +81,21 @@ const AnimatedSection = ({
 };
 
 // Hero Section
-const HeroSection = () => {
+const HeroSection = ({ isMobile }: { isMobile: boolean }) => {
   return (
     <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
       {/* Simplified Background Orbs - fewer on mobile */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
-          animate={isMobile ? {} : {
-            x: [0, 50, 0],
-            y: [0, -30, 0],
-            scale: [1, 1.1, 1],
-          }}
+          animate={
+            isMobile
+              ? {}
+              : {
+                  x: [0, 50, 0],
+                  y: [0, -30, 0],
+                  scale: [1, 1.1, 1],
+                }
+          }
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
           className="absolute top-20 -left-20 w-96 h-96 bg-[#0070A0]/10 rounded-full blur-[100px]"
         />
@@ -142,9 +143,9 @@ const HeroSection = () => {
 
             <motion.h1
               variants={fadeInUp}
-              className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight mb-6"
+              className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.25] mb-6 overflow-visible"
             >
-              Never Break <span className="text-gradient">The Chain</span>
+              Never Break <span className="text-gradient ">The Chain</span>
             </motion.h1>
 
             <motion.p
@@ -160,11 +161,15 @@ const HeroSection = () => {
               className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8"
             >
               <motion.div
-                whileHover={isMobile ? {} : {
-                  scale: 1.05,
-                  rotateX: 5,
-                  rotateY: -5,
-                }}
+                whileHover={
+                  isMobile
+                    ? {}
+                    : {
+                        scale: 1.05,
+                        rotateX: 5,
+                        rotateY: -5,
+                      }
+                }
                 whileTap={{ scale: 0.95 }}
                 className="relative group perspective-1000"
               >
@@ -287,7 +292,11 @@ const HeroSection = () => {
           <motion.div
             initial={{ opacity: 0, x: isMobile ? 0 : 100 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: isMobile ? 0.6 : 1, delay: 0.2, ease: "easeOut" }}
+            transition={{
+              duration: isMobile ? 0.6 : 1,
+              delay: 0.2,
+              ease: "easeOut",
+            }}
             className="relative"
           >
             <motion.div
@@ -310,7 +319,7 @@ const HeroSection = () => {
 };
 
 // Features Section
-const FeaturesSection = () => {
+const FeaturesSection = ({ isMobile }: { isMobile: boolean }) => {
   const features = [
     {
       icon: Calendar,
@@ -408,10 +417,14 @@ const FeaturesSection = () => {
             <motion.div
               key={feature.title}
               variants={scaleIn}
-              whileHover={isMobile ? {} : {
-                y: -4,
-                transition: { duration: 0.2, ease: "easeOut" },
-              }}
+              whileHover={
+                isMobile
+                  ? {}
+                  : {
+                      y: -4,
+                      transition: { duration: 0.2, ease: "easeOut" },
+                    }
+              }
               className="group bg-white rounded-2xl p-8 shadow-sm hover:shadow-lg transition-shadow duration-200 border border-gray-100 hover:border-gray-200 relative overflow-hidden"
             >
               <div className="relative z-10">
@@ -509,7 +522,7 @@ const FeaturesSection = () => {
   );
 };
 // How It Works Section
-const HowItWorksSection = () => {
+const HowItWorksSection = ({ isMobile }: { isMobile: boolean }) => {
   const steps = [
     {
       title: "Set Your Goals",
@@ -635,7 +648,7 @@ const HowItWorksSection = () => {
 };
 
 // MNZD Section
-const MNZDSection = () => {
+const MNZDSection = ({ isMobile }: { isMobile: boolean }) => {
   const pillars = [
     {
       letter: "M",
@@ -839,7 +852,7 @@ const TestimonialsSection = () => {
 };
 
 // Motivational CTA Section - Optimized for mobile
-const MotivationalSection = () => {
+const MotivationalSection = ({ isMobile }: { isMobile: boolean }) => {
   const stats = [
     {
       value: "37×",
@@ -863,7 +876,7 @@ const MotivationalSection = () => {
       color: "from-purple-400 to-pink-400",
     },
   ];
-  
+
   return (
     <section id="start-today" className="relative py-20 overflow-hidden">
       {/* Simplified Background for mobile */}
@@ -902,10 +915,14 @@ const MotivationalSection = () => {
             return (
               <motion.div
                 key={i}
-                animate={isMobile ? { opacity: [0.3, 0.6, 0.3] } : {
-                  y: [0, -20, 0],
-                  opacity: [0.3, 0.8, 0.3],
-                }}
+                animate={
+                  isMobile
+                    ? { opacity: [0.3, 0.6, 0.3] }
+                    : {
+                        y: [0, -20, 0],
+                        opacity: [0.3, 0.8, 0.3],
+                      }
+                }
                 transition={{
                   duration: isMobile ? 2 : 3 + (i % 3),
                   delay: delay,
@@ -1013,9 +1030,7 @@ const MotivationalSection = () => {
                   {/* Simplified button */}
                   <div className="relative px-8 py-4 bg-white text-[#0070A0] font-black text-lg rounded-2xl shadow-xl hover:shadow-2xl flex items-center gap-3 transition-all duration-200 overflow-hidden">
                     {/* Content */}
-                    <motion.div
-                      className="relative z-10 flex items-center gap-3"
-                    >
+                    <motion.div className="relative z-10 flex items-center gap-3">
                       <Zap className="w-6 h-6" />
                       <span>Start Your Chain Now</span>
                       <ArrowRight className="w-6 h-6" />
@@ -1103,14 +1118,20 @@ const Footer = () => {
 };
 
 export default function HomePage() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 768);
+  }, []);
+
   return (
     <div className="home-page-container w-full">
-      <HeroSection />
-      <FeaturesSection />
-      <HowItWorksSection />
-      <MNZDSection />
+      <HeroSection isMobile={isMobile} />
+      <FeaturesSection isMobile={isMobile} />
+      <HowItWorksSection isMobile={isMobile} />
+      <MNZDSection isMobile={isMobile} />
       <TestimonialsSection />
-      <MotivationalSection />
+      <MotivationalSection isMobile={isMobile} />
       <Footer />
     </div>
   );

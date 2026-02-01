@@ -11,14 +11,16 @@ export const useNotifications = () => {
   useEffect(() => {
     setIsClient(true);
     if (typeof window !== 'undefined' && 'Notification' in window) {
-      setPermission(Notification.permission);
-      setIsEnabled(Notification.permission === 'granted');
+      // Check actual permission status
+      const currentPermission = Notification.permission;
+      setPermission(currentPermission);
+      setIsEnabled(currentPermission === 'granted');
       
       // Initialize service worker for push notifications
-      NotificationService.initializeServiceWorker();
-      
-      // Track user activity for smart notifications
-      if (Notification.permission === 'granted') {
+      if (currentPermission === 'granted') {
+        NotificationService.initializeServiceWorker();
+        
+        // Track user activity for smart notifications
         const trackActivity = () => NotificationService.updateActivity();
         
         // Track various user interactions
@@ -38,14 +40,49 @@ export const useNotifications = () => {
   }, []);
 
   const enableNotifications = async (): Promise<boolean> => {
-    if (!isClient || typeof window === 'undefined') return false;
+    if (!isClient || typeof window === 'undefined' || !('Notification' in window)) return false;
     
-    const granted = await NotificationService.requestPermission();
-    setIsEnabled(granted);
-    if ('Notification' in window) {
-      setPermission(Notification.permission);
+    // If already granted, return true
+    if (Notification.permission === 'granted') {
+      setIsEnabled(true);
+      setPermission('granted');
+      return true;
     }
-    return granted;
+    
+    // If denied, return false
+    if (Notification.permission === 'denied') {
+      return false;
+    }
+    
+    try {
+      // Force permission request for 'default' status
+      const permission = await new Promise<NotificationPermission>((resolve) => {
+        // Use the callback version to ensure compatibility
+        const result = Notification.requestPermission((permission) => {
+          resolve(permission);
+        });
+        
+        // Handle promise-based version for modern browsers
+        if (result && typeof result.then === 'function') {
+          result.then(resolve);
+        }
+      });
+      
+      const granted = permission === 'granted';
+      
+      setIsEnabled(granted);
+      setPermission(permission);
+      
+      if (granted) {
+        // Initialize service worker after permission is granted
+        await NotificationService.initializeServiceWorker();
+      }
+      
+      return granted;
+    } catch (error) {
+      console.error('Error requesting notification permission:', error);
+      return false;
+    }
   };
 
   const scheduleSmartNotifications = async (userProgress: UserProgress) => {
