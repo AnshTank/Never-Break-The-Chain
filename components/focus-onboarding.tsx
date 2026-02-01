@@ -8,6 +8,7 @@ interface FocusOnboardingProps {
     focusTime: number;
     breakTime: number;
     dailySessionGoal: number;
+    dailyHoursGoal: number;
   }) => void;
   onClose: () => void;
   isNewUser?: boolean;
@@ -19,6 +20,7 @@ export default function FocusOnboarding({ onComplete, onClose, isNewUser, onInit
   const [focusTime, setFocusTime] = useState(25);
   const [breakTime, setBreakTime] = useState(5);
   const [dailySessionGoal, setDailySessionGoal] = useState(8);
+  const [dailyHoursGoal, setDailyHoursGoal] = useState(8);
 
   const steps = [
     {
@@ -156,6 +158,38 @@ export default function FocusOnboarding({ onComplete, onClose, isNewUser, onInit
       )
     },
     {
+      title: "Daily Hours Goal 🎯",
+      content: (
+        <div className="space-y-6">
+          <p className="text-gray-600 dark:text-gray-400">
+            How many hours do you want to focus each day?
+          </p>
+          <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+            <label className="block text-sm font-medium mb-2">Daily Hours Target</label>
+            <div className="flex items-center gap-4">
+              <input
+                type="range"
+                min="2"
+                max="12"
+                step="0.5"
+                value={dailyHoursGoal}
+                onChange={(e) => setDailyHoursGoal(Number(e.target.value))}
+                className="flex-1"
+              />
+              <span className="font-mono text-lg w-12">{dailyHoursGoal}h</span>
+            </div>
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>2h</span>
+              <span>12h</span>
+            </div>
+          </div>
+          <div className="text-sm text-gray-500">
+            💡 <strong>Tip:</strong> This helps track your daily focus progress. Start realistic and build up!
+          </div>
+        </div>
+      )
+    },
+    {
       title: "You're All Set! 🚀",
       content: (
         <div className="text-center space-y-4">
@@ -173,6 +207,10 @@ export default function FocusOnboarding({ onComplete, onClose, isNewUser, onInit
             <div className="flex justify-between">
               <span>Daily Goal:</span>
               <span className="font-mono">{dailySessionGoal} sessions</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Hours Goal:</span>
+              <span className="font-mono">{dailyHoursGoal} hours</span>
             </div>
             <div className="flex justify-between font-semibold border-t pt-2">
               <span>Total Daily Time:</span>
@@ -199,7 +237,7 @@ export default function FocusOnboarding({ onComplete, onClose, isNewUser, onInit
       if (isNewUser && onInitializeSettings) {
         onInitializeSettings();
       }
-      onComplete({ focusTime, breakTime, dailySessionGoal });
+      onComplete({ focusTime, breakTime, dailySessionGoal, dailyHoursGoal });
     }
   };
 

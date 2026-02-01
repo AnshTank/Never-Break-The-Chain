@@ -243,6 +243,7 @@ export default function TimerPage() {
     focusTime: 25,
     breakTime: 5,
     dailySessionGoal: 8,
+    dailyHoursGoal: 8,
   });
   const [completedSessions, setCompletedSessions] = useState(0);
   const [showLoadingScreen, setShowLoadingScreen] = useState(true);
@@ -727,6 +728,7 @@ export default function TimerPage() {
               focusTime: ts.focusTime || 25,
               breakTime: ts.breakTime || 5,
               dailySessionGoal: ts.dailySessionGoal || 8,
+              dailyHoursGoal: ts.dailyHoursGoal || 8,
             };
             setSessionSettings(newSessionSettings);
             setAutoStart(ts.autoStart || false);
@@ -1344,17 +1346,45 @@ export default function TimerPage() {
     saveData();
   };
 
-  const handleOnboardingComplete = (settings: {
+  const handleOnboardingComplete = async (settings: {
     focusTime: number;
     breakTime: number;
     dailySessionGoal: number;
+    dailyHoursGoal: number;
   }) => {
     setSessionSettings(settings);
     setSelectedDuration(settings.focusTime);
     setTimeLeft(settings.focusTime * 60);
     setBreakDuration(settings.breakTime);
     setShowOnboarding(false);
-    // Don't use localStorage anymore - newUser flag is managed in DB
+    
+    // Save settings to database
+    try {
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          newUser: false,
+          timerSettings: {
+            focusTime: settings.focusTime,
+            breakTime: settings.breakTime,
+            dailySessionGoal: settings.dailySessionGoal,
+            dailyHoursGoal: settings.dailyHoursGoal,
+            autoStart,
+            notifications,
+            soundVolume,
+            backgroundSound,
+            bgSoundVolume,
+            notificationSound,
+            timerTheme: themes[currentTheme]?.name || "No Theme",
+            timerCustomAccentColor: customAccentColor,
+          },
+        }),
+      });
+    } catch (error) {
+      console.error("Error saving onboarding settings:", error);
+    }
+    
     saveData();
   };
 
@@ -1595,24 +1625,35 @@ export default function TimerPage() {
 
           {currentTask && mode === "focus" && (
             <div
-              className={`${isMobile ? "mb-2" : "mb-4"} inline-block ${
-                isMobile ? "px-4 py-2" : "px-8 py-4"
-              } rounded-full ${theme.panel} backdrop-blur-xl ${
-                theme.border
-              } border transition-all duration-600 shadow-xl ${
+              className={`${isMobile ? "mb-2" : "mb-3"} transition-all duration-600 ${
                 showModeTransition
                   ? "opacity-0 translate-y-4"
                   : "opacity-100 translate-y-0"
               }`}
             >
-              <span
-                className={`${theme.text} ${isMobile ? "text-sm" : "text-lg"}`}
+              <div
+                className={`inline-flex items-center gap-2 ${isMobile ? "px-3 py-1.5" : "px-4 py-2"} rounded-full ${theme.panel} backdrop-blur-xl ${
+                  theme.border
+                } border shadow-lg`}
               >
-                Working on:{" "}
-                <span className="font-semibold" style={{ color: theme.accent }}>
-                  {tasks.find((t) => t.id === currentTask)?.name}
+                <div 
+                  className="w-2 h-2 rounded-full animate-pulse"
+                  style={{ backgroundColor: theme.accent }}
+                />
+                <span className={`${theme.text} ${isMobile ? "text-xs" : "text-sm"} opacity-70`}>
+                  Working on:
                 </span>
-              </span>
+                <span 
+                  className={`${isMobile ? "text-sm" : "text-base"} font-semibold`}
+                  style={{ color: theme.accent }}
+                >
+                  {(() => {
+                    const task = tasks.find((t) => t.id === currentTask);
+                    const mnzdConfig = mnzdConfigs.find((c) => c.id === currentTask);
+                    return task?.name || mnzdConfig?.name || "Unknown Task";
+                  })()}
+                </span>
+              </div>
             </div>
           )}
 
@@ -2350,7 +2391,7 @@ export default function TimerPage() {
                           className="text-2xl font-light mb-2"
                           style={{ color: theme.accent }}
                         >
-                          {Math.round((stats.totalHours / 8) * 100)}%
+                          {Math.round((stats.totalHours / sessionSettings.dailyHoursGoal) * 100)}%
                         </div>
                         <div
                           className={`text-xs ${theme.text} opacity-70 mb-2`}
@@ -2362,7 +2403,7 @@ export default function TimerPage() {
                             className="h-2 rounded-full transition-all duration-1000"
                             style={{
                               width: `${Math.min(
-                                (stats.totalHours / 8) * 100,
+                                (stats.totalHours / sessionSettings.dailyHoursGoal) * 100,
                                 100
                               )}%`,
                               backgroundColor: theme.accent,
@@ -2372,7 +2413,7 @@ export default function TimerPage() {
                         <div
                           className={`text-xs ${theme.text} opacity-50 mt-1`}
                         >
-                          {Math.round(stats.totalHours * 10) / 10}/8 hours
+                          {Math.round(stats.totalHours * 10) / 10}/{sessionSettings.dailyHoursGoal} hours
                         </div>
                       </div>
 
@@ -2787,6 +2828,54 @@ export default function TimerPage() {
                           {sessionSettings.dailySessionGoal}
                         </span>
                         <span className={`${theme.text} opacity-60`}>12</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={`block ${theme.text} mb-2 text-sm`}>
+                        Daily Hours Goal
+                      </label>
+                      <input
+                        type="range"
+                        min="2"
+                        max="12"
+                        step="0.5"
+                        value={sessionSettings.dailyHoursGoal}
+                        onChange={(e) => {
+                          if (!originalSettings) {
+                            setOriginalSettings({
+                              sessionSettings,
+                              autoStart,
+                              notifications,
+                              soundVolume,
+                              backgroundSound,
+                              bgSoundVolume,
+                            });
+                          }
+                          const newSettings = {
+                            ...sessionSettings,
+                            dailyHoursGoal: Number(e.target.value),
+                          };
+                          setSessionSettings(newSettings);
+                          setSettingsChanged(true);
+                        }}
+                        className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+                        style={{
+                          background: `linear-gradient(to right, ${
+                            theme.accent
+                          } 0%, ${theme.accent} ${
+                            ((sessionSettings.dailyHoursGoal - 2) / 10) * 100
+                          }%, rgba(255,255,255,0.3) ${
+                            ((sessionSettings.dailyHoursGoal - 2) / 10) * 100
+                          }%, rgba(255,255,255,0.3) 100%)`,
+                        }}
+                      />
+                      <div className="flex justify-between text-xs mt-1">
+                        <span className={`${theme.text} opacity-60`}>2h</span>
+                        <span className={`${theme.text} font-mono`}>
+                          {sessionSettings.dailyHoursGoal}h
+                        </span>
+                        <span className={`${theme.text} opacity-60`}>12h</span>
                       </div>
                     </div>
                   </div>
