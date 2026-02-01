@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
           }, { status: 201 })
         } else {
           return NextResponse.json({ 
-            error: 'Email service temporarily unavailable. This might be due to network issues or rate limiting. Please try again in a few minutes or contact support.',
+            error: 'Unable to send verification email at the moment. Please check your internet connection and try again. If the problem persists, contact support.',
             emailFailed: true
           }, { status: 503 })
         }
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
       await users.deleteOne({ email: sanitizedEmail });
       
       return NextResponse.json({ 
-        error: 'Email service temporarily unavailable. This might be due to network issues or rate limiting. Please try again in a few minutes or contact support.',
+        error: 'Unable to send verification email at the moment. Please check your internet connection and try again. If the problem persists, contact support.',
         emailFailed: true
       }, { status: 503 })
     }

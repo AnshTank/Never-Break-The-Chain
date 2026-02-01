@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://never-break-the-chain-anshtank.vercel.app'
+  const baseUrl = 'https://never-break-the-chain.vercel.app'
   const currentDate = new Date()
   
   return [

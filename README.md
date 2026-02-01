@@ -34,7 +34,7 @@
 
 ### 🌟 **Experience the Magic**
 
-[**🎯 Live Application**](https://never-break-the-chain-anshtank.vercel.app) • [**📖 Discover the Story**](https://never-break-the-chain-anshtank.vercel.app/about) • [**🐛 Report Issues**](https://github.com/AnshTank/Never-Break-The-Chain/issues) • [**✨ Request Features**](https://github.com/AnshTank/Never-Break-The-Chain/issues)
+[**🎯 Live Application**](https://never-break-the-chain.vercel.app) • [**📖 Discover the Story**](https://never-break-the-chain.vercel.app/about) • [**🐛 Report Issues**](https://github.com/AnshTank/Never-Break-The-Chain/issues) • [**✨ Request Features**](https://github.com/AnshTank/Never-Break-The-Chain/issues)
 
 </div>
 
@@ -402,7 +402,7 @@ const codeStandards = {
 
 ### 🌐 **Connect & Collaborate**
 
-[**🎯 Portfolio**](https://anshtank.me) • [**📧 Email**](mailto:anshtank9@gmail.com) • [**💼 LinkedIn**](https://linkedin.com/in/anshtank) • [**🐙 GitHub**](https://github.com/AnshTank) • [**🐦 Twitter**](https://twitter.com/AnshTank)
+[**🎯 Portfolio**](https://anshtank.me) • [**📧 Email**](mailto:anshtank9@gmail.com) • [**💼 LinkedIn**](https://linkedin.com/in/anshtank9) • [**🐙 GitHub**](https://github.com/AnshTank)
 
 ### 📬 **Project Communication**
 

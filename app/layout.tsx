@@ -2,6 +2,7 @@ import type React from "react";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Toaster } from "sonner";
 import AuthProvider from "../components/auth-provider";
 import ConditionalFooter from "../components/conditional-footer";
@@ -94,7 +95,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL("https://never-break-the-chain-anshtank.vercel.app"),
+  metadataBase: new URL("https://never-break-the-chain.vercel.app"),
   alternates: {
     canonical: "/",
   },
@@ -103,7 +104,7 @@ export const metadata: Metadata = {
       "Never Break The Chain - MNZD Habit & Consistency Tracker by Ansh Tank",
     description:
       "Professional habit and consistency tracking app by Ansh Tank. Transform your life with MNZD methodology - Meditation, Nutrition, Zone (Exercise), and Discipline. Built with Next.js, TypeScript, and MongoDB for optimal performance.",
-    url: "https://never-break-the-chain-anshtank.vercel.app",
+    url: "https://never-break-the-chain.vercel.app",
     siteName: "Never Break The Chain by Ansh Tank",
     images: [
       {
@@ -123,8 +124,8 @@ export const metadata: Metadata = {
     description:
       "Professional habit and consistency tracking app by Ansh Tank. Transform your life with MNZD methodology. Built with Next.js & TypeScript.",
     images: ["/og-image.png"],
-    creator: "@AnshTank",
-    site: "@AnshTank",
+    creator: "@AnshTank9",
+    site: "@AnshTank9",
   },
   robots: {
     index: true,
@@ -144,7 +145,7 @@ export const metadata: Metadata = {
   },
   manifest: "/manifest.json",
   verification: {
-    google: "ansh-tank-never-break-chain-verification",
+    google: "your-google-verification-code-here",
   },
   category: "productivity",
   classification: "Productivity & Personal Development App by Ansh Tank",
@@ -193,6 +194,7 @@ export default function RootLayout({
         </AuthProvider>
         <Toaster richColors position="top-center" />
         <Analytics />
+        <SpeedInsights />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -202,7 +204,7 @@ export default function RootLayout({
               name: "Never Break The Chain - MNZD Habit Tracker",
               description:
                 "Professional habit tracking application by Ansh Tank. Transform your life with MNZD methodology - Meditation, Nutrition, Zone (Exercise), and Discipline. Built with Next.js, TypeScript, and MongoDB.",
-              url: "https://never-break-the-chain-anshtank.vercel.app",
+              url: "https://never-break-the-chain.vercel.app",
               applicationCategory: "HealthApplication",
               operatingSystem: "Web",
               browserRequirements: "Requires JavaScript. Requires HTML5.",
@@ -221,8 +223,7 @@ export default function RootLayout({
                 url: "https://github.com/AnshTank",
                 sameAs: [
                   "https://github.com/AnshTank",
-                  "https://linkedin.com/in/anshtank",
-                  "https://twitter.com/AnshTank",
+                  "https://linkedin.com/in/anshtank9",
                 ],
                 jobTitle: "Full Stack Developer",
                 description:
@@ -253,7 +254,7 @@ export default function RootLayout({
               },
               copyrightYear: "2025",
               license:
-                "https://never-break-the-chain-anshtank.vercel.app/license",
+                "https://never-break-the-chain.vercel.app/license",
             }),
           }}
         />
