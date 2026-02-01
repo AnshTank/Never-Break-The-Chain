@@ -31,6 +31,5 @@ export default function robots(): MetadataRoute.Robots {
       },
     ],
     sitemap: 'https://never-break-the-chain.vercel.app/sitemap.xml',
-    host: 'https://never-break-the-chain.vercel.app',
   }
 }
