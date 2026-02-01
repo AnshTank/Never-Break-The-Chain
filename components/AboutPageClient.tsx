@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import HeroSection from '@/components/sections/about/HeroSection';
 import StorySection from '@/components/sections/about/StorySection';
 import MNZDSection from '@/components/sections/about/MNZDSection';
@@ -12,11 +12,13 @@ import AboutContactSection from '@/components/sections/about/AboutContactSection
 
 // Navigation component
 const Navigation = () => {
+
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
+    setIsMobileMenuOpen(false); // Close mobile menu after navigation
   };
 
   const navItems = [
@@ -50,21 +52,43 @@ const Navigation = () => {
               <span className="sm:hidden">Home</span>
             </button>
             
-            {/* Navigation Items - Centered */}
+            {/* Navigation Items - Desktop horizontal, Mobile 2-row grid */}
             <div className="flex-1 flex justify-center">
-              <ul className="flex flex-wrap gap-2 sm:gap-4">
-                {navItems.map((item) => (
-                  <li key={item.id}>
-                    <button
-                      onClick={() => scrollToSection(item.id)}
-                      className="font-handwritten text-sm sm:text-base text-[hsl(var(--ink-blue))] hover:text-[hsl(var(--faded-blue))] transition-colors relative group"
-                    >
-                      {item.label}
-                      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[hsl(var(--ink-blue))] transition-all group-hover:w-full" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <div className="hidden md:block">
+                <ul className="flex gap-6">
+                  {navItems.map((item) => (
+                    <li key={item.id}>
+                      <button
+                        onClick={() => scrollToSection(item.id)}
+                        className="font-handwritten text-base text-[hsl(var(--ink-blue))] hover:text-[hsl(var(--faded-blue))] transition-colors relative group"
+                      >
+                        {item.label}
+                        <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[hsl(var(--ink-blue))] transition-all group-hover:w-full" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              
+              {/* Mobile compact 2-row navigation */}
+              <div className="md:hidden">
+                <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 max-w-xs">
+                  {navItems.map((item, index) => (
+                    <div key={item.id} className="flex items-center">
+                      <button
+                        onClick={() => scrollToSection(item.id)}
+                        className="font-handwritten text-base text-[hsl(var(--ink-blue))] hover:text-[hsl(var(--faded-blue))] transition-colors relative group px-1 py-0.5"
+                      >
+                        {item.label}
+                        <span className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-[hsl(var(--ink-blue))] transition-all group-hover:w-full" />
+                      </button>
+                      {index < navItems.length - 1 && index % 3 === 2 && (
+                        <span className="text-[hsl(var(--ink-blue))]/30 mx-1 text-xs">•</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
             
             {/* Spacer for balance */}
@@ -107,33 +131,53 @@ const ScrollProgress = () => {
 
 // Back to top button component
 const BackToTop = () => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const toggleVisibility = () => {
+      if (window.pageYOffset > 300) {
+        setIsVisible(true);
+      } else {
+        setIsVisible(false);
+      }
+    };
+
+    window.addEventListener('scroll', toggleVisibility);
+    return () => window.removeEventListener('scroll', toggleVisibility);
+  }, []);
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
-    <motion.button
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ delay: 2 }}
-      onClick={scrollToTop}
-      className="fixed bottom-8 right-8 z-50 sketch-card p-3 bg-[hsl(var(--paper-cream))] hover:bg-[hsl(var(--paper-sepia))] transition-colors"
-      aria-label="Back to top"
-    >
-      <svg
-        className="w-5 h-5 text-[hsl(var(--ink-blue))]"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M5 10l7-7m0 0l7 7m-7-7v18"
-        />
-      </svg>
-    </motion.button>
+    <AnimatePresence>
+      {isVisible && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          transition={{ duration: 0.2 }}
+          onClick={scrollToTop}
+          className="fixed bottom-8 right-8 z-50 sketch-card p-3 bg-[hsl(var(--paper-cream))] hover:bg-[hsl(var(--paper-sepia))] transition-colors shadow-lg"
+          aria-label="Back to top"
+        >
+          <svg
+            className="w-5 h-5 text-[hsl(var(--ink-blue))]"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 10l7-7m0 0l7 7m-7-7v18"
+            />
+          </svg>
+        </motion.button>
+      )}
+    </AnimatePresence>
   );
 };
 
