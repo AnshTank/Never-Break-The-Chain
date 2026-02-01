@@ -17,7 +17,7 @@ export const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Obj
 // Auth schemas
 export const loginSchema = z.object({
   email: emailSchema,
-  password: z.string().min(1, 'Password is required'),
+  password: z.string().optional(), // Make password optional for login
   rememberMe: z.boolean().optional()
 });
 

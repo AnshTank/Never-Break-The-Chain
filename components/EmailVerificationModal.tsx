@@ -33,12 +33,13 @@ export function EmailVerificationModal({ isOpen, email, onVerified, onClose }: E
     }
   }, [cooldown]);
 
-  // Auto-send OTP when modal opens
-  useEffect(() => {
-    if (isOpen && email) {
-      handleSendOTP();
-    }
-  }, [isOpen, email]);
+  // Auto-send OTP when modal opens - REMOVED to prevent double sending
+  // The OTP is already sent by the signup/login API
+  // useEffect(() => {
+  //   if (isOpen && email) {
+  //     handleSendOTP();
+  //   }
+  // }, [isOpen, email]);
 
   const handleSendOTP = async () => {
     setIsResending(true);

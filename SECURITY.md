@@ -4,11 +4,12 @@
 
 Never Break The Chain takes security seriously. This document outlines our security practices and how to report security vulnerabilities.
 
-**Last Updated: January 2025**
+**Last Updated: January 2026**
 
 ## Security Measures
 
 ### Authentication & Authorization
+
 - **JWT-based Authentication**: Secure token system with automatic refresh
 - **Password Security**: bcrypt encryption with 12 rounds
 - **Email Verification**: OTP-based account verification
@@ -16,6 +17,7 @@ Never Break The Chain takes security seriously. This document outlines our secur
 - **Rate Limiting**: Protection against brute force attacks
 
 ### Data Protection
+
 - **Encryption**: All sensitive data encrypted at rest and in transit
 - **Input Validation**: Comprehensive validation using Zod schemas
 - **NoSQL Injection Prevention**: Parameterized queries and input sanitization
@@ -23,6 +25,7 @@ Never Break The Chain takes security seriously. This document outlines our secur
 - **CSRF Protection**: SameSite cookies and token validation
 
 ### Infrastructure Security
+
 - **HTTPS Only**: All communications encrypted with TLS
 - **Secure Headers**: Security headers implemented via middleware
 - **Environment Variables**: Sensitive configuration stored securely
@@ -34,6 +37,7 @@ Never Break The Chain takes security seriously. This document outlines our secur
 If you discover a security vulnerability, please report it responsibly:
 
 ### What to Report
+
 - Authentication bypasses
 - Data exposure vulnerabilities
 - Injection vulnerabilities (NoSQL, XSS, etc.)
@@ -42,6 +46,7 @@ If you discover a security vulnerability, please report it responsibly:
 - Any security-related bugs
 
 ### How to Report
+
 1. **Primary Contact**: neverbreakthechain.anshtank@gmail.com
 2. **Alternative Contact**: anshtank9@gmail.com
 3. **Include**:
@@ -52,6 +57,7 @@ If you discover a security vulnerability, please report it responsibly:
 4. **Response Time**: We aim to respond within 24-48 hours
 
 ### What NOT to Report
+
 - Issues already covered in our documentation
 - Social engineering attacks
 - Physical security issues
@@ -68,20 +74,22 @@ If you discover a security vulnerability, please report it responsibly:
 
 ## Supported Versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.0.x   | ✅ Yes             |
-| < 1.0   | ❌ No              |
+| Version | Supported |
+| ------- | --------- |
+| 1.0.x   | ✅ Yes    |
+| < 1.0   | ❌ No     |
 
 ## Security Best Practices for Users
 
 ### Account Security
+
 - Use a strong, unique password
 - Keep your email account secure
 - Log out from shared devices
 - Report suspicious activity immediately
 
 ### Data Protection
+
 - Don't share your account credentials
 - Be cautious with public Wi-Fi
 - Keep your browser updated
@@ -90,6 +98,7 @@ If you discover a security vulnerability, please report it responsibly:
 ## Security Features
 
 ### For Developers
+
 - **Secure Development**: Following OWASP guidelines
 - **Code Review**: All code changes reviewed for security
 - **Dependency Scanning**: Regular vulnerability assessments
@@ -97,6 +106,7 @@ If you discover a security vulnerability, please report it responsibly:
 - **Incident Response**: Documented procedures for security incidents
 
 ### For Users
+
 - **Data Ownership**: You control your data
 - **Privacy Controls**: Granular privacy settings
 - **Data Export**: Export your data anytime
@@ -118,4 +128,4 @@ This security policy is reviewed and updated regularly. Check back for the lates
 
 **Remember**: Security is a shared responsibility. We're committed to protecting your data, and we appreciate your help in keeping Never Break The Chain secure for everyone.
 
-© 2025 Never Break The Chain. All Rights Reserved.
+© 2026 Never Break The Chain. All Rights Reserved.

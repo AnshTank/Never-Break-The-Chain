@@ -469,7 +469,6 @@ function LoginForm() {
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    required
                     disabled={isLoading}
                     className="border-slate-200 focus:border-amber-400 focus:ring-amber-400/20 transition-colors duration-300"
                     placeholder="Enter your password"

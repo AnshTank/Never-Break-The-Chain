@@ -284,16 +284,28 @@ export class NotificationService {
   static async sendWelcomeNotification(): Promise<void> {
     if (typeof window === "undefined") return;
 
+    // Check if website notifications are disabled
+    if (localStorage.getItem('websiteNotificationsDisabled') === 'true') {
+      console.log('Website notifications disabled, skipping welcome notification');
+      return;
+    }
+
     if (await this.requestPermission()) {
       const message = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
       
-      // Send welcome notification immediately
-      new Notification("🎆 Never Break The Chain", {
-        body: message,
-        tag: "welcome-message",
-        requireInteraction: true, // Keep it visible longer
-        silent: false,
-      });
+      // Add a small delay to ensure everything is set up
+      setTimeout(() => {
+        // Send welcome notification immediately
+        new Notification("🎆 Never Break The Chain", {
+          body: message,
+          tag: "welcome-message",
+          requireInteraction: true, // Keep it visible longer
+          silent: false,
+          icon: '/favicon.svg',
+        });
+        
+        console.log('Welcome notification sent:', message);
+      }, 1000); // 1 second delay
     }
   }
 

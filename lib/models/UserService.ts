@@ -65,7 +65,12 @@ export class UserService {
   
   static async updatePassword(email: string, newPassword: string): Promise<void> {
     const hashedPassword = await bcrypt.hash(newPassword, 12);
-    await this.updateUser(email, { password: hashedPassword });
+    // Clear any setup flags when password is updated
+    await this.updateUser(email, { 
+      password: hashedPassword,
+      needsPasswordSetup: false,
+      isNewUser: false
+    });
   }
   
   static async setOTP(email: string, otp: string, expiresInMinutes: number = 5): Promise<void> {

@@ -57,10 +57,14 @@ export const useNotifications = () => {
   const sendWelcomeNotification = async () => {
     if (isEnabled && isClient && isWebsiteNotificationsEnabled()) {
       try {
+        console.log('Sending welcome notification...');
         await NotificationService.sendWelcomeNotification();
+        console.log('Welcome notification sent successfully');
       } catch (error) {
         console.error('Failed to send welcome notification:', error);
       }
+    } else {
+      console.log('Welcome notification skipped:', { isEnabled, isClient, websiteEnabled: isWebsiteNotificationsEnabled() });
     }
   };
 
