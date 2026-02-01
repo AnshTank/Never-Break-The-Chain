@@ -425,7 +425,7 @@ export default function CoolLoading({
   }, [onLoadingComplete]);
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-purple-950/30 dark:to-indigo-950/30">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-purple-950/30 dark:to-indigo-950/30" data-loading="true">
       {/* Smooth Animated Background */}
       <div className="absolute inset-0">
         <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-gradient-to-r from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl animate-blob-smooth"></div>

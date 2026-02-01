@@ -19,7 +19,7 @@ export default function ConditionalFooter() {
   const isAuthPage = authPages.includes(pathname);
 
   useEffect(() => {
-    if (pathname === "/") {
+    if (pathname === "/" || pathname === "/dashboard") {
       // Check initial loading state
       const checkLoading = () => {
         const loadingElement = document.querySelector('[data-loading="true"]');
