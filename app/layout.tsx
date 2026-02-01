@@ -145,7 +145,7 @@ export const metadata: Metadata = {
   },
   manifest: "/manifest.json",
   verification: {
-    google: "your-google-verification-code-here",
+    google: "Aqx9NXcmzkZC__Sk0ldLYzihHFtIKKjokQtp7GWwHes",
   },
   category: "productivity",
   classification: "Productivity & Personal Development App by Ansh Tank",
@@ -157,7 +157,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geist.variable} ${geistMono.variable} ${caveat.variable} ${merriweather.variable} ${spaceMono.variable}`}>
+    <html
+      lang="en"
+      className={`${geist.variable} ${geistMono.variable} ${caveat.variable} ${merriweather.variable} ${spaceMono.variable}`}
+    >
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -176,8 +179,14 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-TileColor" content="#ffffff" />
         <meta name="msapplication-tap-highlight" content="no" />
-        <meta name="application-name" content="Never Break The Chain by Ansh Tank" />
-        <meta name="msapplication-tooltip" content="MNZD Habit Tracker by Ansh Tank" />
+        <meta
+          name="application-name"
+          content="Never Break The Chain by Ansh Tank"
+        />
+        <meta
+          name="msapplication-tooltip"
+          content="MNZD Habit Tracker by Ansh Tank"
+        />
         <meta name="msapplication-starturl" content="/" />
         <meta name="msapplication-navbutton-color" content="#0070A0" />
         <meta name="msapplication-window" content="width=1024;height=768" />
@@ -253,8 +262,7 @@ export default function RootLayout({
                 name: "Ansh Tank",
               },
               copyrightYear: "2025",
-              license:
-                "https://never-break-the-chain.vercel.app/license",
+              license: "https://never-break-the-chain.vercel.app/license",
             }),
           }}
         />
