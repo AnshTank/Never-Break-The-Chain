@@ -20,7 +20,7 @@ export default function NotificationTester() {
         return;
       }
 
-      const response = await fetch('/api/notifications/schedule', {
+      const response = await fetch('/api/notifications/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type })

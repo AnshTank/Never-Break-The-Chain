@@ -58,6 +58,12 @@ function SessionManagerWrapper({ children }: { children: React.ReactNode }) {
         const result = await DeviceManager.registerDevice(pushSubscription || undefined)
         console.log('Device registration result:', result)
         
+        if (result.success) {
+          console.log('Device registered successfully with ID:', result.deviceId)
+        } else {
+          console.error('Device registration failed:', result.message)
+        }
+        
         if (!result.success && result.message === 'Device limit reached') {
           // Show device selection modal
           const response = await fetch('/api/devices/register', {

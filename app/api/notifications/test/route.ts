@@ -22,9 +22,11 @@ export async function POST(request: NextRequest) {
     // Get all active devices with push subscriptions
     const devices = await db.collection('devices').find({
       userId,
-      isActive: true,
-      pushSubscription: { $exists: true, $ne: null }
+      isActive: true
     }).toArray();
+
+    console.log(`Found ${devices.length} devices for user ${userId}`);
+    console.log('Devices:', devices.map(d => ({ deviceId: d.deviceId, deviceName: d.deviceName, hasPush: !!d.pushSubscription })));
 
     let sent = 0;
     let failed = 0;
@@ -38,7 +40,7 @@ export async function POST(request: NextRequest) {
         title: '🌙 Evening Check-in',
         body: 'How did your MNZD journey go today? Every step counts! 🎯'
       },
-      missed: {
+      missed_day: {
         title: '🔗 Gentle Reminder',
         body: 'Your chain misses you! Ready to get back on track? 💪'
       }
@@ -63,7 +65,12 @@ export async function POST(request: NextRequest) {
       message: `Sent to ${sent} devices, ${failed} failed`,
       sent,
       failed,
-      totalDevices: devices.length
+      totalDevices: devices.length,
+      debug: {
+        userId: userId.toString(),
+        devicesFound: devices.length,
+        devicesWithPush: devices.filter(d => d.pushSubscription).length
+      }
     });
 
   } catch (error) {
