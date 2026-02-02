@@ -1,19 +1,21 @@
 import type React from "react";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+// import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Toaster } from "sonner";
 import AuthProvider from "../components/auth-provider";
 import ConditionalFooter from "../components/conditional-footer";
 import "./globals.css";
-import { Caveat, Merriweather, Space_Mono } from "next/font/google";
+// import { Caveat, Merriweather, Space_Mono } from "next/font/google";
 
 // Initialize enterprise features
 if (typeof window === 'undefined') {
   import('@/lib/enterprise-init');
 }
 
+// Temporarily disabled Google Fonts for build
+/*
 const caveat = Caveat({
   subsets: ["latin"],
   variable: "--font-caveat",
@@ -41,56 +43,143 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   display: "swap",
 });
+*/
 
 export const metadata: Metadata = {
   title: {
-    default: "Never Break The Chain - MNZD Habit Tracker by Ansh Tank",
-    template: "%s | Never Break The Chain - Ansh Tank",
+    default: "Habit Tracker - Never Break The Chain by Ansh Tank | Best Free Habit Tracking App",
+    template: "%s | Habit Tracker by Ansh Tank - Never Break The Chain",
   },
   description:
-    "Transform your life with MNZD methodology by Ansh Tank - Meditation, Nutrition, Zone (Exercise), and Discipline. Professional habit tracker and consistency tracker built with Next.js, TypeScript, and MongoDB. Track daily habits, build streaks, and never break the chain of success.",
+    "Best free habit tracker app by Ansh Tank from Parul University. Track daily habits, build streaks, and transform your life with MNZD methodology. Professional habit tracking application built with Next.js, TypeScript, and MongoDB. Never break the chain of success with this powerful productivity tool.",
   keywords: [
-    "Ansh Tank",
+    // Primary Keywords
     "habit tracker",
-    "consistency tracker",
+    "habit tracker app",
+    "free habit tracker",
+    "best habit tracker",
+    "daily habit tracker",
+    "habit tracking app",
+    "habit tracker online",
+    "habit tracker web app",
+    "habit tracker free",
+    "habit tracker 2025",
+    
+    // Ansh Tank Keywords
+    "Ansh Tank",
+    "Ansh Tank habit tracker",
+    "Ansh Tank Parul University",
+    "Ansh Tank project",
+    "Ansh Tank github",
+    "Ansh Tank developer",
+    "Ansh Tank portfolio",
+    "Ansh Tank full stack developer",
+    "Ansh Tank Next.js",
+    "Ansh Tank TypeScript",
+    "Ansh Tank MongoDB",
+    "Ansh Tank web developer",
+    "Ansh Tank software engineer",
+    "Ansh Tank applications",
+    "Ansh Tank coding projects",
+    
+    // University & Location
+    "Parul University",
+    "Parul University student",
+    "Parul University project",
+    "Parul University developer",
+    "Gujarat developer",
+    "India developer",
+    
+    // App-specific Keywords
+    "Never Break The Chain",
     "MNZD methodology",
-    "meditation app",
-    "nutrition tracker",
-    "exercise tracker",
-    "discipline habits",
-    "productivity app",
+    "MNZD habit tracker",
+    "consistency tracker",
     "streak tracker",
     "daily habits",
-    "personal development",
-    "Next.js app",
-    "TypeScript",
-    "MongoDB",
     "habit formation",
-    "behavioral change",
-    "self improvement",
-    "goal tracking",
-    "routine builder",
-    "consistency tracker",
+    "habit building",
     "habit chain",
-    "daily consistency",
-    "progress tracking",
-    "Jerry Seinfeld method",
     "don't break the chain",
-    "habit building app",
-    "daily routine tracker",
+    "Jerry Seinfeld method",
+    "productivity tracker",
+    "routine tracker",
+    "goal tracker",
+    "progress tracker",
+    
+    // Methodology Keywords
+    "meditation tracker",
+    "nutrition tracker",
+    "exercise tracker",
+    "discipline tracker",
     "mindfulness app",
     "fitness tracker",
-    "productivity system",
-    "habit analytics",
-    "streak counter",
-    "behavioral psychology",
+    "wellness tracker",
+    "health tracker",
+    "lifestyle tracker",
+    
+    // Technical Keywords
+    "Next.js app",
+    "TypeScript application",
+    "MongoDB app",
+    "React habit tracker",
+    "web application",
+    "progressive web app",
+    "PWA habit tracker",
+    "responsive web app",
+    
+    // Behavioral & Psychology
+    "behavioral change",
+    "habit psychology",
     "atomic habits",
     "habit stacking",
-    "routine optimization",
-    "personal growth",
+    "behavioral psychology",
+    "personal development",
+    "self improvement",
     "life transformation",
-    "wellness tracker",
     "success habits",
+    "positive habits",
+    "habit formation science",
+    
+    // Productivity Keywords
+    "productivity app",
+    "productivity system",
+    "productivity tool",
+    "time management",
+    "goal achievement",
+    "personal growth",
+    "routine builder",
+    "habit analytics",
+    "streak counter",
+    "daily routine",
+    "morning routine",
+    "evening routine",
+    
+    // Competitive Keywords
+    "habitica alternative",
+    "streaks app alternative",
+    "way of life alternative",
+    "productive alternative",
+    "habit bull alternative",
+    "loop habit tracker alternative",
+    "strides alternative",
+    "coach.me alternative",
+    
+    // Long-tail Keywords
+    "how to track habits",
+    "best way to build habits",
+    "habit tracking for students",
+    "free online habit tracker",
+    "simple habit tracker",
+    "effective habit tracker",
+    "habit tracker with analytics",
+    "habit tracker with streaks",
+    "habit tracker with reminders",
+    "habit tracker for productivity",
+    "habit tracker for health",
+    "habit tracker for fitness",
+    "habit tracker for meditation",
+    "habit tracker for learning",
   ],
   authors: [{ name: "Ansh Tank", url: "https://github.com/AnshTank" }],
   creator: "Ansh Tank - Full Stack Developer",
@@ -106,17 +195,17 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title:
-      "Never Break The Chain - MNZD Habit & Consistency Tracker by Ansh Tank",
+      "Best Free Habit Tracker App - Never Break The Chain by Ansh Tank",
     description:
-      "Professional habit and consistency tracking app by Ansh Tank. Transform your life with MNZD methodology - Meditation, Nutrition, Zone (Exercise), and Discipline. Built with Next.js, TypeScript, and MongoDB for optimal performance.",
+      "Professional habit tracker app by Ansh Tank from Parul University. Track daily habits, build streaks, and transform your life with MNZD methodology. Free online habit tracking application built with Next.js, TypeScript, and MongoDB.",
     url: "https://never-break-the-chain.vercel.app",
-    siteName: "Never Break The Chain by Ansh Tank",
+    siteName: "Habit Tracker by Ansh Tank - Never Break The Chain",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Never Break The Chain - MNZD Habit & Consistency Tracker by Ansh Tank - Professional habit tracking application",
+        alt: "Best Free Habit Tracker App - Never Break The Chain by Ansh Tank from Parul University - Professional habit tracking application",
       },
     ],
     locale: "en_US",
@@ -125,9 +214,9 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title:
-      "Never Break The Chain - MNZD Habit & Consistency Tracker by Ansh Tank",
+      "Best Free Habit Tracker App - Never Break The Chain by Ansh Tank",
     description:
-      "Professional habit and consistency tracking app by Ansh Tank. Transform your life with MNZD methodology. Built with Next.js & TypeScript.",
+      "Professional habit tracker app by Ansh Tank from Parul University. Track daily habits, build streaks with MNZD methodology. Built with Next.js & TypeScript.",
     images: ["/og-image.png"],
     creator: "@AnshTank9",
     site: "@AnshTank9",
@@ -153,7 +242,7 @@ export const metadata: Metadata = {
     google: "Aqx9NXcmzkZC__Sk0ldLYzihHFtIKKjokQtp7GWwHes",
   },
   category: "productivity",
-  classification: "Productivity & Personal Development App by Ansh Tank",
+  classification: "Best Free Habit Tracker App by Ansh Tank from Parul University",
 };
 
 export default function RootLayout({
@@ -164,7 +253,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geist.variable} ${geistMono.variable} ${caveat.variable} ${merriweather.variable} ${spaceMono.variable}`}
+      className="font-sans"
     >
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -190,7 +279,7 @@ export default function RootLayout({
         />
         <meta
           name="msapplication-tooltip"
-          content="MNZD Habit Tracker by Ansh Tank"
+          content="Best Free Habit Tracker by Ansh Tank"
         />
         <meta name="msapplication-starturl" content="/" />
         <meta name="msapplication-navbutton-color" content="#0070A0" />
@@ -215,9 +304,9 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebApplication",
-              name: "Never Break The Chain - MNZD Habit Tracker",
+              name: "Habit Tracker - Never Break The Chain by Ansh Tank",
               description:
-                "Professional habit tracking application by Ansh Tank. Transform your life with MNZD methodology - Meditation, Nutrition, Zone (Exercise), and Discipline. Built with Next.js, TypeScript, and MongoDB.",
+                "Best free habit tracker application by Ansh Tank from Parul University. Transform your life with MNZD methodology - Meditation, Nutrition, Zone (Exercise), and Discipline. Professional habit tracking app built with Next.js, TypeScript, and MongoDB for optimal performance and user experience.",
               url: "https://never-break-the-chain.vercel.app",
               applicationCategory: "HealthApplication",
               operatingSystem: "Web",
@@ -241,7 +330,11 @@ export default function RootLayout({
                 ],
                 jobTitle: "Full Stack Developer",
                 description:
-                  "Full Stack Developer specializing in Next.js, TypeScript, and MongoDB. Creator of Never Break The Chain habit tracking application.",
+                  "Full Stack Developer from Parul University specializing in Next.js, TypeScript, and MongoDB. Creator of Never Break The Chain habit tracking application and multiple web development projects.",
+                affiliation: {
+                  "@type": "EducationalOrganization",
+                  name: "Parul University"
+                }
               },
               creator: {
                 "@type": "Person",
@@ -260,7 +353,7 @@ export default function RootLayout({
                   "A comprehensive approach to personal development focusing on four key pillars: Meditation (mindfulness), Nutrition (learning), Zone (exercise), and Discipline (focused work).",
               },
               keywords:
-                "Ansh Tank, habit tracker, MNZD methodology, meditation app, nutrition tracker, exercise tracker, discipline habits, productivity app, Next.js, TypeScript, MongoDB, consistency tracker, daily habits, streak tracker, Jerry Seinfeld method, don't break the chain, habit formation, behavioral change, personal development, routine builder, atomic habits, habit stacking, mindfulness app, fitness tracker, wellness tracker, success habits, life transformation",
+                "habit tracker, Ansh Tank, Ansh Tank Parul University, Ansh Tank project, Ansh Tank github, best habit tracker, free habit tracker, daily habit tracker, habit tracking app, MNZD methodology, Parul University, Parul University student, Parul University project, meditation tracker, nutrition tracker, exercise tracker, discipline habits, productivity app, Next.js, TypeScript, MongoDB, consistency tracker, streak tracker, Jerry Seinfeld method, don't break the chain, habit formation, behavioral change, personal development, routine builder, atomic habits, habit stacking, mindfulness app, fitness tracker, wellness tracker, success habits, life transformation, habit tracker online, habit tracker web app, habit tracker 2025, Ansh Tank developer, Ansh Tank portfolio, Ansh Tank full stack developer, Gujarat developer, India developer",
               inLanguage: "en-US",
               copyrightHolder: {
                 "@type": "Person",

@@ -6,13 +6,13 @@ import { Bell, Send, TestTube } from 'lucide-react';
 export default function NotificationTester() {
   const [isTesting, setIsTesting] = useState(false);
   const [lastResult, setLastResult] = useState<string>('');
+  const [isCleaningDevices, setIsCleaningDevices] = useState(false);
 
-  const testNotification = async (type: 'morning' | 'evening' | 'missed_day') => {
+  const testNotification = async (type: 'morning' | 'evening' | 'missed_day' | 'milestone' | 'streak') => {
     setIsTesting(true);
     setLastResult('');
 
     try {
-      // Check if user is logged in first
       const authCheck = await fetch('/api/user');
       if (!authCheck.ok) {
         setLastResult('❌ Please login first to test notifications');
@@ -27,16 +27,40 @@ export default function NotificationTester() {
       });
 
       const result = await response.json();
+      console.log('Notification test result:', result);
       
       if (response.ok) {
-        setLastResult(`✅ Sent to ${result.sent} devices, ${result.failed} failed`);
+        const sent = result.sent || 0;
+        const failed = result.failed || 0;
+        setLastResult(`✅ Sent to ${sent} devices, ${failed} failed`);
       } else {
-        setLastResult(`❌ Error: ${result.message}`);
+        setLastResult(`❌ Error: ${result.message || 'Unknown error'}`);
       }
     } catch (error) {
       setLastResult(`❌ Network error: ${error}`);
     } finally {
       setIsTesting(false);
+    }
+  };
+
+  const cleanupDevices = async () => {
+    setIsCleaningDevices(true);
+    try {
+      const response = await fetch('/api/devices/cleanup-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      const result = await response.json();
+      if (response.ok) {
+        setLastResult(`🧹 Cleaned up ${result.deletedCount} devices. Please refresh and login again.`);
+      } else {
+        setLastResult(`❌ Cleanup failed: ${result.message}`);
+      }
+    } catch (error) {
+      setLastResult(`❌ Cleanup error: ${error}`);
+    } finally {
+      setIsCleaningDevices(false);
     }
   };
 
@@ -50,7 +74,7 @@ export default function NotificationTester() {
       </div>
 
       <div className="space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
           <button
             onClick={() => testNotification('morning')}
             disabled={isTesting}
@@ -77,6 +101,24 @@ export default function NotificationTester() {
             <Bell className="w-4 h-4" />
             Missed Day
           </button>
+          
+          <button
+            onClick={() => testNotification('milestone')}
+            disabled={isTesting}
+            className="flex items-center justify-center gap-2 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg disabled:opacity-50 text-sm"
+          >
+            <Bell className="w-4 h-4" />
+            Milestone
+          </button>
+          
+          <button
+            onClick={() => testNotification('streak')}
+            disabled={isTesting}
+            className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 text-sm"
+          >
+            <Bell className="w-4 h-4" />
+            Streak
+          </button>
         </div>
 
         {isTesting && (
@@ -97,6 +139,19 @@ export default function NotificationTester() {
         
         <div className="text-xs p-2 bg-blue-50 dark:bg-blue-900/20 rounded border">
           🔄 Device registration happens automatically when you login. Check browser console for details.
+        </div>
+        
+        <div className="pt-2 border-t">
+          <button
+            onClick={cleanupDevices}
+            disabled={isCleaningDevices}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg disabled:opacity-50 text-sm"
+          >
+            {isCleaningDevices ? '🧹 Cleaning...' : '🧹 Reset All Devices'}
+          </button>
+          <p className="text-xs text-gray-500 mt-1 text-center">
+            Use this if you can't login due to device issues
+          </p>
         </div>
       </div>
     </div>

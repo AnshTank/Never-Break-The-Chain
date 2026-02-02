@@ -115,6 +115,48 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Redirect authenticated users away from login/signup pages
+  if (pathname === "/login" || pathname === "/signup") {
+    const token =
+      request.cookies.get("auth-token")?.value ||
+      request.headers.get("authorization")?.replace("Bearer ", "");
+
+    if (token) {
+      const payload = verifyToken(token);
+      if (payload) {
+        try {
+          const userCacheKey = CacheKeys.user(payload.userId);
+          let user = cache.get(userCacheKey);
+          
+          if (!user) {
+            const { db } = await connectToDatabase();
+            const users = db.collection("users");
+            user = await users.findOne(
+              { _id: new ObjectId(payload.userId) },
+              {
+                projection: { isNewUser: 1, needsPasswordSetup: 1, password: 1 },
+              },
+            );
+            
+            if (user) {
+              cache.set(userCacheKey, user, CacheTTL.MEDIUM);
+            }
+          }
+
+          if (user) {
+            if (user.isNewUser || user.needsPasswordSetup || !user.password) {
+              return NextResponse.redirect(new URL("/welcome", request.url));
+            } else {
+              return NextResponse.redirect(new URL("/dashboard", request.url));
+            }
+          }
+        } catch (error) {
+          console.error("Error checking user status:", error);
+        }
+      }
+    }
+  }
+
   // Check for authentication token for protected routes
   const token =
     request.cookies.get("auth-token")?.value ||
@@ -239,6 +281,49 @@ export async function middleware(request: NextRequest) {
         return NextResponse.json({ error: "Database error" }, { status: 500 });
       }
       return NextResponse.redirect(new URL("/login", request.url));
+    }
+  }
+
+  // CRITICAL: Check if current device is still active and registered
+  // This prevents removed devices from continuing to access the system
+  const deviceId = request.headers.get('x-device-id') || request.cookies.get('device-id')?.value;
+  
+  if (deviceId && (pathname.startsWith("/api/") || !pathname.startsWith("/_next"))) {
+    try {
+      const { db } = await connectToDatabase();
+      const device = await db.collection('devices').findOne({
+        userId: new ObjectId(payload.userId),
+        deviceId: deviceId,
+        isActive: true
+      });
+      
+      if (!device) {
+        console.log(`Device ${deviceId} not found or inactive for user ${payload.userId}`);
+        // Device was removed or deactivated - force logout
+        if (pathname.startsWith("/api/")) {
+          return NextResponse.json(
+            { error: "Device no longer authorized", forceLogout: true },
+            { status: 401 }
+          );
+        }
+        
+        // For dashboard and other protected pages, redirect to login with device selection
+        const response = NextResponse.redirect(new URL("/login?error=device_removed&show_devices=true", request.url));
+        response.cookies.set("auth-token", "", { maxAge: 0, path: "/" });
+        response.cookies.set("refresh-token", "", { maxAge: 0, path: "/" });
+        response.cookies.set("device-id", "", { maxAge: 0, path: "/" });
+        return response;
+      }
+      
+      // Update device last active time
+      await db.collection('devices').updateOne(
+        { userId: new ObjectId(payload.userId), deviceId: deviceId },
+        { $set: { lastActive: new Date() } }
+      );
+      
+    } catch (error) {
+      console.error("Error checking device status:", error);
+      // On error, allow request to continue but log the issue
     }
   }
 

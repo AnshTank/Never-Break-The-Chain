@@ -152,7 +152,7 @@ export const useNotifications = () => {
         const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: 'BEl62iUYgUivxIkv69yViEuiBIa40HI80NM9f4LmWnE6_qHyHjqF8DiAUPHcfBXz4hjSjCuaHJaeuYqiNwdckQ'
+          applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BLQK6JX65-Jkc1ubvAvRBs7FFGfuV1aVk3NlihqFM7mtdlrrnDhgK9IhNKFDCCk9okl-y8DXkoxddsS8sBjdFy0'
         });
         
         // Register subscription with device
@@ -209,19 +209,32 @@ export const useNotifications = () => {
       throw new Error('Not in browser environment');
     }
     
-    if (!isEnabled || Notification.permission !== 'granted') {
-      throw new Error('Notifications not enabled or permission not granted');
-    }
-    
     if (!isWebsiteNotificationsEnabled()) {
       throw new Error('Website notifications are disabled');
     }
     
     try {
-      await NotificationService.sendNotification(
-        '🔗 Test Notification',
-        'Your smart notifications are working perfectly! 🎉'
-      );
+      // Use the enhanced email notification endpoint
+      const response = await fetch('/api/notifications/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'morning' })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to send test notification');
+      }
+      
+      const result = await response.json();
+      console.log('Test notification result:', result);
+      
+      // Also send browser notification if enabled
+      if (isEnabled && Notification.permission === 'granted') {
+        await NotificationService.sendNotification(
+          '🔗 Test Notification',
+          'Your smart notifications are working perfectly! 🎉'
+        );
+      }
     } catch (error) {
       console.error('Failed to send test notification:', error);
       throw error;

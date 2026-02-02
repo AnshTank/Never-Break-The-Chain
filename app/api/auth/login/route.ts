@@ -157,7 +157,8 @@ export async function POST(request: NextRequest) {
     // Create secure response with HTTP-only cookies
     const response = NextResponse.json({ 
       message: 'Login successful',
-      email: user.email
+      email: user.email,
+      userId: user._id.toString()
     }, { status: 200 })
 
     // Set secure HTTP-only cookies with dynamic expiration

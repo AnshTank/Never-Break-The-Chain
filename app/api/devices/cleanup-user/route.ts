@@ -15,40 +15,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
     }
 
-    const { pushSubscription } = await request.json();
-    const deviceId = request.headers.get('x-device-id');
-    
-    if (!pushSubscription || !deviceId) {
-      return NextResponse.json({ message: 'Push subscription and device ID required' }, { status: 400 });
-    }
-
     const { db } = await connectToDatabase();
     const userId = new ObjectId(decoded.userId);
 
-    // Update device with push subscription
-    await db.collection('devices').updateOne(
-      { userId, deviceId },
-      {
-        $set: {
-          pushSubscription,
-          pushSubscriptionUpdated: new Date(),
-          lastActive: new Date()
-        }
-      }
-    );
+    // Clean up all devices for this user to reset state
+    const result = await db.collection('devices').deleteMany({ userId });
 
-    console.log(`✅ Push subscription updated for device ${deviceId}`);
+    console.log(`Cleaned up ${result.deletedCount} devices for user ${userId}`);
 
     return NextResponse.json({
-      message: 'Push subscription registered successfully',
-      deviceId,
+      message: `Cleaned up ${result.deletedCount} devices`,
+      deletedCount: result.deletedCount,
       success: true
     });
 
   } catch (error) {
-    console.error('Push subscription error:', error);
+    console.error('Device cleanup error:', error);
     return NextResponse.json(
-      { message: 'Failed to register push subscription' },
+      { message: 'Internal server error', success: false },
       { status: 500 }
     );
   }

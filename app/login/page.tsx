@@ -240,20 +240,28 @@ function LoginForm() {
   useEffect(() => {
     const checkAutoLogin = async () => {
       try {
-        const result = await DeviceManager.performAutoLogin();
+        // Check if user is already authenticated via middleware redirect
+        const urlParams = new URLSearchParams(window.location.search)
+        if (urlParams.get('error') === 'device_removed') {
+          setError('Your device was removed from another location. Please sign in again.')
+          setIsCheckingAutoLogin(false)
+          return
+        }
+
+        const result = await DeviceManager.performAutoLogin()
         if (result.success && result.redirect) {
-          router.replace(result.redirect);
-          return;
+          router.replace(result.redirect)
+          return
         }
       } catch (error) {
-        console.error('Auto-login check failed:', error);
+        console.error('Auto-login check failed:', error)
       } finally {
-        setIsCheckingAutoLogin(false);
+        setIsCheckingAutoLogin(false)
       }
-    };
+    }
 
-    checkAutoLogin();
-  }, [router]);
+    checkAutoLogin()
+  }, [router])
 
   // Initialize activity tracking when component mounts
   useEffect(() => {
@@ -295,9 +303,6 @@ function LoginForm() {
       const data = await response.json();
 
       if (response.ok) {
-        // Register device with remember me preference
-        await DeviceManager.registerDevice(undefined, rememberMe);
-        
         if (data.needsVerification) {
           setLoginEmail(email);
           setShowVerificationModal(true);

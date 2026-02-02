@@ -27,6 +27,29 @@ export function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+// Generic send email function for notifications
+export async function sendEmail(options: {
+  to: string;
+  subject: string;
+  html: string;
+  from?: string;
+}): Promise<boolean> {
+  try {
+    const mailOptions = {
+      from: options.from || process.env.EMAIL_FROM,
+      to: options.to,
+      subject: options.subject,
+      html: options.html
+    };
+
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (error) {
+    console.error("Generic email send error:", error);
+    return false;
+  }
+}
+
 // Send OTP email
 export async function sendOTPEmail(
   email: string,

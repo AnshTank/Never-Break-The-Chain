@@ -144,7 +144,7 @@ export default function Header() {
               </button>
             </div>
             <div className="p-6">
-              <NotificationSettings onDisableNotifications={() => setShowNotificationModal(false)} />
+              <NotificationSettings />
             </div>
           </div>
         </div>

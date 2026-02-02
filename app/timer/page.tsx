@@ -795,13 +795,43 @@ export default function TimerPage() {
         if (response.ok) {
           const data = await response.json();
           setSessions(data.sessions || []);
+          setStats(data.stats || {
+            todayMinutes: 0,
+            todaySessions: 0,
+            totalHours: 0,
+            mnzdProgress: { meditation: 0, nutrition: 0, zone: 0, discipline: 0 },
+          });
+          setTasks(data.tasks || []);
+          setPomodoroCount(data.pomodoroCount || 0);
+          setCompletedSessions(data.completedSessions || 0);
+          console.log('Timer data loaded from database successfully');
+        } else {
+          console.error('Failed to load timer data from database');
+          // Only fallback to localStorage if database fails
+          const savedData = localStorage.getItem("focusTimerData");
+          if (savedData) {
+            const data = JSON.parse(savedData);
+            setSessions(data.sessions || []);
+            setStats(data.stats || stats);
+            setTasks(data.tasks || []);
+            setPomodoroCount(data.pomodoroCount || 0);
+            setCompletedSessions(data.completedSessions || 0);
+            console.log('Timer data loaded from localStorage fallback');
+          }
+        }
+      } catch (error) {
+        console.error("Error loading timer data:", error);
+        // Fallback to localStorage on error
+        const savedData = localStorage.getItem("focusTimerData");
+        if (savedData) {
+          const data = JSON.parse(savedData);
+          setSessions(data.sessions || []);
           setStats(data.stats || stats);
           setTasks(data.tasks || []);
           setPomodoroCount(data.pomodoroCount || 0);
           setCompletedSessions(data.completedSessions || 0);
+          console.log('Timer data loaded from localStorage after error');
         }
-      } catch (error) {
-        console.error("Error loading timer data:", error);
       }
     };
 
@@ -827,19 +857,7 @@ export default function TimerPage() {
       }
     };
 
-    const savedData = localStorage.getItem("focusTimerData");
-
-    if (savedData) {
-      const data = JSON.parse(savedData);
-      setSessions(data.sessions || []);
-      setStats(data.stats || stats);
-      setTasks(data.tasks || []);
-      setPomodoroCount(data.pomodoroCount || 0);
-      setBackgroundSound(data.backgroundSound || "");
-      setSessionSettings(data.sessionSettings || sessionSettings);
-      setCompletedSessions(data.completedSessions || 0);
-    }
-
+    // Remove localStorage dependency - load from database first
     loadUserSettings();
     loadTimerData();
     loadTodayProgress();
@@ -1029,7 +1047,7 @@ export default function TimerPage() {
 
   const saveTimerSettings = async () => {
     try {
-      await fetch("/api/settings", {
+      const response = await fetch("/api/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1038,6 +1056,7 @@ export default function TimerPage() {
             focusTime: sessionSettings.focusTime,
             breakTime: sessionSettings.breakTime,
             dailySessionGoal: sessionSettings.dailySessionGoal,
+            dailyHoursGoal: sessionSettings.dailyHoursGoal,
             autoStart,
             notifications,
             soundVolume,
@@ -1049,11 +1068,18 @@ export default function TimerPage() {
           },
         }),
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save settings to database');
+      }
+      
       setSettingsChanged(false);
       setOriginalSettings(null);
       setIsNewUser(false);
+      console.log('Timer settings saved to database successfully');
     } catch (error) {
-      console.error("Error saving timer settings:", error);
+      console.error("Error saving timer settings to database:", error);
+      alert('Failed to save settings. Please try again.');
     }
   };
 
@@ -1094,26 +1120,22 @@ export default function TimerPage() {
     };
 
     try {
-      await fetch("/api/timer-data", {
+      const response = await fetch("/api/timer-data", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save to database');
+      }
+      
+      console.log('Timer data saved to database successfully');
     } catch (error) {
-      console.error("Error saving timer data:", error);
+      console.error("Error saving timer data to database:", error);
+      // Only use localStorage as emergency backup
+      localStorage.setItem("focusTimerData", JSON.stringify(data));
     }
-
-    // Keep localStorage as backup
-    localStorage.setItem("focusTimerData", JSON.stringify(data));
-
-    const journeyData = JSON.parse(localStorage.getItem("journeyData") || "{}");
-    const today = new Date().toISOString().split("T")[0];
-
-    if (journeyData[today]) {
-      journeyData[today].totalHours = stats.totalHours;
-    }
-
-    localStorage.setItem("journeyData", JSON.stringify(journeyData));
   };
 
   const switchMode = (newMode: "focus" | "break") => {
@@ -1275,7 +1297,7 @@ export default function TimerPage() {
     }
   };
 
-  const addTask = () => {
+  const addTask = async () => {
     if (newTaskName.trim() && newTaskName.trim().length <= 25) {
       const newTask: Task = {
         id: Date.now().toString(),
@@ -1284,19 +1306,24 @@ export default function TimerPage() {
         totalTime: 0,
         isMNZD: false,
       };
-      setTasks([...tasks, newTask]);
+      const updatedTasks = [...tasks, newTask];
+      setTasks(updatedTasks);
       setNewTaskName("");
-      saveData();
+      
+      // Save immediately to database
+      await saveData();
     }
   };
 
-  const deleteTask = (taskId: string) => {
+  const deleteTask = async (taskId: string) => {
     if (tasks.find((t) => t.id === taskId)?.isMNZD) return;
-    setTasks(tasks.filter((t) => t.id !== taskId));
+    const updatedTasks = tasks.filter((t) => t.id !== taskId);
+    setTasks(updatedTasks);
     if (currentTask === taskId) {
       setCurrentTask("");
     }
-    saveData();
+    // Save immediately to database
+    await saveData();
   };
 
   const formatTime = (seconds: number) => {

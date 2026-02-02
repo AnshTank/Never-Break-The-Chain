@@ -11,7 +11,6 @@ import ProgressView from "@/components/progress-view";
 import CoolLoading from "@/components/cool-loading";
 import MNZDInfoSection from "@/components/mnzd-info-section";
 import NotificationSettings from "@/components/NotificationSettings";
-import NotificationTester from "@/components/notification-tester";
 import { GlobalStateProvider } from "@/lib/global-state";
 import { useNotifications } from "@/lib/notifications/use-notifications";
 
@@ -186,9 +185,6 @@ export default function Home() {
 
                 {/* Daily Check-in */}
                 <DailyCheckIn preloadedData={loadedData} />
-
-                {/* Notification Tester - Development Only */}
-                <NotificationTester />
 
                 {/* Current Month Calendar */}
                 <div className="space-y-4">

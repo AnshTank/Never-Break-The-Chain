@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
 import { verifyToken } from '@/lib/jwt';
-import { ObjectId } from 'mongodb';
+import { DeviceSessionManager } from '@/lib/device-session-manager';
+import { NotificationScheduler } from '@/lib/notification-scheduler';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,111 +17,60 @@ export async function POST(request: NextRequest) {
 
     const { 
       deviceId, 
-      sessionId, 
       deviceName, 
       deviceType, 
       browser, 
       os, 
       pushSubscription, 
-      rememberMe 
+      rememberMe = false,
+      forceRegister = false
     } = await request.json();
 
-    const { db } = await connectToDatabase();
-    const userId = new ObjectId(decoded.userId);
-    const now = new Date();
-    const rememberMeExpiry = rememberMe ? new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) : undefined;
-
-    // Auto-cleanup: Remove duplicates with same device name
-    await db.collection('devices').deleteMany({
-      userId,
-      deviceName,
-      deviceId: { $ne: deviceId }
-    });
-
-    // Check if device already exists
-    const existingDevice = await db.collection('devices').findOne({
-      userId,
-      deviceId
-    });
-
-    if (existingDevice) {
-      // Update existing device
-      const updateData: any = {
-        lastActive: now,
-        lastLogin: now,
-        rememberMe,
-        rememberMeExpiry,
-        isActive: true,
-        currentBrowser: browser
-      };
-      
-      // Only update pushSubscription if provided
-      if (pushSubscription) {
-        updateData.pushSubscription = pushSubscription;
-      }
-      
-      await db.collection('devices').updateOne(
-        { userId, deviceId },
-        { $set: updateData }
-      );
-      
-      return NextResponse.json({ 
-        message: 'Device updated successfully',
-        deviceId
-      });
+    if (!deviceId) {
+      return NextResponse.json({ message: 'Device ID required' }, { status: 400 });
     }
 
-    // Check device limit (max 2 devices)
-    const deviceCount = await db.collection('devices').countDocuments({
-      userId,
-      isActive: true,
-    });
+    // Use the new device session manager
+    const result = await DeviceSessionManager.registerDevice(
+      decoded.userId,
+      {
+        deviceId,
+        deviceName: deviceName || 'Unknown Device',
+        deviceType: deviceType || 'desktop',
+        browser: browser || 'Unknown',
+        os: os || 'Unknown',
+        rememberMe,
+        pushSubscription
+      },
+      forceRegister
+    );
 
-    if (deviceCount >= 2) {
-      const existingDevices = await db.collection('devices')
-        .find({ userId, isActive: true })
-        .sort({ lastActive: -1 })
-        .toArray();
-
+    if (!result.success) {
       return NextResponse.json({
         message: 'Device limit reached',
         requiresDeviceSelection: true,
-        existingDevices: existingDevices.map(d => ({
-          deviceId: d.deviceId,
-          deviceName: d.deviceName,
-          deviceType: d.deviceType,
-          lastActive: d.lastActive
-        })),
+        success: false,
+        existingDevices: result.existingDevices,
       }, { status: 409 });
     }
 
-    // Register new device
-    await db.collection('devices').insertOne({
-      userId,
-      deviceId,
-      deviceName,
-      deviceType,
-      browser,
-      os,
-      lastActive: now,
-      lastLogin: now,
-      pushSubscription,
-      isActive: true,
-      registeredAt: now,
-      rememberMe,
-      rememberMeExpiry,
-      currentBrowser: browser
-    });
+    // Setup notifications for new user sessions
+    try {
+      await NotificationScheduler.setupUserNotifications(decoded.userId);
+    } catch (error) {
+      console.warn('Failed to setup notifications:', error);
+    }
 
     return NextResponse.json({ 
       message: 'Device registered successfully',
-      deviceId 
+      deviceId,
+      success: true
     });
 
   } catch (error) {
     console.error('Device registration error:', error);
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { message: 'Internal server error', success: false },
       { status: 500 }
     );
   }
@@ -140,28 +89,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { deviceIdToRemove } = await request.json();
-    const { db } = await connectToDatabase();
-    const userId = new ObjectId(decoded.userId);
-
-    // Find the device to remove
-    const deviceToRemove = await db.collection('devices').findOne({
-      userId, 
-      deviceId: deviceIdToRemove
-    });
-    
-    if (!deviceToRemove) {
-      return NextResponse.json({ message: 'Device not found' }, { status: 404 });
-    }
-
-    // Delete the device completely
-    await db.collection('devices').deleteOne({
-      userId, 
-      deviceId: deviceIdToRemove
-    });
-
-    // Check if this is the current user's device
     const currentDeviceId = request.headers.get('x-device-id');
-    const isCurrentDevice = deviceToRemove.deviceId === currentDeviceId;
+    const isCurrentDevice = deviceIdToRemove === currentDeviceId;
+
+    // Use the device session manager to remove the device
+    await DeviceSessionManager.removeDevice(decoded.userId, deviceIdToRemove);
+    
+    console.log(`Device ${deviceIdToRemove} completely removed and sessions invalidated`);
 
     const response = NextResponse.json({ 
       message: 'Device removed successfully',
