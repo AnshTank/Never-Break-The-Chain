@@ -1,259 +1,169 @@
-# 🔗 Never Break The Chain - MNZD Habit Tracker
+# Never Break The Chain - MNZD Habit Tracker
 
-<div align="center">
+A modern habit tracking application built with Next.js, TypeScript, and MongoDB that helps users build consistent daily habits through the MNZD methodology (Meditation, Nutrition, Zone, Discipline).
 
-```ascii
-╔══════════════════════════════════════════════════════════════════════════════╗
-║                                                                              ║
-║    ███╗   ██╗███████╗██╗   ██╗███████╗██████╗     ██████╗ ██████╗ ███████╗  ║
-║    ████╗  ██║██╔════╝██║   ██║██╔════╝██╔══██╗    ██╔══██╗██╔══██╗██╔════╝  ║
-║    ██╔██╗ ██║█████╗  ██║   ██║█████╗  ██████╔╝    ██████╔╝██████╔╝█████╗    ║
-║    ██║╚██╗██║██╔══╝  ╚██╗ ██╔╝██╔══╝  ██╔══██╗    ██╔══██╗██╔══██╗██╔══╝    ║
-║    ██║ ╚████║███████╗ ╚████╔╝ ███████╗██████╔╝    ██████╔╝██║  ██║███████╗  ║
-║    ╚═╝  ╚═══╝╚══════╝  ╚═══╝  ╚══════╝╚═════╝     ╚═════╝ ╚═╝  ╚═╝╚══════╝  ║
-║                                                                              ║
-║    ████████╗██╗  ██╗███████╗     ██████╗██╗  ██╗ █████╗ ██╗███╗   ██╗      ║
-║    ╚══██╔══╝██║  ██║██╔════╝    ██╔════╝██║  ██║██╔══██╗██║████╗  ██║      ║
-║       ██║   ███████║█████╗      ██║     ███████║███████║██║██╔██╗ ██║      ║
-║       ██║   ██╔══██║██╔══╝      ██║     ██╔══██║██╔══██║██║██║╚██╗██║      ║
-║       ██║   ██║  ██║███████╗    ╚██████╗██║  ██║██║  ██║██║██║ ╚████║      ║
-║       ╚═╝   ╚═╝  ╚═╝╚══════╝     ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝      ║
-║                                                                              ║
-║                        THE CHAIN - MNZD METHODOLOGY                         ║
-║                     🧘 Meditation • 📚 Nutrition • 💪 Zone • 🎯 Discipline    ║
-║                                                                              ║
-╚══════════════════════════════════════════════════════════════════════════════╝
-```
+## Features
 
-![Never Break The Chain](https://img.shields.io/badge/Never%20Break%20The%20Chain-MNZD%20Habit%20Tracker-0070A0?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEwIDEzSDRBMiAyIDAgMCAxIDIgMTFWN0EyIDIgMCAwIDEgNCA1SDEwQTIgMiAwIDAgMSAxMiA3VjExQTIgMiAwIDAgMSAxMCAxM1oiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjIiLz4KPHBhdGggZD0iTTIwIDEzSDE0QTIgMiAwIDAgMSAxMiAxMVY3QTIgMiAwIDAgMSAxNCA1SDIwQTIgMiAwIDAgMSAyMiA3VjExQTIgMiAwIDAgMSAyMCAxM1oiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjIiLz4KPC9zdmc+)
-![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=for-the-badge&logo=next.js&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
-![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
-![License](https://img.shields.io/badge/License-Custom-FF6B6B?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-Production%20Ready-00D084?style=for-the-badge)
+- **Interactive Progress Calendar**: Monthly view with visual progress indicators
+- **GitHub-Style Heatmap**: Year-long journey visualization
+- **Advanced Analytics**: Multiple chart types for progress tracking
+- **Smart Notifications**: Morning and evening reminders with milestone alerts
+- **Secure Authentication**: JWT-based auth with OTP verification
+- **Responsive Design**: Mobile-first design with PWA capabilities
 
-**🚀 A revolutionary habit tracking application that transforms your daily consistency into extraordinary results through the innovative MNZD methodology.**
+## MNZD Methodology
 
-_"We are what we repeatedly do. Excellence, then, is not an act, but a habit." - Aristotle_
+The application is built around four core pillars:
 
----
+- 🧘 **Meditation**: Mindfulness and mental clarity
+- 📚 **Nutrition**: Healthy eating and continuous learning
+- 💪 **Zone**: Physical exercise and movement
+- 🎯 **Discipline**: Focused work and skill development
 
-### 🌟 **Experience the Magic**
+## Tech Stack
 
-[**🎯 Live Application**](https://never-break-the-chain.vercel.app) • [**📖 Discover the Story**](https://never-break-the-chain.vercel.app/about) • [**🐛 Report Issues**](https://github.com/AnshTank/Never-Break-The-Chain/issues) • [**✨ Request Features**](https://github.com/AnshTank/Never-Break-The-Chain/issues)
+- **Frontend**: Next.js 16, TypeScript, Tailwind CSS, Framer Motion
+- **Backend**: Node.js, MongoDB Atlas, JWT Authentication
+- **Deployment**: Vercel
+- **Notifications**: Web Push API, Email (Nodemailer)
 
-</div>
+## Quick Start
 
----
+### Prerequisites
 
-## 🎭 **The Philosophy Behind the Chain**
+- Node.js >= 18.17.0
+- npm >= 9.0.0
+- MongoDB Atlas account
+- Gmail account (for email services)
 
-> _"Success is not a destination, but a journey of consistent daily actions that compound into extraordinary transformations."_
-
-In a world obsessed with overnight success, **Never Break The Chain** stands as a testament to the power of consistency. Inspired by Jerry Seinfeld's legendary productivity method and enhanced with modern behavioral psychology, this isn't just another habit tracker—it's your personal transformation engine.
-
-### 🧬 **The MNZD DNA**
-
-Every great life is built on four fundamental pillars. The MNZD methodology isn't just an acronym—it's a philosophy, a way of life, a commitment to excellence:
-
-```
-🧘 MEDITATION  →  The Mind Palace
-   ├─ Mindfulness & Mental Clarity
-   ├─ Emotional Intelligence
-   ├─ Stress Resilience
-   └─ Inner Peace & Focus
-
-📚 NUTRITION   →  The Knowledge Engine
-   ├─ Healthy Eating Habits
-   ├─ Continuous Learning
-   ├─ Intellectual Growth
-   └─ Wisdom Accumulation
-
-💪 ZONE        →  The Physical Foundation
-   ├─ Exercise & Movement
-   ├─ Physical Strength
-   ├─ Energy Optimization
-   └─ Body-Mind Connection
-
-🎯 DISCIPLINE  →  The Success Catalyst
-   ├─ Focused Work Sessions
-   ├─ Skill Development
-   ├─ Goal Achievement
-   └─ Character Building
-```
-
----
-
-## ⚡ **Features That Spark Transformation**
-
-### 🎨 **Visual Storytelling Through Data**
-
-**Interactive Progress Calendar**
-
-- 🗓️ Monthly view with intuitive color psychology
-- 🎨 Visual progress indicators that tell your story
-- 📊 Real-time updates that celebrate every victory
-- 🔥 Streak visualization that ignites motivation
-
-**GitHub-Style Contribution Heatmap**
-
-- 🌈 Year-long journey visualization
-- 📈 Contribution-style progress tracking
-- 🎯 Consistency patterns at a glance
-- 🏆 Achievement milestones celebration
-
-**Multi-Dimensional Analytics**
-
-- 📊 Area Charts: Trend analysis over time
-- 📈 Bar Charts: Daily/weekly performance comparison
-- 📉 Line Charts: Progress trajectory mapping
-- 🎯 Scatter Plots: Correlation discovery
-- 🔥 Heatmaps: Activity intensity visualization
-
-### 🛡️ **Enterprise-Grade Security Architecture**
-
-**Authentication Fortress**
-
-- 🔐 JWT-based authentication with military-grade encryption
-- 📧 OTP email verification system
-- 🛡️ bcrypt password hashing (12 rounds)
-- 🚫 Rate limiting & brute force protection
-- 🔄 Automatic token refresh & session management
-
-**Data Protection Shield**
-
-- 🔒 End-to-end encryption for sensitive data
-- 🛡️ CSRF protection with SameSite cookies
-- 🚫 XSS prevention with Content Security Policy
-- 📝 Input validation with Zod schemas
-- 🔍 NoSQL injection prevention
-
-### 🎪 **User Experience Magic**
-
-**Responsive Design Symphony**
-
-- 📱 Mobile-first responsive design
-- 💻 Desktop optimization for power users
-- 🎨 Smooth Framer Motion animations
-- ♿ WCAG 2.1 accessibility compliance
-- 🚀 Progressive Web App (PWA) capabilities
-
-**Smart Notification Ecosystem**
-
-- 🌅 Morning motivation messages (7 AM)
-- 🌙 Evening reflection prompts (8 PM)
-- 🧠 AI-powered adaptive messaging
-- 🔔 Browser push notifications
-- 📊 Progress-based personalization
-
----
-
-## 🏗️ **Technical Architecture Masterpiece**
-
-### 🎯 **Frontend Excellence**
-
-```typescript
-// The Modern Stack
-const techStack = {
-  framework: "Next.js 16 with App Router",
-  language: "TypeScript 5 (Strict Mode)",
-  styling: "Tailwind CSS 4 + Custom Design System",
-  components: "Radix UI + shadcn/ui",
-  animations: "Framer Motion",
-  charts: "Recharts + Custom Visualizations",
-  state: "Zustand + React Context",
-  forms: "React Hook Form + Zod Validation",
-};
-```
-
-### ⚙️ **Backend Powerhouse**
-
-```typescript
-// The Server Architecture
-const backendStack = {
-  runtime: "Node.js with Edge Runtime",
-  database: "MongoDB Atlas + Connection Pooling",
-  auth: "Custom JWT + Refresh Token Rotation",
-  email: "Nodemailer + Gmail SMTP",
-  validation: "Zod Schemas + Type Safety",
-  security: "bcrypt + Rate Limiting + CSRF Protection",
-  api: "RESTful APIs + Error Handling",
-};
-```
-
-### 🚀 **DevOps & Performance**
-
-```yaml
-# Deployment Pipeline
-hosting: Vercel (Edge Network)
-ci_cd: GitHub Actions
-monitoring: Vercel Analytics + Error Tracking
-testing: Jest + React Testing Library
-code_quality: ESLint + Prettier + TypeScript
-performance: Next.js Optimization + Image Optimization
-security: Security Headers + HTTPS Enforcement
-```
-
----
-
-## 🎨 **The Color Psychology of Progress**
-
-_Every color tells a story. Every shade represents a step in your journey._
-
-<div align="center">
-
-| 🎨 **Visual** | ⏱️ **Hours** | 🎯 **Meaning** | 🌈 **Color Code** |     💭 **Psychology**      |
-| :-----------: | :----------: | :------------: | :---------------: | :------------------------: |
-|      🔴       |    < 0.5h    |    Minimal     |     `#ef4444`     | _Urgency & Action Needed_  |
-|      🟠       |    0.5-1h    |      Low       |     `#f97316`     |  _Warming Up & Building_   |
-|      🟡       |     1-2h     |    Moderate    |     `#eab308`     | _Steady Progress & Growth_ |
-|      🟢       |     2-3h     |      Good      |     `#84cc16`     |    _Positive Momentum_     |
-|      🟢       |     3-4h     |   Very Good    |     `#22c55e`     |    _Strong Performance_    |
-|      🟢       |     4-6h     |   Excellent    |     `#10b981`     |   _Excellence Achieved_    |
-|      🔵       |     6-8h     |  Outstanding   |     `#14b8a6`     |  _Exceptional Dedication_  |
-|      🔵       |     8h+      |   Legendary    |     `#06b6d4`     | _Mastery & Transcendence_  |
-
-</div>
-
----
-
-## 🚀 **Quick Start: Your Journey Begins Here**
-
-### 📋 **Prerequisites**
+### Installation
 
 ```bash
-# Essential Tools
-Node.js >= 18.17.0
-npm >= 9.0.0
-MongoDB Atlas Account
-Gmail Account (for email services)
-```
-
-### ⚡ **Lightning Setup**
-
-```bash
-# 1. Clone the Repository
+# Clone the repository
 git clone https://github.com/AnshTank/Never-Break-The-Chain.git
 cd Never-Break-The-Chain
 
-# 2. Install Dependencies
+# Install dependencies
 npm install
 
-# 3. Environment Configuration
+# Configure environment variables
 cp .env.example .env
-# Configure your environment variables
+# Edit .env with your configuration
 
-# 4. Launch Development Server
+# Start development server
 npm run dev
-
-# 🎉 Open http://localhost:3000 and start your transformation!
 ```
 
-### 🔧 **Environment Configuration**
+### Environment Variables
 
 ```env
-# 🗄️ Database Configuration
+# Database
+MONGODB_URL="mongodb+srv://username:password@cluster.mongodb.net/database"
+
+# Authentication
+JWT_SECRET="your-jwt-secret-key"
+
+# Email Service
+EMAIL_HOST="smtp.gmail.com"
+EMAIL_PORT=587
+EMAIL_USER="your-email@gmail.com"
+EMAIL_PASSWORD="your-app-password"
+EMAIL_FROM="Your App <your-email@gmail.com>"
+
+# Push Notifications
+VAPID_PUBLIC_KEY="your-vapid-public-key"
+VAPID_PRIVATE_KEY="your-vapid-private-key"
+VAPID_EMAIL="your-email@gmail.com"
+
+# Cron Security
+CRON_SECRET="your-cron-secret"
+```
+
+## Project Structure
+
+```
+app/
+├── api/                 # API routes
+├── dashboard/           # Main dashboard
+├── (auth)/             # Authentication pages
+└── globals.css         # Global styles
+
+components/
+├── ui/                 # Reusable UI components
+├── dashboard/          # Dashboard-specific components
+└── auth/              # Authentication components
+
+lib/
+├── auth-utils.ts      # Authentication utilities
+├── database.ts        # Database connection
+├── notification-scheduler.ts  # Notification system
+└── utils.ts           # General utilities
+```
+
+## Notification System
+
+The app includes an advanced notification system with:
+
+- **Random Timing**: 2-3 motivational messages per day
+- **Milestone Alerts**: Celebrations for streak achievements
+- **Smart Scheduling**: Optimal timing based on user behavior
+- **Multiple Channels**: Web push and email notifications
+
+### External Cron Setup
+
+For reliable notifications, set up external cron jobs at [cron-job.org](https://cron-job.org):
+
+- **Morning**: `0 7 * * *` (7 AM)
+- **Midday**: `0 12 * * *` (12 PM)
+- **Afternoon**: `0 15 * * *` (3 PM)
+- **Evening**: `0 20 * * *` (8 PM)
+- **Random Scheduler**: `0 6,18 * * *` (6 AM & 6 PM)
+- **Milestones**: `0 9,15,21 * * *` (9 AM, 3 PM, 9 PM)
+
+URL: `https://your-domain.vercel.app/api/cron/notifications`
+Headers: `Authorization: Bearer your-cron-secret`
+
+## Deployment
+
+### Vercel (Recommended)
+
+1. Connect your GitHub repository to Vercel
+2. Configure environment variables in Vercel dashboard
+3. Deploy automatically on push to main branch
+
+### Manual Deployment
+
+```bash
+# Build the application
+npm run build
+
+# Start production server
+npm start
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+## License
+
+This project is licensed under a Custom License. See [LICENSE](LICENSE) for details.
+
+## Author
+
+**Ansh Tank**
+- Portfolio: [anshtank.me](https://anshtank.me)
+- Email: [anshtank9@gmail.com](mailto:anshtank9@gmail.com)
+- LinkedIn: [linkedin.com/in/anshtank9](https://linkedin.com/in/anshtank9)
+- GitHub: [github.com/AnshTank](https://github.com/AnshTank)
+
+---
+
+© 2026 Never Break The Chain. Built with ❤️ by Ansh Tank. Configuration
 MONGODB_URL="mongodb+srv://username:password@cluster.mongodb.net/database"
 
 # 🔐 Security Configuration
