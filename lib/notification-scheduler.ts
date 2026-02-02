@@ -226,6 +226,8 @@ export class NotificationScheduler {
       { priority: 'high', forceEmail: true }
     );
   }
+
+  static async checkMissedDays(): Promise<void> {
     const { db } = await connectToDatabase();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
