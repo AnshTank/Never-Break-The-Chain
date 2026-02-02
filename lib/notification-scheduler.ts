@@ -466,3 +466,4 @@ export class NotificationScheduler {
     
     console.log(`📱 Scheduled random reminders for ${activeUsers.length} users`);
   }
+}

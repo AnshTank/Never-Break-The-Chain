@@ -248,7 +248,7 @@ export class HybridNotificationService {
     payload: NotificationPayload,
     scheduledFor: Date,
     options: {
-      type: 'morning' | 'evening' | 'missed_day' | 'milestone' | 'streak';
+      type: 'morning' | 'evening' | 'missed_day' | 'milestone' | 'streak' | 'random';
       recurring?: boolean;
       emailTemplate?: string;
     }
