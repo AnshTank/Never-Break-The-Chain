@@ -370,16 +370,6 @@ export class NotificationService {
             tag: "chain-reminder",
             requireInteraction: false,
             silent: false,
-            actions: [
-              {
-                action: 'open',
-                title: 'Open App'
-              },
-              {
-                action: 'dismiss', 
-                title: 'Dismiss'
-              }
-            ],
             data: {
               url: '/dashboard',
               timestamp: Date.now()

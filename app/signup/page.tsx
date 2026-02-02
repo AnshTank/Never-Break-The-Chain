@@ -449,39 +449,30 @@ function SignupForm() {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full cursor-pointer transition-all duration-300"
+                className="w-full cursor-pointer transition-all duration-300 relative overflow-hidden"
                 style={{
-                  background: 'linear-gradient(135deg, rgb(245,158,11) 0%, rgb(217,119,6) 100%)',
+                  background: isLoading 
+                    ? 'linear-gradient(135deg, rgb(156,163,175) 0%, rgb(107,114,128) 100%)'
+                    : 'linear-gradient(135deg, rgb(245,158,11) 0%, rgb(217,119,6) 100%)',
                   color: 'white',
                   border: 'none'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(135deg, rgb(180,83,9) 0%, rgb(146,64,14) 100%)';
+                  if (!isLoading) {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgb(180,83,9) 0%, rgb(146,64,14) 100%)';
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(135deg, rgb(245,158,11) 0%, rgb(217,119,6) 100%)';
+                  if (!isLoading) {
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgb(245,158,11) 0%, rgb(217,119,6) 100%)';
+                  }
                 }}
               >
                 {isLoading ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        fill="none"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Creating account...
-                  </span>
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Creating account...</span>
+                  </div>
                 ) : (
                   "Create account"
                 )}

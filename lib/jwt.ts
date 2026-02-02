@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken'
 import { NextRequest } from 'next/server'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production'
-const JWT_EXPIRES_IN = '24h' // Extended to 24 hours
+const JWT_EXPIRES_IN = '12h' // Changed to 12 hours for inactivity timeout
 const REFRESH_TOKEN_EXPIRES_IN = '90d' // Extended to 90 days
 
 export interface JWTPayload {
@@ -13,7 +13,7 @@ export interface JWTPayload {
 }
 
 export function generateTokens(payload: { userId: string; email: string }, rememberMe: boolean = false) {
-  const accessTokenExpiry = rememberMe ? '7d' : JWT_EXPIRES_IN // 7 days if remember me
+  const accessTokenExpiry = rememberMe ? '7d' : JWT_EXPIRES_IN // 7 days if remember me, 12h otherwise
   const refreshTokenExpiry = rememberMe ? '365d' : REFRESH_TOKEN_EXPIRES_IN // 1 year if remember me
   
   const accessToken = jwt.sign(payload, JWT_SECRET, { 
@@ -31,7 +31,7 @@ export function generateTokens(payload: { userId: string; email: string }, remem
   return { 
     accessToken, 
     refreshToken,
-    accessTokenMaxAge: rememberMe ? 7 * 24 * 60 * 60 : 24 * 60 * 60,
+    accessTokenMaxAge: rememberMe ? 7 * 24 * 60 * 60 : 12 * 60 * 60, // 7 days or 12 hours
     refreshTokenMaxAge: rememberMe ? 365 * 24 * 60 * 60 : 90 * 24 * 60 * 60
   }
 }

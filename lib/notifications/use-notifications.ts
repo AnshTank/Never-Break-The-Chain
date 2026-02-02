@@ -1,30 +1,49 @@
 'use client'
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import NotificationService, { UserProgress } from './notification-service';
+import { getDeviceId } from '@/lib/device-id';
 
 export const useNotifications = () => {
   const [isEnabled, setIsEnabled] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [isClient, setIsClient] = useState(false);
 
-  useEffect(() => {
-    setIsClient(true);
+  // Function to check and update permission state
+  const updatePermissionState = useCallback(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
-      // Check actual permission status
       const currentPermission = Notification.permission;
       setPermission(currentPermission);
       setIsEnabled(currentPermission === 'granted');
+      return currentPermission;
+    }
+    return 'default';
+  }, []);
+
+  useEffect(() => {
+    setIsClient(true);
+    
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      // Initial permission check
+      updatePermissionState();
       
-      // Initialize service worker for push notifications
-      if (currentPermission === 'granted') {
+      // Initialize service worker for push notifications if permission is granted
+      if (Notification.permission === 'granted') {
         NotificationService.initializeServiceWorker();
         
-        // Track user activity for smart notifications
-        const trackActivity = () => NotificationService.updateActivity();
+        // Track user activity for smart notifications (throttled)
+        let lastActivityUpdate = 0;
+        const trackActivity = () => {
+          const now = Date.now();
+          // Only update activity every 5 minutes to reduce overhead
+          if (now - lastActivityUpdate > 5 * 60 * 1000) {
+            lastActivityUpdate = now;
+            NotificationService.updateActivity();
+          }
+        };
         
-        // Track various user interactions
-        const events = ['click', 'scroll', 'keypress', 'mousemove', 'touchstart'];
+        // Track fewer, more meaningful interactions
+        const events = ['click', 'keypress', 'scroll'];
         events.forEach(event => {
           document.addEventListener(event, trackActivity, { passive: true });
         });
@@ -37,57 +56,132 @@ export const useNotifications = () => {
         };
       }
     }
-  }, []);
+  }, [updatePermissionState]);
 
   const enableNotifications = async (): Promise<boolean> => {
-    if (!isClient || typeof window === 'undefined' || !('Notification' in window)) return false;
+    if (!isClient || typeof window === 'undefined' || !('Notification' in window)) {
+      console.log('Notifications not supported');
+      return false;
+    }
+    
+    // Check current permission first
+    const currentPermission = updatePermissionState();
     
     // If already granted, return true
-    if (Notification.permission === 'granted') {
-      setIsEnabled(true);
-      setPermission('granted');
+    if (currentPermission === 'granted') {
+      console.log('Notifications already granted');
+      // Register push subscription with device
+      await registerPushSubscription();
       return true;
     }
     
-    // If denied, return false
-    if (Notification.permission === 'denied') {
+    // If denied, return false immediately
+    if (currentPermission === 'denied') {
+      console.log('Notifications denied');
       return false;
     }
     
     try {
-      // Force permission request for 'default' status
-      const permission = await new Promise<NotificationPermission>((resolve) => {
-        // Use the callback version to ensure compatibility
-        const result = Notification.requestPermission((permission) => {
-          resolve(permission);
-        });
-        
-        // Handle promise-based version for modern browsers
-        if (result && typeof result.then === 'function') {
-          result.then(resolve);
+      console.log('Requesting notification permission...');
+      
+      // Request permission using the most compatible method
+      let newPermission: NotificationPermission;
+      
+      if ('requestPermission' in Notification) {
+        // Modern promise-based API
+        if (typeof Notification.requestPermission === 'function') {
+          const result = Notification.requestPermission();
+          
+          // Handle both callback and promise versions
+          if (result && typeof result.then === 'function') {
+            // Promise-based
+            newPermission = await result;
+          } else {
+            // Callback-based (fallback)
+            newPermission = await new Promise<NotificationPermission>((resolve) => {
+              Notification.requestPermission((permission) => {
+                resolve(permission);
+              });
+            });
+          }
+        } else {
+          // Very old browsers
+          newPermission = await new Promise<NotificationPermission>((resolve) => {
+            (Notification as any).requestPermission((permission: NotificationPermission) => {
+              resolve(permission);
+            });
+          });
         }
-      });
+      } else {
+        console.error('Notification.requestPermission not available');
+        return false;
+      }
       
-      const granted = permission === 'granted';
+      console.log('Permission result:', newPermission);
       
+      // Update state with new permission
+      setPermission(newPermission);
+      const granted = newPermission === 'granted';
       setIsEnabled(granted);
-      setPermission(permission);
       
       if (granted) {
         // Initialize service worker after permission is granted
-        await NotificationService.initializeServiceWorker();
+        try {
+          await NotificationService.initializeServiceWorker();
+          console.log('Service worker initialized');
+          
+          // Register push subscription with device
+          await registerPushSubscription();
+        } catch (swError) {
+          console.error('Failed to initialize service worker:', swError);
+        }
       }
       
       return granted;
     } catch (error) {
       console.error('Error requesting notification permission:', error);
+      // Update permission state in case of error
+      updatePermissionState();
       return false;
+    }
+  };
+
+  const registerPushSubscription = async () => {
+    try {
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: 'BEl62iUYgUivxIkv69yViEuiBIa40HI80NM9f4LmWnE6_qHyHjqF8DiAUPHcfBXz4hjSjCuaHJaeuYqiNwdckQ'
+        });
+        
+        // Register subscription with device
+        const deviceId = getDeviceId();
+        await fetch('/api/devices/push-subscription', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-device-id': deviceId
+          },
+          body: JSON.stringify({
+            pushSubscription: subscription
+          })
+        });
+        
+        console.log('Push subscription registered');
+      }
+    } catch (error) {
+      console.error('Failed to register push subscription:', error);
     }
   };
 
   const scheduleSmartNotifications = async (userProgress: UserProgress) => {
     if (isEnabled && isClient && isWebsiteNotificationsEnabled()) {
-      NotificationService.scheduleNotifications(userProgress);
+      try {
+        NotificationService.scheduleNotifications(userProgress);
+      } catch (error) {
+        console.error('Failed to schedule notifications:', error);
+      }
     }
   };
 
@@ -101,16 +195,36 @@ export const useNotifications = () => {
         console.error('Failed to send welcome notification:', error);
       }
     } else {
-      console.log('Welcome notification skipped:', { isEnabled, isClient, websiteEnabled: isWebsiteNotificationsEnabled() });
+      console.log('Welcome notification skipped:', { 
+        isEnabled, 
+        isClient, 
+        websiteEnabled: isWebsiteNotificationsEnabled(),
+        permission: Notification?.permission 
+      });
     }
   };
 
   const sendTestNotification = async () => {
-    if (isEnabled && isClient && isWebsiteNotificationsEnabled()) {
+    if (!isClient || typeof window === 'undefined') {
+      throw new Error('Not in browser environment');
+    }
+    
+    if (!isEnabled || Notification.permission !== 'granted') {
+      throw new Error('Notifications not enabled or permission not granted');
+    }
+    
+    if (!isWebsiteNotificationsEnabled()) {
+      throw new Error('Website notifications are disabled');
+    }
+    
+    try {
       await NotificationService.sendNotification(
         '🔗 Test Notification',
         'Your smart notifications are working perfectly! 🎉'
       );
+    } catch (error) {
+      console.error('Failed to send test notification:', error);
+      throw error;
     }
   };
 
@@ -125,6 +239,11 @@ export const useNotifications = () => {
     }
   };
 
+  // Expose method to manually refresh permission state
+  const refreshPermissionState = useCallback(() => {
+    return updatePermissionState();
+  }, [updatePermissionState]);
+
   return {
     isEnabled,
     permission,
@@ -134,6 +253,7 @@ export const useNotifications = () => {
     sendTestNotification,
     isWebsiteNotificationsEnabled,
     disableWebsiteNotifications,
+    refreshPermissionState,
     isClient
   };
 };

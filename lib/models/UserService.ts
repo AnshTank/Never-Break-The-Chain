@@ -68,9 +68,8 @@ export class UserService {
     // Clear any setup flags when password is updated
     await this.updateUser(email, { 
       password: hashedPassword,
-      needsPasswordSetup: false,
       isNewUser: false
-    });
+    } as any);
   }
   
   static async setOTP(email: string, otp: string, expiresInMinutes: number = 5): Promise<void> {

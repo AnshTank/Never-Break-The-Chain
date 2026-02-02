@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { motion } from "framer-motion";
 import { Sparkles, Target, Zap, TrendingUp, Eye } from "lucide-react";
 import { EmailVerificationModal } from "@/components/EmailVerificationModal";
+import { DeviceManager } from "@/lib/device-manager";
 
 // Animated floating background shapes
 function FloatingShapes() {
@@ -222,6 +223,7 @@ function AnimatedBackground() {
 
 function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAutoLogin, setIsCheckingAutoLogin] = useState(true);
   const [error, setError] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -233,6 +235,34 @@ function LoginForm() {
   const [loginEmail, setLoginEmail] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Check for auto-login on component mount
+  useEffect(() => {
+    const checkAutoLogin = async () => {
+      try {
+        const result = await DeviceManager.performAutoLogin();
+        if (result.success && result.redirect) {
+          router.replace(result.redirect);
+          return;
+        }
+      } catch (error) {
+        console.error('Auto-login check failed:', error);
+      } finally {
+        setIsCheckingAutoLogin(false);
+      }
+    };
+
+    checkAutoLogin();
+  }, [router]);
+
+  // Initialize activity tracking when component mounts
+  useEffect(() => {
+    DeviceManager.initActivityTracking();
+    
+    return () => {
+      DeviceManager.stopActivityTracking();
+    };
+  }, []);
 
   useEffect(() => {
     const oauthError = searchParams.get("error");
@@ -265,6 +295,9 @@ function LoginForm() {
       const data = await response.json();
 
       if (response.ok) {
+        // Register device with remember me preference
+        await DeviceManager.registerDevice(undefined, rememberMe);
+        
         if (data.needsVerification) {
           setLoginEmail(email);
           setShowVerificationModal(true);
@@ -342,6 +375,24 @@ function LoginForm() {
       setIsLoading(false);
     }
   };
+
+  // Show loading screen while checking auto-login
+  if (isCheckingAutoLogin) {
+    return (
+      <div className="min-h-screen relative flex items-center justify-center p-4">
+        <AnimatedBackground />
+        <FloatingShapes />
+        <motion.div
+          className="text-center relative z-10"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <div className="w-8 h-8 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Checking login status...</p>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4">
@@ -514,29 +565,41 @@ function LoginForm() {
                 <p className="text-xs text-slate-500">
                   {rememberMe
                     ? "You'll stay logged in for 7 days"
-                    : "You'll be logged out after 24 hours of inactivity"}
+                    : "You'll be logged out after 12 hours of inactivity"}
                 </p>
 
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full cursor-pointer transition-all duration-300"
+                  className="w-full cursor-pointer transition-all duration-300 relative overflow-hidden"
                   style={{
-                    background:
-                      "linear-gradient(135deg, rgb(245,158,11) 0%, rgb(217,119,6) 100%)",
+                    background: isLoading 
+                      ? "linear-gradient(135deg, rgb(156,163,175) 0%, rgb(107,114,128) 100%)"
+                      : "linear-gradient(135deg, rgb(245,158,11) 0%, rgb(217,119,6) 100%)",
                     color: "white",
                     border: "none",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background =
-                      "linear-gradient(135deg, rgb(180,83,9) 0%, rgb(146,64,14) 100%)";
+                    if (!isLoading) {
+                      e.currentTarget.style.background =
+                        "linear-gradient(135deg, rgb(180,83,9) 0%, rgb(146,64,14) 100%)";
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background =
-                      "linear-gradient(135deg, rgb(245,158,11) 0%, rgb(217,119,6) 100%)";
+                    if (!isLoading) {
+                      e.currentTarget.style.background =
+                        "linear-gradient(135deg, rgb(245,158,11) 0%, rgb(217,119,6) 100%)";
+                    }
                   }}
                 >
-                  {isLoading ? "Signing in..." : "Sign in"}
+                  {isLoading ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      <span>Signing in...</span>
+                    </div>
+                  ) : (
+                    "Sign in"
+                  )}
                 </Button>
               </form>
 

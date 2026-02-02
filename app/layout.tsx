@@ -9,6 +9,11 @@ import ConditionalFooter from "../components/conditional-footer";
 import "./globals.css";
 import { Caveat, Merriweather, Space_Mono } from "next/font/google";
 
+// Initialize enterprise features
+if (typeof window === 'undefined') {
+  import('@/lib/enterprise-init');
+}
+
 const caveat = Caveat({
   subsets: ["latin"],
   variable: "--font-caveat",
@@ -194,7 +199,7 @@ export default function RootLayout({
         <meta name="MobileOptimized" content="320" />
         <meta name="format-detection" content="telephone=no" />
       </head>
-      <body className={`font-sans antialiased m-0 p-0`}>
+      <body className={`font-sans antialiased m-0 p-0`} suppressHydrationWarning>
         <AuthProvider>
           <div className="min-h-screen">
             <main className="w-full">{children}</main>

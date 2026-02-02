@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { connectToDatabase } from '@/lib/mongodb'
 import { generateTokens } from '@/lib/jwt'
-import { checkRateLimit } from '@/lib/rate-limit'
+import { checkAdvancedRateLimit } from '@/lib/advanced-rate-limit'
 import { validateRequest, loginSchema } from '@/lib/validation'
+import { cache, CacheKeys, CacheTTL } from '@/lib/cache'
 
 export const runtime = 'nodejs'
 
@@ -55,22 +56,44 @@ export async function POST(request: NextRequest) {
     const { email, password, rememberMe } = validation.data;
     const sanitizedEmail = email.toLowerCase().trim();
 
-    // Rate limiting check
-    const rateLimitResult = checkRateLimit(`login:${clientIP}:${sanitizedEmail}`);
+    // Advanced rate limiting
+    const rateLimitResult = checkAdvancedRateLimit(`${clientIP}:${sanitizedEmail}`, 'auth');
     if (!rateLimitResult.allowed) {
-      const resetTime = rateLimitResult.resetTime ? new Date(rateLimitResult.resetTime).toISOString() : undefined;
       return NextResponse.json({ 
         error: 'Too many login attempts. Please try again later.',
-        resetTime,
-        remainingAttempts: 0
+        resetTime: rateLimitResult.resetTime,
+        remaining: rateLimitResult.remaining
       }, { status: 429 });
     }
 
     const { db } = await connectToDatabase()
     const users = db.collection('users')
 
-    // Find user with sanitized email
-    const user = await users.findOne({ email: sanitizedEmail })
+    // Check cache first for user data
+    const cacheKey = CacheKeys.user(sanitizedEmail);
+    let user = cache.get(cacheKey);
+    
+    if (!user) {
+      // Find user with optimized projection
+      user = await users.findOne(
+        { email: sanitizedEmail },
+        { 
+          projection: { 
+            _id: 1, 
+            email: 1, 
+            password: 1, 
+            emailVerified: 1, 
+            needsPasswordSetup: 1, 
+            oauthProvider: 1 
+          } 
+        }
+      );
+      
+      if (user) {
+        // Cache user data for 5 minutes
+        cache.set(cacheKey, user, CacheTTL.MEDIUM);
+      }
+    }
     if (!user) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }

@@ -11,6 +11,7 @@ import ProgressView from "@/components/progress-view";
 import CoolLoading from "@/components/cool-loading";
 import MNZDInfoSection from "@/components/mnzd-info-section";
 import NotificationSettings from "@/components/NotificationSettings";
+import NotificationTester from "@/components/notification-tester";
 import { GlobalStateProvider } from "@/lib/global-state";
 import { useNotifications } from "@/lib/notifications/use-notifications";
 
@@ -57,7 +58,7 @@ export default function Home() {
       const userProgress = {
         completed: data.todayProgress?.completed || 0,
         streak: data.currentStreak || 0,
-        timeOfDay: new Date().getHours() < 12 ? "morning" : "evening",
+        timeOfDay: (new Date().getHours() < 12 ? "morning" : "evening") as "morning" | "evening",
         patterns: {
           usualCompletionTime: "12:00",
           strongestPillar: "Move",
@@ -185,6 +186,9 @@ export default function Home() {
 
                 {/* Daily Check-in */}
                 <DailyCheckIn preloadedData={loadedData} />
+
+                {/* Notification Tester - Development Only */}
+                <NotificationTester />
 
                 {/* Current Month Calendar */}
                 <div className="space-y-4">

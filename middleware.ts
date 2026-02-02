@@ -8,6 +8,8 @@ import {
 } from "@/lib/jwt";
 import { connectToDatabase } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import { cache, CacheKeys, CacheTTL } from "@/lib/cache";
+import { checkAdvancedRateLimit } from "@/lib/advanced-rate-limit";
 
 export const runtime = "nodejs";
 
@@ -51,6 +53,16 @@ const welcomeRequiredPaths = ["/welcome"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const clientIP = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+
+  // Rate limiting for all requests
+  const rateLimitResult = checkAdvancedRateLimit(clientIP, 'general');
+  if (!rateLimitResult.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests' }, 
+      { status: 429 }
+    );
+  }
 
   // Allow public paths first (including API routes)
   if (publicPaths.some((path) => pathname.startsWith(path))) {
@@ -67,16 +79,25 @@ export async function middleware(request: NextRequest) {
     if (token) {
       const payload = verifyToken(token);
       if (payload) {
-        // Check if user needs welcome flow
+        // Check if user needs welcome flow with caching
         try {
-          const { db } = await connectToDatabase();
-          const users = db.collection("users");
-          const user = await users.findOne(
-            { _id: new ObjectId(payload.userId) },
-            {
-              projection: { isNewUser: 1, needsPasswordSetup: 1, password: 1 },
-            },
-          );
+          const userCacheKey = CacheKeys.user(payload.userId);
+          let user = cache.get(userCacheKey);
+          
+          if (!user) {
+            const { db } = await connectToDatabase();
+            const users = db.collection("users");
+            user = await users.findOne(
+              { _id: new ObjectId(payload.userId) },
+              {
+                projection: { isNewUser: 1, needsPasswordSetup: 1, password: 1 },
+              },
+            );
+            
+            if (user) {
+              cache.set(userCacheKey, user, CacheTTL.MEDIUM);
+            }
+          }
 
           if (
             user &&
@@ -174,12 +195,27 @@ export async function middleware(request: NextRequest) {
     !pathname.startsWith("/api/")
   ) {
     try {
-      const { db } = await connectToDatabase();
-      const users = db.collection("users");
-      const user = await users.findOne({ _id: new ObjectId(payload.userId) });
+      const userCacheKey = CacheKeys.user(payload.userId);
+      let user = cache.get(userCacheKey);
+      
+      if (!user) {
+        const { db } = await connectToDatabase();
+        const users = db.collection("users");
+        user = await users.findOne(
+          { _id: new ObjectId(payload.userId) },
+          { projection: { isNewUser: 1, needsPasswordSetup: 1, password: 1 } }
+        );
+        
+        if (user) {
+          cache.set(userCacheKey, user, CacheTTL.MEDIUM);
+        }
+      }
 
       // If user doesn't exist (deleted account), redirect to login
       if (!user) {
+        // Clear cache
+        cache.delete(CacheKeys.user(payload.userId));
+        
         if (pathname.startsWith("/api/")) {
           return NextResponse.json(
             { error: "User not found" },

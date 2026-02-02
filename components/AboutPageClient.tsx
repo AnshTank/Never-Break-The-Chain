@@ -18,7 +18,8 @@ const Navigation = () => {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
-    setIsMobileMenuOpen(false); // Close mobile menu after navigation
+    // Close mobile menu after navigation
+    // setIsMobileMenuOpen(false);
   };
 
   const navItems = [

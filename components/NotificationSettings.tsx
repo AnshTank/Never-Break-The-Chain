@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { Bell, BellOff, TestTube, Sparkles, X } from 'lucide-react';
+import { Bell, BellOff, TestTube, Sparkles, X, Lock, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNotifications } from '@/lib/notifications/use-notifications';
 import { toast } from 'sonner';
@@ -14,21 +14,38 @@ export default function NotificationSettings({ onDisableNotifications }: Notific
   const { isEnabled, permission, enableNotifications, sendTestNotification, disableWebsiteNotifications, isWebsiteNotificationsEnabled } = useNotifications();
   const [isLoading, setIsLoading] = useState(false);
   const [websiteEnabled, setWebsiteEnabled] = useState(true);
+  const [currentPermission, setCurrentPermission] = useState<NotificationPermission>('default');
 
   useEffect(() => {
     setWebsiteEnabled(isWebsiteNotificationsEnabled());
+    
+    // Check current permission state
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setCurrentPermission(Notification.permission);
+      
+      // Listen for permission changes (some browsers support this)
+      const checkPermission = () => {
+        setCurrentPermission(Notification.permission);
+      };
+      
+      // Check permission periodically (fallback for browsers that don't support permission change events)
+      const interval = setInterval(checkPermission, 1000);
+      
+      return () => clearInterval(interval);
+    }
   }, [isWebsiteNotificationsEnabled]);
 
-  const handleToggleNotifications = async () => {
-    if (isEnabled) {
-      // Can't programmatically disable browser notifications, show instructions
-      toast.info('To disable browser notifications, click the 🔒 icon in your browser address bar and change notification settings.');
+  const handleRequestPermission = async () => {
+    if (currentPermission === 'denied') {
+      toast.error(
+        'Notifications are blocked. Please click the 🔒 icon in your browser address bar and allow notifications, then refresh the page.',
+        { duration: 6000 }
+      );
       return;
     }
     
-    // Check if permission is denied
-    if (permission === 'denied') {
-      toast.error('Notifications are blocked. Please click the 🔒 icon in your browser address bar and allow notifications.');
+    if (currentPermission === 'granted') {
+      toast.info('Notifications are already enabled!');
       return;
     }
     
@@ -36,11 +53,21 @@ export default function NotificationSettings({ onDisableNotifications }: Notific
     try {
       const granted = await enableNotifications();
       if (granted) {
+        setCurrentPermission('granted');
         toast.success('🎉 Smart notifications enabled!');
       } else {
-        toast.error('Please allow notifications in your browser settings.');
+        setCurrentPermission(Notification.permission);
+        if (Notification.permission === 'denied') {
+          toast.error(
+            'Notifications were blocked. Please click the 🔒 icon in your browser address bar and allow notifications.',
+            { duration: 6000 }
+          );
+        } else {
+          toast.error('Please allow notifications when prompted by your browser.');
+        }
       }
     } catch (error) {
+      console.error('Failed to enable notifications:', error);
       toast.error('Failed to enable notifications');
     } finally {
       setIsLoading(false);
@@ -62,15 +89,58 @@ export default function NotificationSettings({ onDisableNotifications }: Notific
   };
 
   const handleTestNotification = async () => {
+    if (currentPermission !== 'granted') {
+      toast.error('Please enable browser notifications first');
+      return;
+    }
+    
     if (!websiteEnabled) {
       toast.error('Website notifications are disabled');
       return;
     }
+    
     try {
       await sendTestNotification();
       toast.success('Test notification sent!');
     } catch (error) {
       toast.error('Failed to send test notification');
+    }
+  };
+
+  const getPermissionStatus = () => {
+    switch (currentPermission) {
+      case 'granted':
+        return { color: 'green', text: 'Enabled', icon: Bell };
+      case 'denied':
+        return { color: 'red', text: 'Blocked', icon: Lock };
+      default:
+        return { color: 'gray', text: 'Not Set', icon: AlertCircle };
+    }
+  };
+
+  const getButtonConfig = () => {
+    switch (currentPermission) {
+      case 'granted':
+        return {
+          text: 'Notifications Enabled',
+          disabled: true,
+          className: 'bg-green-500 hover:bg-green-600 cursor-default',
+          icon: Bell
+        };
+      case 'denied':
+        return {
+          text: 'Enable in Browser Settings',
+          disabled: false,
+          className: 'bg-red-500 hover:bg-red-600',
+          icon: Lock
+        };
+      default:
+        return {
+          text: 'Enable Browser Notifications',
+          disabled: false,
+          className: 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600',
+          icon: Bell
+        };
     }
   };
 
@@ -87,6 +157,9 @@ export default function NotificationSettings({ onDisableNotifications }: Notific
       </div>
     );
   }
+
+  const permissionStatus = getPermissionStatus();
+  const buttonConfig = getButtonConfig();
 
   return (
     <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
@@ -122,11 +195,17 @@ export default function NotificationSettings({ onDisableNotifications }: Notific
       <div className="space-y-3">
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${isEnabled ? 'bg-green-500' : 'bg-gray-400'}`} />
+            <div className={`w-2 h-2 rounded-full bg-${permissionStatus.color}-500`} />
             <span className="text-sm font-medium">
-              Browser: {isEnabled ? 'Enabled' : 'Disabled'}
+              Browser: {permissionStatus.text}
             </span>
+            <permissionStatus.icon className={`w-3 h-3 text-${permissionStatus.color}-500`} />
           </div>
+          {currentPermission === 'denied' && (
+            <span className="text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
+              Check browser settings
+            </span>
+          )}
         </div>
         
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -152,28 +231,24 @@ export default function NotificationSettings({ onDisableNotifications }: Notific
 
         <div className="flex gap-3">
           <Button
-            onClick={handleToggleNotifications}
-            disabled={isLoading}
-            className={`flex-1 ${isEnabled 
-              ? 'bg-gray-500 hover:bg-gray-600' 
-              : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'
-            }`}
+            onClick={handleRequestPermission}
+            disabled={isLoading || buttonConfig.disabled}
+            className={`flex-1 ${buttonConfig.className}`}
           >
             {isLoading ? (
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-            ) : isEnabled ? (
-              <BellOff className="w-4 h-4 mr-2" />
             ) : (
-              <Bell className="w-4 h-4 mr-2" />
+              <buttonConfig.icon className="w-4 h-4 mr-2" />
             )}
-            {isEnabled ? 'Manage Browser Settings' : 'Enable Browser Notifications'}
+            {buttonConfig.text}
           </Button>
           
-          {isEnabled && websiteEnabled && (
+          {currentPermission === 'granted' && websiteEnabled && (
             <Button
               onClick={handleTestNotification}
               variant="outline"
               className="px-4"
+              title="Send test notification"
             >
               <TestTube className="w-4 h-4" />
             </Button>
@@ -181,12 +256,33 @@ export default function NotificationSettings({ onDisableNotifications }: Notific
         </div>
       </div>
 
-      {/* Info */}
-      <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-        <p className="text-xs text-blue-800">
-          <strong>Smart & Helpful:</strong> Get personalized motivational messages that adapt to your habits and help you stay consistent with your goals.
-        </p>
-      </div>
+      {/* Help text based on permission state */}
+      {currentPermission === 'denied' && (
+        <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
+          <p className="text-xs text-red-800">
+            <strong>Notifications Blocked:</strong> Click the 🔒 lock icon in your browser's address bar, 
+            find "Notifications" and change it to "Allow", then refresh this page.
+          </p>
+        </div>
+      )}
+      
+      {currentPermission === 'default' && (
+        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <p className="text-xs text-blue-800">
+            <strong>Ready to Enable:</strong> Click the button above and allow notifications when your browser asks. 
+            You'll get smart, personalized reminders to help you stay consistent.
+          </p>
+        </div>
+      )}
+      
+      {currentPermission === 'granted' && (
+        <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+          <p className="text-xs text-green-800">
+            <strong>All Set!</strong> You'll receive personalized motivational messages that adapt to your habits 
+            and help you maintain your daily consistency.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
