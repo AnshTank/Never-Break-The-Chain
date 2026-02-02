@@ -469,7 +469,75 @@ export class HybridNotificationService {
           body: 'Alert! Alert! 🚨 We have a consistency champion in the building! Your streak is so hot, it\'s practically glowing! ✨',
           motivation: 'At this rate, you\'ll be teaching masterclasses on "How to Be Awesome Daily." Keep that momentum rolling! 🎯'
         }
-      }
+      },
+      random: [
+        {
+          title: '💪 Power Moment!',
+          body: 'Quick check: How\'s your MNZD energy today?',
+          tag: 'random-motivation',
+          data: { url: '/dashboard', type: 'random' },
+          email: {
+            title: '💪 POWER MOMENT ALERT!',
+            body: 'Hey superstar! Just dropping by to remind you that you\'re absolutely crushing it! Every moment is a chance to level up!',
+            motivation: 'Small actions, when multiplied by consistency, create extraordinary results! 🚀'
+          }
+        },
+        {
+          title: '🎯 Focus Check!',
+          body: 'What\'s your next MNZD win going to be?',
+          tag: 'random-focus',
+          data: { url: '/dashboard', type: 'random' },
+          email: {
+            title: '🎯 FOCUS CHECKPOINT!',
+            body: 'Time for a quick focus check! Your future self is counting on the decisions you make right now. What\'s your next move?',
+            motivation: 'Champions aren\'t made in comfort zones. They\'re made in moments like this! 💎'
+          }
+        },
+        {
+          title: '⚡ Energy Boost!',
+          body: 'Ready to add some spark to your day?',
+          tag: 'random-energy',
+          data: { url: '/dashboard', type: 'random' },
+          email: {
+            title: '⚡ ENERGY BOOST INCOMING!',
+            body: 'Feeling the afternoon slump? Time to inject some MNZD magic into your day! Your chain is waiting for its next link!',
+            motivation: 'Energy flows where attention goes. Focus on your goals and watch the magic happen! ✨'
+          }
+        },
+        {
+          title: '🌟 Shine Time!',
+          body: 'Your potential is calling. Will you answer?',
+          tag: 'random-potential',
+          data: { url: '/dashboard', type: 'random' },
+          email: {
+            title: '🌟 YOUR SHINE TIME IS NOW!',
+            body: 'Can you hear that? It\'s your potential calling your name! Every great achievement started with someone saying "I can do this."',
+            motivation: 'You have everything within you to succeed. The only question is: will you use it? 🔥'
+          }
+        },
+        {
+          title: '🚀 Momentum Check!',
+          body: 'How\'s your MNZD momentum feeling today?',
+          tag: 'random-momentum',
+          data: { url: '/dashboard', type: 'random' },
+          email: {
+            title: '🚀 MOMENTUM METER CHECK!',
+            body: 'Quick momentum check! Are you riding the wave of success or creating it? Either way, you\'re exactly where you need to be!',
+            motivation: 'Momentum is built one decision at a time. What\'s your next power move? 💪'
+          }
+        },
+        {
+          title: '🎪 Magic Moment!',
+          body: 'Time to create some MNZD magic!',
+          tag: 'random-magic',
+          data: { url: '/dashboard', type: 'random' },
+          email: {
+            title: '🎪 MAGIC MOMENT ALERT!',
+            body: 'Abracadabra! ✨ Time to create some MNZD magic! Every small action is a spell you cast on your future self!',
+            motivation: 'The real magic happens when preparation meets opportunity. Are you ready? 🎭'
+          }
+        }
+      ]
     };
   }
 }

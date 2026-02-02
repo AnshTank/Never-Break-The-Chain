@@ -35,7 +35,7 @@
 
 **🚀 A revolutionary habit tracking application that transforms your daily consistency into extraordinary results through the innovative MNZD methodology.**
 
-*"We are what we repeatedly do. Excellence, then, is not an act, but a habit." - Aristotle*
+_"We are what we repeatedly do. Excellence, then, is not an act, but a habit." - Aristotle_
 
 ---
 
@@ -49,7 +49,7 @@
 
 ## 🎭 **The Philosophy Behind the Chain**
 
-> *"Success is not a destination, but a journey of consistent daily actions that compound into extraordinary transformations."*
+> _"Success is not a destination, but a journey of consistent daily actions that compound into extraordinary transformations."_
 
 In a world obsessed with overnight success, **Never Break The Chain** stands as a testament to the power of consistency. Inspired by Jerry Seinfeld's legendary productivity method and enhanced with modern behavioral psychology, this isn't just another habit tracker—it's your personal transformation engine.
 
@@ -64,7 +64,7 @@ Every great life is built on four fundamental pillars. The MNZD methodology isn'
    ├─ Stress Resilience
    └─ Inner Peace & Focus
 
-📚 NUTRITION   →  The Knowledge Engine  
+📚 NUTRITION   →  The Knowledge Engine
    ├─ Healthy Eating Habits
    ├─ Continuous Learning
    ├─ Intellectual Growth
@@ -90,18 +90,21 @@ Every great life is built on four fundamental pillars. The MNZD methodology isn'
 ### 🎨 **Visual Storytelling Through Data**
 
 **Interactive Progress Calendar**
+
 - 🗓️ Monthly view with intuitive color psychology
 - 🎨 Visual progress indicators that tell your story
 - 📊 Real-time updates that celebrate every victory
 - 🔥 Streak visualization that ignites motivation
 
 **GitHub-Style Contribution Heatmap**
+
 - 🌈 Year-long journey visualization
 - 📈 Contribution-style progress tracking
 - 🎯 Consistency patterns at a glance
 - 🏆 Achievement milestones celebration
 
 **Multi-Dimensional Analytics**
+
 - 📊 Area Charts: Trend analysis over time
 - 📈 Bar Charts: Daily/weekly performance comparison
 - 📉 Line Charts: Progress trajectory mapping
@@ -111,6 +114,7 @@ Every great life is built on four fundamental pillars. The MNZD methodology isn'
 ### 🛡️ **Enterprise-Grade Security Architecture**
 
 **Authentication Fortress**
+
 - 🔐 JWT-based authentication with military-grade encryption
 - 📧 OTP email verification system
 - 🛡️ bcrypt password hashing (12 rounds)
@@ -118,6 +122,7 @@ Every great life is built on four fundamental pillars. The MNZD methodology isn'
 - 🔄 Automatic token refresh & session management
 
 **Data Protection Shield**
+
 - 🔒 End-to-end encryption for sensitive data
 - 🛡️ CSRF protection with SameSite cookies
 - 🚫 XSS prevention with Content Security Policy
@@ -127,6 +132,7 @@ Every great life is built on four fundamental pillars. The MNZD methodology isn'
 ### 🎪 **User Experience Magic**
 
 **Responsive Design Symphony**
+
 - 📱 Mobile-first responsive design
 - 💻 Desktop optimization for power users
 - 🎨 Smooth Framer Motion animations
@@ -134,6 +140,7 @@ Every great life is built on four fundamental pillars. The MNZD methodology isn'
 - 🚀 Progressive Web App (PWA) capabilities
 
 **Smart Notification Ecosystem**
+
 - 🌅 Morning motivation messages (7 AM)
 - 🌙 Evening reflection prompts (8 PM)
 - 🧠 AI-powered adaptive messaging
@@ -156,7 +163,7 @@ const techStack = {
   animations: "Framer Motion",
   charts: "Recharts + Custom Visualizations",
   state: "Zustand + React Context",
-  forms: "React Hook Form + Zod Validation"
+  forms: "React Hook Form + Zod Validation",
 };
 ```
 
@@ -171,7 +178,7 @@ const backendStack = {
   email: "Nodemailer + Gmail SMTP",
   validation: "Zod Schemas + Type Safety",
   security: "bcrypt + Rate Limiting + CSRF Protection",
-  api: "RESTful APIs + Error Handling"
+  api: "RESTful APIs + Error Handling",
 };
 ```
 
@@ -192,20 +199,20 @@ security: Security Headers + HTTPS Enforcement
 
 ## 🎨 **The Color Psychology of Progress**
 
-*Every color tells a story. Every shade represents a step in your journey.*
+_Every color tells a story. Every shade represents a step in your journey._
 
 <div align="center">
 
-| 🎨 **Visual** | ⏱️ **Hours** | 🎯 **Meaning** | 🌈 **Color Code** | 💭 **Psychology** |
-|:---:|:---:|:---:|:---:|:---:|
-| 🔴 | < 0.5h | Minimal | `#ef4444` | *Urgency & Action Needed* |
-| 🟠 | 0.5-1h | Low | `#f97316` | *Warming Up & Building* |
-| 🟡 | 1-2h | Moderate | `#eab308` | *Steady Progress & Growth* |
-| 🟢 | 2-3h | Good | `#84cc16` | *Positive Momentum* |
-| 🟢 | 3-4h | Very Good | `#22c55e` | *Strong Performance* |
-| 🟢 | 4-6h | Excellent | `#10b981` | *Excellence Achieved* |
-| 🔵 | 6-8h | Outstanding | `#14b8a6` | *Exceptional Dedication* |
-| 🔵 | 8h+ | Legendary | `#06b6d4` | *Mastery & Transcendence* |
+| 🎨 **Visual** | ⏱️ **Hours** | 🎯 **Meaning** | 🌈 **Color Code** |     💭 **Psychology**      |
+| :-----------: | :----------: | :------------: | :---------------: | :------------------------: |
+|      🔴       |    < 0.5h    |    Minimal     |     `#ef4444`     | _Urgency & Action Needed_  |
+|      🟠       |    0.5-1h    |      Low       |     `#f97316`     |  _Warming Up & Building_   |
+|      🟡       |     1-2h     |    Moderate    |     `#eab308`     | _Steady Progress & Growth_ |
+|      🟢       |     2-3h     |      Good      |     `#84cc16`     |    _Positive Momentum_     |
+|      🟢       |     3-4h     |   Very Good    |     `#22c55e`     |    _Strong Performance_    |
+|      🟢       |     4-6h     |   Excellent    |     `#10b981`     |   _Excellence Achieved_    |
+|      🔵       |     6-8h     |  Outstanding   |     `#14b8a6`     |  _Exceptional Dedication_  |
+|      🔵       |     8h+      |   Legendary    |     `#06b6d4`     | _Mastery & Transcendence_  |
 
 </div>
 
@@ -313,7 +320,7 @@ const securityFeatures = {
   inputValidation: "Comprehensive Zod schemas",
   csrfProtection: "SameSite cookie attributes",
   xssPreventtion: "Content Security Policy headers",
-  bruteForceProtection: "IP-based intelligent blocking"
+  bruteForceProtection: "IP-based intelligent blocking",
 };
 ```
 
@@ -355,7 +362,7 @@ CMD ["npm", "start"]
 
 ## 🤝 **Contributing: Join the Revolution**
 
-*Every great project is built by a community of passionate individuals.*
+_Every great project is built by a community of passionate individuals._
 
 ### 🌟 **How to Contribute**
 
@@ -375,7 +382,7 @@ const codeStandards = {
   linting: "ESLint + Prettier",
   commits: "Conventional commit messages",
   testing: "80%+ code coverage",
-  documentation: "Comprehensive & up-to-date"
+  documentation: "Comprehensive & up-to-date",
 };
 ```
 
@@ -467,7 +474,7 @@ const codeStandards = {
 
 **"The journey of a thousand miles begins with a single step, but the journey of transformation begins with a single habit."**
 
-*Start your transformation today. Your future self will thank you.*
+_Start your transformation today. Your future self will thank you._
 
 ---
 

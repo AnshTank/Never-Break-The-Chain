@@ -4,11 +4,16 @@ import { DeviceSessionManager } from '@/lib/device-session-manager';
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify the request is from a trusted source (Vercel Cron or similar)
+    // Check for auth in header or URL parameter
     const authHeader = request.headers.get('authorization');
+    const urlSecret = request.nextUrl.searchParams.get('secret');
     const cronSecret = process.env.CRON_SECRET || 'your-cron-secret-key';
     
-    if (authHeader !== `Bearer ${cronSecret}`) {
+    const isAuthorized = 
+      authHeader === `Bearer ${cronSecret}` || 
+      urlSecret === cronSecret;
+    
+    if (!isAuthorized) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 

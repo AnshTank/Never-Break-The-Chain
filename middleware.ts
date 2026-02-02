@@ -36,6 +36,7 @@ const publicPaths = [
   "/api/contact",
   "/api/feedback",
   "/api/about-contact",
+  "/api/cron/notifications",
   "/about-contact",
   "/sitemap.xml",
 ];
