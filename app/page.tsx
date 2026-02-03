@@ -4,7 +4,17 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Navigation from '@/components/Navigation'
 import HomePage from '@/components/pages/HomePage'
-import Head from 'next/head'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Ansh Tank - Habit Tracker App | Never Break The Chain | Parul University Student Project',
+  description: 'Ansh Tank from Parul University presents Never Break The Chain - a professional habit tracking app built with Next.js, TypeScript & MongoDB. Track MNZD habits: Meditation, Nutrition, Zone, Discipline. Free habit tracker by Ansh Tank.',
+  keywords: 'Ansh Tank, Ansh Tank Parul University, Ansh Tank habit tracker, Ansh Tank project, Ansh Tank github, Ansh Tank developer, Parul University student, habit tracker app, MNZD methodology, Never Break The Chain, free habit tracker',
+  openGraph: {
+    title: 'Ansh Tank - Professional Habit Tracker | Never Break The Chain',
+    description: 'Ansh Tank from Parul University created this advanced habit tracking app. Track daily habits with MNZD methodology. Built with Next.js & TypeScript.',
+  }
+}
 
 export default function Home() {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -20,40 +30,9 @@ export default function Home() {
   }, [])
 
   return (
-    <>
-      <Head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "FAQPage",
-              "mainEntity": [
-                {
-                  "@type": "Question",
-                  "name": "What is the MNZD methodology by Ansh Tank?",
-                  "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "MNZD is a comprehensive habit tracking methodology created by Ansh Tank focusing on four pillars: Meditation (mindfulness and mental clarity), Nutrition (healthy eating and learning), Zone (physical exercise and movement), and Discipline (focused work and productivity). This system helps build consistent daily habits for personal transformation."
-                  }
-                },
-                {
-                  "@type": "Question",
-                  "name": "How does Never Break The Chain habit tracker work?",
-                  "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "Never Break The Chain by Ansh Tank uses Jerry Seinfeld's 'Don't Break the Chain' method. You track your daily habits across the four MNZD pillars, building streaks and maintaining consistency. The app provides visual progress tracking, analytics, and smart notifications to help you maintain your habit chains."
-                  }
-                }
-              ]
-            })
-          }}
-        />
-      </Head>
-      <div className="min-h-screen bg-white">
-        <Navigation isScrolled={isScrolled} />
-        <HomePage />
-      </div>
-    </>
+    <div className="min-h-screen bg-white">
+      <Navigation isScrolled={isScrolled} />
+      <HomePage />
+    </div>
   )
 }

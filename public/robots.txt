@@ -2,24 +2,18 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://never-break-the-chain-anshtank.vercel.app/sitemap.xml
+Sitemap: https://never-break-the-chain.vercel.app/sitemap.xml
 
-# Block sensitive areas
-Disallow: /api/
-Disallow: /_next/
-Disallow: /admin/
-
-# Allow important pages for SEO
-Allow: /dashboard
-Allow: /analytics
-Allow: /login
-Allow: /signup
-
-# Crawl-delay for respectful crawling
+# Crawl-delay
 Crawl-delay: 1
 
-# Additional information
-# Created by: Ansh Tank
-# Contact: anshtank9@gmail.com
-# GitHub: https://github.com/AnshTank
-# Project: Never Break The Chain - MNZD Habit Tracker
+# Specific pages
+Allow: /dashboard
+Allow: /about
+Allow: /analytics
+Allow: /timer
+Allow: /welcome
+
+# Block admin/api routes
+Disallow: /api/
+Disallow: /admin/

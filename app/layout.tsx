@@ -1,49 +1,37 @@
 import type React from "react";
 import type { Metadata } from "next";
-// import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Toaster } from "sonner";
 import AuthProvider from "../components/auth-provider";
 import ConditionalFooter from "../components/conditional-footer";
 import "./globals.css";
-// import { Caveat, Merriweather, Space_Mono } from "next/font/google";
+import { Caveat, Merriweather, Space_Mono } from "next/font/google";
 
 // Initialize enterprise features
 if (typeof window === 'undefined') {
   import('@/lib/enterprise-init');
 }
 
-// Temporarily disabled Google Fonts for build
-/*
 const caveat = Caveat({
   subsets: ["latin"],
   variable: "--font-caveat",
+  display: "swap",
 });
 
 const merriweather = Merriweather({
   weight: ["300", "400", "700", "900"],
   subsets: ["latin"],
   variable: "--font-merriweather",
+  display: "swap",
 });
 
 const spaceMono = Space_Mono({
   weight: ["400", "700"],
   subsets: ["latin"],
   variable: "--font-space-mono",
-});
-
-const geist = Geist({
-  subsets: ["latin"],
-  variable: "--font-geist",
   display: "swap",
 });
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-geist-mono",
-  display: "swap",
-});
-*/
 
 export const metadata: Metadata = {
   title: {
@@ -253,7 +241,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className="font-sans"
+      className={`${caveat.variable} ${merriweather.variable} ${spaceMono.variable} font-sans`}
     >
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -288,7 +276,7 @@ export default function RootLayout({
         <meta name="MobileOptimized" content="320" />
         <meta name="format-detection" content="telephone=no" />
       </head>
-      <body className={`font-sans antialiased m-0 p-0`} suppressHydrationWarning>
+      <body className={`${caveat.variable} ${merriweather.variable} ${spaceMono.variable} font-sans antialiased m-0 p-0`} suppressHydrationWarning>
         <AuthProvider>
           <div className="min-h-screen">
             <main className="w-full">{children}</main>

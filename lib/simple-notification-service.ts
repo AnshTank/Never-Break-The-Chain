@@ -31,20 +31,63 @@ export class SimpleNotificationService {
             <meta charset="utf-8">
             <title>${emailData.title || payload.title}</title>
           </head>
-          <body style="font-family: Arial, sans-serif; background: #f8fafc; padding: 20px;">
-            <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-              <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #1e293b; font-size: 28px; margin: 0;">🔗 Never Break The Chain</h1>
-                <p style="color: #64748b; margin: 10px 0 0;">MNZD Habit Tracker</p>
+          <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f8fafc;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+              
+              <!-- Header -->
+              <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 40px 30px; text-align: center;">
+                <div style="margin-bottom: 20px;">
+                  <span style="font-size: 36px;">🔗</span>
+                </div>
+                <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">
+                  Never Break The Chain
+                </h1>
+                <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0; font-size: 16px;">
+                  MNZD Habit Tracker
+                </p>
               </div>
-              <div style="text-align: center;">
-                <h2 style="color: #f59e0b; font-size: 24px; margin: 0 0 20px;">${emailData.title || payload.title}</h2>
-                <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">${emailData.body || payload.body}</p>
-                ${emailData.motivation ? `<div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 20px 0;"><p style="color: #92400e; margin: 0; font-weight: 600;">💫 ${emailData.motivation}</p></div>` : ''}
-                <a href="https://never-break-the-chain.vercel.app/dashboard" style="display: inline-block; background: #f59e0b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0;">Open Dashboard</a>
+              
+              <!-- Content -->
+              <div style="padding: 40px 30px;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                  <h2 style="color: #1e293b; margin: 0 0 16px; font-size: 24px; font-weight: 600;">
+                    ${emailData.title || payload.title}
+                  </h2>
+                  <div style="width: 60px; height: 4px; background: linear-gradient(90deg, #f59e0b, #ef4444); margin: 0 auto; border-radius: 2px;"></div>
+                </div>
+                <div style="margin-bottom: 30px;">
+                  <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px; text-align: center;">
+                    ${emailData.body || payload.body}
+                  </p>
+                </div>
+                ${emailData.motivation ? `
+                <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 2px solid #f59e0b; border-radius: 15px; padding: 25px; margin: 30px 0;">
+                  <p style="color: #92400e; margin: 0; font-size: 16px; font-weight: 600; text-align: center;">
+                    💫 ${emailData.motivation}
+                  </p>
+                </div>
+                ` : ''}
+                <div style="text-align: center; margin: 40px 0;">
+                  <a href="https://never-break-the-chain.vercel.app/dashboard" 
+                     style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); color: white; padding: 18px 40px; text-decoration: none; border-radius: 50px; font-weight: 700; font-size: 16px; box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4); text-transform: uppercase; letter-spacing: 1px;">
+                    Open Dashboard
+                  </a>
+                </div>
+                <div style="text-align: center; margin: 30px 0; padding: 20px; background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%); border-radius: 15px; border-left: 5px solid #6366f1;">
+                  <p style="color: #3730a3; margin: 0; font-style: italic; font-size: 16px; font-weight: 500;">
+                    "We are what we repeatedly do. Excellence, then, is not an act, but a habit." - Aristotle
+                  </p>
+                </div>
               </div>
-              <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-                <p style="color: #64748b; font-size: 14px; margin: 0;">© 2024 Never Break The Chain by Ansh Tank</p>
+              
+              <!-- Footer -->
+              <div style="background: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+                <p style="color: #64748b; margin: 0 0 16px; font-size: 14px;">
+                  Keep building your chain, one day at a time! 🔗✨
+                </p>
+                <p style="color: #94a3b8; margin: 0; font-size: 12px;">
+                  © 2024 Never Break The Chain by Ansh Tank
+                </p>
               </div>
             </div>
           </body>
