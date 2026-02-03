@@ -1,5 +1,7 @@
 import { connectToDatabase } from './mongodb';
-import { HybridNotificationService } from './hybrid-notification-service';
+import { sendEmail } from './email-service';
+import { SimpleNotificationService } from './simple-notification-service';
+import { testEmailConnection } from './email-service';
 import { ObjectId } from 'mongodb';
 
 export class NotificationScheduler {
@@ -108,7 +110,7 @@ export class NotificationScheduler {
     const { db } = await connectToDatabase();
     const templates = HybridNotificationService.getNotificationTemplates();
 
-    // Get users with recent progress
+    // Get users with recent progress (last 30 days)
     const recentProgress = await db.collection('progress').aggregate([
       {
         $match: {
@@ -122,10 +124,18 @@ export class NotificationScheduler {
           _id: '$userId',
           progressDays: { $push: '$date' },
           totalHours: { $sum: { $add: ['$meditation', '$nutrition', '$zone', '$discipline'] } },
-          avgDaily: { $avg: { $add: ['$meditation', '$nutrition', '$zone', '$discipline'] } }
+          avgDaily: { $avg: { $add: ['$meditation', '$nutrition', '$zone', '$discipline'] } },
+          recentEntries: { $sum: 1 }
+        }
+      },
+      {
+        $match: {
+          recentEntries: { $gte: 1 } // Only users with at least 1 entry
         }
       }
     ]).toArray();
+
+    console.log(`🏆 Checking milestones for ${recentProgress.length} users with progress data`);
 
     for (const userProgress of recentProgress) {
       const userId = userProgress._id.toString();
@@ -136,24 +146,30 @@ export class NotificationScheduler {
       const streak = this.calculateStreak(userProgress.progressDays);
       const totalHours = userProgress.totalHours;
       
+      console.log(`User ${userId}: streak=${streak}, totalHours=${totalHours}`);
+      
       // Check streak milestones
       const streakMilestones = [3, 7, 14, 21, 30, 50, 75, 100, 150, 200, 365, 500, 1000];
       if (streakMilestones.includes(streak)) {
+        console.log(`🔥 Sending streak milestone for user ${userId}: ${streak} days`);
         await this.sendMilestoneNotification(userId, 'streak', streak, templates);
       }
       
       // Check hour milestones
       const hourMilestones = [10, 25, 50, 100, 200, 500, 1000];
-      const hourMilestone = hourMilestones.find(m => totalHours >= m && totalHours < m + 5);
+      const hourMilestone = hourMilestones.find(m => totalHours >= m && totalHours < m + 10);
       if (hourMilestone) {
+        console.log(`⏰ Sending hour milestone for user ${userId}: ${hourMilestone} hours`);
         await this.sendMilestoneNotification(userId, 'hours', hourMilestone, templates);
       }
       
       // Check consistency milestones (percentage of days in last 30)
       const consistencyRate = (userProgress.progressDays.length / 30) * 100;
       if (consistencyRate >= 90 && consistencyRate < 95) {
+        console.log(`📊 Sending consistency milestone for user ${userId}: 90%`);
         await this.sendMilestoneNotification(userId, 'consistency', 90, templates);
       } else if (consistencyRate >= 95) {
+        console.log(`📊 Sending consistency milestone for user ${userId}: 95%`);
         await this.sendMilestoneNotification(userId, 'consistency', 95, templates);
       }
     }
@@ -421,6 +437,14 @@ export class NotificationScheduler {
   static async runScheduledTasks(): Promise<void> {
     try {
       console.log('🕐 Running scheduled notification tasks...');
+      console.log(`⏰ Current time: ${new Date().toLocaleString()}`);
+      
+      // Always run these core functions regardless of time
+      console.log('📧 Running morning notifications...');
+      await this.sendMorningNotifications();
+      
+      console.log('🌙 Running evening notifications...');
+      await this.sendEveningNotifications();
       
       // Process scheduled notifications
       await HybridNotificationService.processScheduledNotifications();
@@ -447,6 +471,108 @@ export class NotificationScheduler {
       console.log('✅ Scheduled notification tasks completed');
     } catch (error) {
       console.error('❌ Error running scheduled notification tasks:', error);
+    }
+  }
+
+  // Send morning notifications to all active users
+  static async sendMorningNotifications(): Promise<void> {
+    try {
+      const { db } = await connectToDatabase();
+      const templates = SimpleNotificationService.getNotificationTemplates();
+      
+      console.log('🔍 Querying for users with emails...');
+      
+      // Get ALL users with emails (simplified query)
+      const activeUsers = await db.collection('users').find({
+        email: { $exists: true, $ne: null, $ne: '' }
+      }).toArray();
+      
+      console.log(`📧 Found ${activeUsers.length} users with emails in database`);
+      
+      if (activeUsers.length === 0) {
+        console.log('⚠️ No users found in database with valid emails');
+        return;
+      }
+      
+      let successCount = 0;
+      let failCount = 0;
+      
+      for (const user of activeUsers) {
+        console.log(`📨 Attempting to send morning email to: ${user.email} (ID: ${user._id})`);
+        try {
+          const result = await SimpleNotificationService.sendNotification(
+            user._id.toString(),
+            templates.morning,
+            { forceEmail: true }
+          );
+          
+          if (result) {
+            console.log(`✅ Morning notification sent successfully to ${user.email}`);
+            successCount++;
+          } else {
+            console.log(`❌ Morning notification failed for ${user.email}`);
+            failCount++;
+          }
+        } catch (error) {
+          console.error(`❌ Exception sending morning notification to ${user.email}:`, error);
+          failCount++;
+        }
+      }
+      
+      console.log(`🌅 Morning notification process completed: ${successCount} success, ${failCount} failed`);
+    } catch (error) {
+      console.error('❌ Critical error in sendMorningNotifications:', error);
+    }
+  }
+
+  // Send evening notifications to all active users
+  static async sendEveningNotifications(): Promise<void> {
+    try {
+      const { db } = await connectToDatabase();
+      const templates = SimpleNotificationService.getNotificationTemplates();
+      
+      console.log('🔍 Querying for users with emails...');
+      
+      // Get ALL users with emails (simplified query)
+      const activeUsers = await db.collection('users').find({
+        email: { $exists: true, $ne: null, $ne: '' }
+      }).toArray();
+      
+      console.log(`🌙 Found ${activeUsers.length} users with emails in database`);
+      
+      if (activeUsers.length === 0) {
+        console.log('⚠️ No users found in database with valid emails');
+        return;
+      }
+      
+      let successCount = 0;
+      let failCount = 0;
+      
+      for (const user of activeUsers) {
+        console.log(`📨 Attempting to send evening email to: ${user.email} (ID: ${user._id})`);
+        try {
+          const result = await SimpleNotificationService.sendNotification(
+            user._id.toString(),
+            templates.evening,
+            { forceEmail: true }
+          );
+          
+          if (result) {
+            console.log(`✅ Evening notification sent successfully to ${user.email}`);
+            successCount++;
+          } else {
+            console.log(`❌ Evening notification failed for ${user.email}`);
+            failCount++;
+          }
+        } catch (error) {
+          console.error(`❌ Exception sending evening notification to ${user.email}:`, error);
+          failCount++;
+        }
+      }
+      
+      console.log(`🌙 Evening notification process completed: ${successCount} success, ${failCount} failed`);
+    } catch (error) {
+      console.error('❌ Critical error in sendEveningNotifications:', error);
     }
   }
 
