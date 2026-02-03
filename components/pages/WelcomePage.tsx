@@ -600,7 +600,7 @@ const WelcomePage = () => {
       }
     } catch (error) {
       console.error('Password setup error:', error);
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         toast.error('Request timed out. Please try again.');
       } else {
         toast.error('Network error. Please try again.');

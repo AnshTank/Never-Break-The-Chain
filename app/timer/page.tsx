@@ -1306,24 +1306,80 @@ export default function TimerPage() {
         totalTime: 0,
         isMNZD: false,
       };
+      
       const updatedTasks = [...tasks, newTask];
       setTasks(updatedTasks);
       setNewTaskName("");
       
       // Save immediately to database
-      await saveData();
+      const data = {
+        sessions,
+        stats,
+        tasks: updatedTasks,
+        pomodoroCount,
+        completedSessions,
+      };
+      
+      try {
+        const response = await fetch("/api/timer-data", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to save to database');
+        }
+        
+        console.log('Task added and saved to database successfully');
+      } catch (error) {
+        console.error("Error adding task to database:", error);
+        // Revert the change if database save fails
+        setTasks(tasks);
+        setNewTaskName(newTaskName.trim());
+      }
     }
   };
 
   const deleteTask = async (taskId: string) => {
     if (tasks.find((t) => t.id === taskId)?.isMNZD) return;
+    
     const updatedTasks = tasks.filter((t) => t.id !== taskId);
     setTasks(updatedTasks);
+    
     if (currentTask === taskId) {
       setCurrentTask("");
     }
+    
     // Save immediately to database
-    await saveData();
+    const data = {
+      sessions,
+      stats,
+      tasks: updatedTasks,
+      pomodoroCount,
+      completedSessions,
+    };
+    
+    try {
+      const response = await fetch("/api/timer-data", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save to database');
+      }
+      
+      console.log('Task deleted and saved to database successfully');
+    } catch (error) {
+      console.error("Error deleting task from database:", error);
+      // Revert the change if database save fails
+      setTasks(tasks);
+      if (currentTask === taskId) {
+        setCurrentTask(taskId);
+      }
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -2317,25 +2373,10 @@ export default function TimerPage() {
                         className="text-4xl font-extralight mb-2"
                         style={{ color: theme.accent }}
                       >
-                        {Math.round(stats.totalHours * 10) / 10}
+                        {Math.round((stats.todayMinutes / 60) * 10) / 10}
                       </div>
-                      <div className={`text-xs ${theme.text} opacity-70 mb-2`}>
+                      <div className={`text-xs ${theme.text} opacity-70`}>
                         Hours Today
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-1">
-                        <div
-                          className="h-1 rounded-full transition-all duration-1000"
-                          style={{
-                            width: `${Math.min(
-                              (stats.totalHours / 8) * 100,
-                              100
-                            )}%`,
-                            backgroundColor: theme.accent,
-                          }}
-                        ></div>
-                      </div>
-                      <div className={`text-xs ${theme.text} opacity-50 mt-1`}>
-                        Goal: 8 hours
                       </div>
                     </div>
                   </div>
@@ -2418,7 +2459,7 @@ export default function TimerPage() {
                           className="text-2xl font-light mb-2"
                           style={{ color: theme.accent }}
                         >
-                          {Math.round((stats.totalHours / sessionSettings.dailyHoursGoal) * 100)}%
+                          {Math.round(((stats.todayMinutes / 60) / sessionSettings.dailyHoursGoal) * 100)}%
                         </div>
                         <div
                           className={`text-xs ${theme.text} opacity-70 mb-2`}
@@ -2430,7 +2471,7 @@ export default function TimerPage() {
                             className="h-2 rounded-full transition-all duration-1000"
                             style={{
                               width: `${Math.min(
-                                (stats.totalHours / sessionSettings.dailyHoursGoal) * 100,
+                                ((stats.todayMinutes / 60) / sessionSettings.dailyHoursGoal) * 100,
                                 100
                               )}%`,
                               backgroundColor: theme.accent,
@@ -2440,7 +2481,7 @@ export default function TimerPage() {
                         <div
                           className={`text-xs ${theme.text} opacity-50 mt-1`}
                         >
-                          {Math.round(stats.totalHours * 10) / 10}/{sessionSettings.dailyHoursGoal} hours
+                          {Math.round((stats.todayMinutes / 60) * 10) / 10}/{sessionSettings.dailyHoursGoal} hours
                         </div>
                       </div>
 
