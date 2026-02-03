@@ -527,15 +527,26 @@ const WelcomePage = () => {
     setIsLoading(true);
     
     try {
-      // Setup password
+      console.log('Starting password setup...');
+      
+      // Setup password with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       const response = await fetch('/api/auth/setup-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ password }),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
+      console.log('Password setup response:', response.status);
 
       if (response.ok) {
+        console.log('Password setup successful');
+        
         // Save final MNZD configs to database
         try {
           await fetch('/api/user/mnzd-config', {
@@ -579,14 +590,21 @@ const WelcomePage = () => {
         localStorage.removeItem('welcomeMNZDConfigs');
         setShowPasswordModal(false);
         toast.success('Welcome to your journey!');
-        // Redirect to dashboard
-        router.push('/dashboard');
+        
+        // Force page reload to refresh auth state
+        window.location.href = '/dashboard';
       } else {
         const data = await response.json();
+        console.error('Password setup failed:', data);
         toast.error(data.error || 'Failed to setup password');
       }
     } catch (error) {
-      toast.error('Network error. Please try again.');
+      console.error('Password setup error:', error);
+      if (error.name === 'AbortError') {
+        toast.error('Request timed out. Please try again.');
+      } else {
+        toast.error('Network error. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
