@@ -12,7 +12,6 @@ export class SimpleNotificationService {
       const { db } = await connectToDatabase();
       const userObjectId = new ObjectId(userId);
       
-      // Get user
       const user = await db.collection('users').findOne({ _id: userObjectId });
       if (!user || !user.email) {
         console.error(`❌ User ${userId} not found or no email`);
@@ -56,7 +55,6 @@ export class SimpleNotificationService {
       if (success) {
         console.log(`✅ Email sent successfully to ${user.email}`);
         
-        // Log notification
         await db.collection('notification_logs').insertOne({
           userId: userObjectId,
           type: payload.tag || 'general',
@@ -76,6 +74,26 @@ export class SimpleNotificationService {
       console.error(`❌ Notification error for user ${userId}:`, error);
       return false;
     }
+  }
+
+  static async scheduleNotification(
+    userId: string,
+    payload: any,
+    scheduledFor: Date,
+    options: { type: string; recurring?: boolean }
+  ): Promise<void> {
+    const { db } = await connectToDatabase();
+    const userObjectId = new ObjectId(userId);
+
+    await db.collection('scheduled_notifications').insertOne({
+      userId: userObjectId,
+      payload,
+      scheduledFor,
+      type: options.type,
+      recurring: options.recurring || false,
+      status: 'pending',
+      createdAt: new Date()
+    });
   }
 
   static getNotificationTemplates() {
@@ -99,7 +117,61 @@ export class SimpleNotificationService {
           body: 'Hey there, habit hero! 🦸♀️ How did your MNZD adventure go today? Every small step counts toward your transformation journey.',
           motivation: 'Remember: Rome wasn\'t built in a day, but they were laying bricks every hour. What bricks did you lay today? 🧱'
         }
-      }
+      },
+      missed_day: {
+        title: '🔗 Gentle Reminder',
+        body: 'Ready to get back on track?',
+        tag: 'missed-reminder',
+        email: {
+          title: '🔗 Your Chain Misses You!',
+          body: 'Hey champion! 👋 We noticed you took a little detour from your habit highway. No worries - even superheroes need rest days!',
+          motivation: 'Plot twist: Comebacks are always stronger than setbacks. Ready to show that chain who\'s boss? 🚀'
+        }
+      },
+      milestone: {
+        title: '🏆 Milestone Achieved!',
+        body: 'Amazing work!',
+        tag: 'milestone-celebration',
+        data: {},
+        email: {
+          title: '🏆 LEGENDARY ACHIEVEMENT UNLOCKED!',
+          body: 'STOP EVERYTHING! 🛑 You just hit a major milestone and we\'re literally doing a happy dance over here! 💃🕺',
+          motivation: 'You\'re not just building habits, you\'re building a legacy. This is the stuff legends are made of! 🌟'
+        }
+      },
+      streak: {
+        title: '🔥 Streak Alert!',
+        body: 'Keep it going!',
+        tag: 'streak-celebration',
+        data: {},
+        email: {
+          title: '🔥 You\'re ON FIRE!',
+          body: 'Alert! Alert! 🚨 We have a consistency champion in the building! Your streak is so hot, it\'s practically glowing! ✨',
+          motivation: 'At this rate, you\'ll be teaching masterclasses on "How to Be Awesome Daily." Keep that momentum rolling! 🎯'
+        }
+      },
+      random: [
+        {
+          title: '💪 Power Moment!',
+          body: 'Quick check: How\'s your MNZD energy today?',
+          tag: 'random-motivation',
+          email: {
+            title: '💪 POWER MOMENT ALERT!',
+            body: 'Hey superstar! Just dropping by to remind you that you\'re absolutely crushing it! Every moment is a chance to level up!',
+            motivation: 'Small actions, when multiplied by consistency, create extraordinary results! 🚀'
+          }
+        },
+        {
+          title: '🎯 Focus Check!',
+          body: 'What\'s your next MNZD win going to be?',
+          tag: 'random-focus',
+          email: {
+            title: '🎯 FOCUS CHECKPOINT!',
+            body: 'Time for a quick focus check! Your future self is counting on the decisions you make right now. What\'s your next move?',
+            motivation: 'Champions aren\'t made in comfort zones. They\'re made in moments like this! 💎'
+          }
+        }
+      ]
     };
   }
 }

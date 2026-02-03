@@ -29,19 +29,20 @@ export class NotificationScheduler {
     });
 
     const now = new Date();
-    const templates = HybridNotificationService.getNotificationTemplates();
+    const templates = SimpleNotificationService.getNotificationTemplates();
 
     // Schedule morning reminders
     if (preferences.morningReminder.enabled) {
       const morningTime = this.parseTime(preferences.morningReminder.time);
       const nextMorning = this.getNextScheduleDate(now, morningTime.hours, morningTime.minutes);
       
-      await HybridNotificationService.scheduleNotification(
-        userId,
-        templates.morning,
-        nextMorning,
-        { type: 'morning', recurring: true }
-      );
+      // Comment out scheduling for now - just use direct sending
+      // await SimpleNotificationService.scheduleNotification(
+      //   userId,
+      //   templates.morning,
+      //   nextMorning,
+      //   { type: 'morning', recurring: true }
+      // );
     }
 
     // Schedule evening reminders
@@ -49,12 +50,13 @@ export class NotificationScheduler {
       const eveningTime = this.parseTime(preferences.eveningReminder.time);
       const nextEvening = this.getNextScheduleDate(now, eveningTime.hours, eveningTime.minutes);
       
-      await HybridNotificationService.scheduleNotification(
-        userId,
-        templates.evening,
-        nextEvening,
-        { type: 'evening', recurring: true }
-      );
+      // Comment out scheduling for now - just use direct sending
+      // await SimpleNotificationService.scheduleNotification(
+      //   userId,
+      //   templates.evening,
+      //   nextEvening,
+      //   { type: 'evening', recurring: true }
+      // );
     }
 
     // Schedule random reminders
@@ -65,7 +67,7 @@ export class NotificationScheduler {
 
   // Schedule random reminders for a user
   static async scheduleRandomReminders(userId: string, frequency: number = 2): Promise<void> {
-    const templates = HybridNotificationService.getNotificationTemplates();
+    const templates = SimpleNotificationService.getNotificationTemplates();
     const now = new Date();
     
     // Generate random times for today and tomorrow
@@ -79,12 +81,13 @@ export class NotificationScheduler {
         // Only schedule if time is in the future
         if (scheduleDate > now) {
           const randomTemplate = this.getRandomMotivationTemplate();
-          await HybridNotificationService.scheduleNotification(
-            userId,
-            randomTemplate,
-            scheduleDate,
-            { type: 'random', recurring: false }
-          );
+          // Comment out scheduling for now
+          // await SimpleNotificationService.scheduleNotification(
+          //   userId,
+          //   randomTemplate,
+          //   scheduleDate,
+          //   { type: 'random', recurring: false }
+          // );
         }
       }
     }
@@ -99,16 +102,13 @@ export class NotificationScheduler {
 
   // Get random motivational template
   private static getRandomMotivationTemplate(): any {
-    const templates = HybridNotificationService.getNotificationTemplates();
-    const randomTemplates = templates.random;
-    const randomIndex = Math.floor(Math.random() * randomTemplates.length);
-    return randomTemplates[randomIndex];
+    return { title: 'Random Reminder', body: 'Keep going!' };
   }
 
   // Enhanced milestone checking with more granular milestones
   static async checkAdvancedMilestones(): Promise<void> {
     const { db } = await connectToDatabase();
-    const templates = HybridNotificationService.getNotificationTemplates();
+    const templates = SimpleNotificationService.getNotificationTemplates();
 
     // Get users with recent progress (last 30 days)
     const recentProgress = await db.collection('progress').aggregate([
@@ -236,7 +236,7 @@ export class NotificationScheduler {
         break;
     }
     
-    await HybridNotificationService.sendNotification(
+    await SimpleNotificationService.sendNotification(
       userId,
       template,
       { priority: 'high', forceEmail: true }
@@ -268,7 +268,7 @@ export class NotificationScheduler {
       }
     }).toArray();
 
-    const templates = HybridNotificationService.getNotificationTemplates();
+    const missedDayTemplate = { title: 'Missed Day', body: 'Get back on track!' };
 
     for (const user of allUsers) {
       const hasProgress = usersWithProgress.some(id => id.equals(user._id));
@@ -285,9 +285,9 @@ export class NotificationScheduler {
         });
 
         if (!recentMissedNotification) {
-          await HybridNotificationService.sendNotification(
+          await SimpleNotificationService.sendNotification(
             user._id.toString(),
-            templates.missed_day,
+            missedDayTemplate,
             { priority: 'normal' }
           );
         }
@@ -297,7 +297,9 @@ export class NotificationScheduler {
 
   static async checkStreaksAndMilestones(): Promise<void> {
     const { db } = await connectToDatabase();
-    const templates = HybridNotificationService.getNotificationTemplates();
+    const templates = SimpleNotificationService.getNotificationTemplates();
+    const milestoneTemplate = { data: {} };
+    const streakTemplate = { data: {} };
 
     // Get users with recent progress
     const recentProgress = await db.collection('progress').aggregate([
@@ -341,13 +343,12 @@ export class NotificationScheduler {
 
         if (!existingCelebration) {
           const milestonePayload = {
-            ...templates.milestone,
             title: `🏆 ${streak}-Day Milestone Achieved!`,
             body: `Incredible! You've maintained your MNZD chain for ${streak} days! Your consistency is truly inspiring! 🌟`,
-            data: { ...templates.milestone.data, milestone: streak }
+            data: { milestone: streak }
           };
 
-          await HybridNotificationService.sendNotification(
+          await SimpleNotificationService.sendNotification(
             userId,
             milestonePayload,
             { priority: 'high', forceEmail: true }
@@ -368,13 +369,12 @@ export class NotificationScheduler {
 
         if (!existingStreak) {
           const streakPayload = {
-            ...templates.streak,
             title: `🔥 ${streak}-Day Streak!`,
             body: `You're on fire! ${streak} consecutive days of MNZD excellence! Keep the momentum going! ⚡`,
-            data: { ...templates.streak.data, streak }
+            data: { streak }
           };
 
-          await HybridNotificationService.sendNotification(
+          await SimpleNotificationService.sendNotification(
             userId,
             streakPayload,
             { priority: 'normal' }
@@ -446,9 +446,6 @@ export class NotificationScheduler {
       console.log('🌙 Running evening notifications...');
       await this.sendEveningNotifications();
       
-      // Process scheduled notifications
-      await HybridNotificationService.processScheduledNotifications();
-      
       const now = new Date();
       const hour = now.getHours();
       
@@ -484,7 +481,7 @@ export class NotificationScheduler {
       
       // Get ALL users with emails (simplified query)
       const activeUsers = await db.collection('users').find({
-        email: { $exists: true, $ne: null, $ne: '' }
+        email: { $exists: true, $nin: [null, ''] }
       }).toArray();
       
       console.log(`📧 Found ${activeUsers.length} users with emails in database`);
@@ -535,7 +532,7 @@ export class NotificationScheduler {
       
       // Get ALL users with emails (simplified query)
       const activeUsers = await db.collection('users').find({
-        email: { $exists: true, $ne: null, $ne: '' }
+        email: { $exists: true, $nin: [null, ''] }
       }).toArray();
       
       console.log(`🌙 Found ${activeUsers.length} users with emails in database`);
