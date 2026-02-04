@@ -212,7 +212,6 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
       
       return data
     } catch (err) {
-      // console.error('Error loading progress:', err)
       return null
     }
   }
@@ -299,6 +298,16 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true
     
+    // Listen for analytics refresh events
+    const handleAnalyticsRefresh = () => {
+      if (mounted) {
+        fetchedRef.current.analytics = null
+        fetchAnalytics()
+      }
+    }
+    
+    window.addEventListener('analyticsRefresh', handleAnalyticsRefresh)
+    
     // Initialize global state on mount with debouncing
     const timer = setTimeout(async () => {
       if (!mounted) return
@@ -364,6 +373,7 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
     return () => {
       mounted = false
       clearTimeout(timer)
+      window.removeEventListener('analyticsRefresh', handleAnalyticsRefresh)
     }
   }, [])
 

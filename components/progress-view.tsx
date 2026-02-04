@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useMemo } from "react"
 import type { JourneyData, DayEntry } from "@/lib/types"
 import CompactMonthView from "./compact-month-view"
 import YearHeatmap from "./year-heatmap"
@@ -14,8 +14,28 @@ interface ProgressViewProps {
 export default function ProgressView({ onDayEntry = () => {} }: ProgressViewProps) {
   const [selectedMonth, setSelectedMonth] = useState(new Date())
   const [viewMode, setViewMode] = useState<"calendar" | "year" | "journey">("calendar")
-  const { data: monthlyData, loading } = useProgressData(selectedMonth)
-  const today = new Date()
+  const [today, setToday] = useState(new Date())
+  const { data: monthlyData, loading, refetch } = useProgressData(selectedMonth)
+
+  // Update today every minute to handle date changes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const newToday = new Date()
+      if (newToday.toDateString() !== today.toDateString()) {
+        setToday(newToday)
+        // Force refresh monthly data when date changes
+        refetch?.(selectedMonth)
+      }
+    }, 60000)
+    
+    return () => clearInterval(interval)
+  }, [today, selectedMonth, refetch])
+
+  // Clear any localStorage cache on component mount
+  useEffect(() => {
+    localStorage.removeItem('progressCache')
+    localStorage.removeItem('trackedDays')
+  }, [])
 
   const isCurrentMonth = (month: Date) => {
     return month.getFullYear() === today.getFullYear() && month.getMonth() === today.getMonth()
@@ -168,55 +188,70 @@ export default function ProgressView({ onDayEntry = () => {} }: ProgressViewProp
                   ))
                 }
                 
-                const year = selectedMonth.getFullYear()
-                const month = selectedMonth.getMonth()
-                const daysInMonth = new Date(year, month + 1, 0).getDate()
-                
-                let completedDays = 0
-                let totalHours = 0
-                let partialDays = 0
-                let missedDays = 0
-
-                for (let day = 1; day <= daysInMonth; day++) {
-                  const date = new Date(year, month, day)
-                  const dateStr = date.toISOString().split("T")[0]
-                  const entry = monthlyData[dateStr]
+                // Memoize the calculation to prevent multiple renders with inconsistent data
+                const monthStats = useMemo(() => {
+                  const year = selectedMonth.getFullYear()
+                  const month = selectedMonth.getMonth()
+                  const daysInMonth = new Date(year, month + 1, 0).getDate()
+                  const todayStr = today.toISOString().split('T')[0]
+                  const isCurrentMonth = selectedMonth.getMonth() === today.getMonth() && selectedMonth.getFullYear() === today.getFullYear()
                   
-                  // Check if date is before today (not today or future)
-                  const isBeforeToday = date < today
+                  let completedDays = 0
+                  let totalHours = 0
+                  let partialDays = 0
+                  let missedDays = 0
                   
-                  if (entry && entry.tasks) {
-                    totalHours += entry.totalHours
-                    const completedTasks = entry.tasks.filter(t => t.completed).length
+                  for (let day = 1; day <= daysInMonth; day++) {
+                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                    const entry = monthlyData[dateStr]
                     
-                    if (completedTasks === 4) {
-                      completedDays++
-                    } else if (completedTasks >= 1 && completedTasks <= 3) {
-                      partialDays++
-                    } else if (completedTasks === 0 && isBeforeToday) {
+                    // Skip future days in current month
+                    if (isCurrentMonth && dateStr > todayStr) {
+                      continue
+                    }
+                    
+                    if (entry && entry.tasks && entry.tasks.length > 0) {
+                      totalHours += entry.totalHours || 0
+                      
+                      const completedTasks = entry.tasks.filter(task => {
+                        const minRequirements = { meditation: 30, nutrition: 20, zone: 45, discipline: 15 }
+                        const minRequired = minRequirements[task.id as keyof typeof minRequirements] || 0
+                        return (task.minutes || 0) >= minRequired
+                      }).length
+                      
+                      const hasAnyProgress = entry.tasks.some(task => (task.minutes || 0) > 0)
+                      
+                      if (completedTasks === 4) {
+                        completedDays++
+                      } else if (hasAnyProgress) {
+                        partialDays++
+                      } else {
+                        missedDays++
+                      }
+                    } else {
                       missedDays++
                     }
-                  } else if (isBeforeToday) {
-                    missedDays++
                   }
-                }
-
+                  
+                  return { completedDays, partialDays, missedDays, totalHours }
+                }, [selectedMonth, monthlyData, today.toDateString()])
+                
                 return (
                   <>
                     <div className="text-center p-4 bg-emerald-50 rounded-lg">
-                      <div className="text-2xl font-bold text-emerald-600">{completedDays}</div>
+                      <div className="text-2xl font-bold text-emerald-600">{monthStats.completedDays}</div>
                       <div className="text-sm text-emerald-700">Complete Days</div>
                     </div>
                     <div className="text-center p-4 bg-amber-50 rounded-lg">
-                      <div className="text-2xl font-bold text-amber-600">{partialDays}</div>
+                      <div className="text-2xl font-bold text-amber-600">{monthStats.partialDays}</div>
                       <div className="text-sm text-amber-700">Partial Days</div>
                     </div>
                     <div className="text-center p-4 bg-red-50 rounded-lg">
-                      <div className="text-2xl font-bold text-red-600">{missedDays}</div>
+                      <div className="text-2xl font-bold text-red-600">{monthStats.missedDays}</div>
                       <div className="text-sm text-red-700">Missed Days</div>
                     </div>
                     <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">{totalHours.toFixed(1)}</div>
+                      <div className="text-2xl font-bold text-blue-600">{monthStats.totalHours.toFixed(1)}</div>
                       <div className="text-sm text-blue-700">Total Hours</div>
                     </div>
                   </>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type { DayEntry } from "@/lib/types"
 import {
   Dialog,
@@ -20,8 +20,15 @@ interface DayDetailsModalProps {
 export default function DayDetailsModal({ isOpen, onClose, date }: DayDetailsModalProps) {
   const { settings } = useUserSettings()
   const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-  const { progress: entry, loading } = useDailyProgress(dateStr)
+  const { progress: entry, loading, refetch } = useDailyProgress(dateStr)
   const [isNotesExpanded, setIsNotesExpanded] = useState(false)
+
+  // Force refetch when modal opens to ensure fresh data
+  useEffect(() => {
+    if (isOpen) {
+      refetch()
+    }
+  }, [isOpen, refetch])
 
   const completedTasks = entry?.tasks?.filter((t: any) => t.completed).length || 0
   const totalTasks = entry?.tasks?.length || 4

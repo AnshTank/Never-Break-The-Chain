@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     }
 
     const progressData = await DatabaseService.getProgressRange(
-      user.email,
+      user.userId,
       startDate,
       endDate
     )

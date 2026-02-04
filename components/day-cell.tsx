@@ -5,6 +5,7 @@ import type { DayEntry } from "@/lib/types"
 import DayEditModal from "./day-edit-modal"
 import { useDailyProgress, useUserSettings } from "@/hooks/use-data"
 import { useGlobalDailyProgress, useGlobalState } from "@/lib/global-state"
+import { mnzdEvents } from "@/lib/mnzd-events"
 
 interface DayCellProps {
   day: number
@@ -126,7 +127,12 @@ export default function DayCell({ day, date, entry, isToday, onEntryChange }: Da
       
       // Refresh analytics and calendar
       window.dispatchEvent(new CustomEvent('progressUpdated', { detail: { date: dateStr } }))
-      window.dispatchEvent(new CustomEvent('analyticsRefresh'))
+      mnzdEvents.emitProgressUpdate(dateStr, newEntry)
+      
+      // Force analytics refresh
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('analyticsRefresh'))
+      }, 100)
     } catch (error) {
       // console.error('Error saving entry:', error)
     }

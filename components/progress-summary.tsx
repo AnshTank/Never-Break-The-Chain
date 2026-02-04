@@ -4,6 +4,7 @@ import { useAnalytics } from "@/hooks/use-data"
 import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useEffect, useMemo, useCallback, useRef } from "react"
+import { mnzdEvents } from "@/lib/mnzd-events"
 
 interface ProgressSummaryProps {
   currentMonth?: Date
@@ -28,7 +29,17 @@ export default function ProgressSummary({ currentMonth }: ProgressSummaryProps) 
   // Optimize refresh handler with useCallback
   const handleRefresh = useCallback(async () => {
     if (currentMonth) {
-      await refetch(currentMonth) // Refresh
+      await refetch(currentMonth)
+      // Trigger calendar refresh by emitting progress update event
+      window.dispatchEvent(new CustomEvent('progressUpdated', { detail: { refreshAll: true } }))
+      mnzdEvents.emitProgressUpdate('refresh', {})
+    }
+  }, [refetch, currentMonth])
+
+  // Listen for progress updates to auto-refresh analytics
+  const handleProgressUpdate = useCallback(() => {
+    if (currentMonth) {
+      refetch(currentMonth)
     }
   }, [refetch, currentMonth])
 
@@ -50,6 +61,17 @@ export default function ProgressSummary({ currentMonth }: ProgressSummaryProps) 
       }
     }
   }, [monthKey, refetch, currentMonth])
+
+  // Listen for progress updates to keep analytics in sync
+  useEffect(() => {
+    window.addEventListener('progressUpdated', handleProgressUpdate)
+    const unsubscribe = mnzdEvents.onProgressUpdate(handleProgressUpdate)
+    
+    return () => {
+      window.removeEventListener('progressUpdated', handleProgressUpdate)
+      unsubscribe()
+    }
+  }, [handleProgressUpdate])
 
   if (loading || !analytics) {
     return (

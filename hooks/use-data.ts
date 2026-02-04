@@ -12,10 +12,10 @@ export function useDailyProgress(date: string) {
   const isMountedRef = useRef(true)
   const cacheRef = useRef<Record<string, any>>({})
 
-  const fetchProgress = useCallback(async () => {
-    if (fetchedRef.current === date || !isMountedRef.current) return
+  const fetchProgress = useCallback(async (forceRefresh = false) => {
+    if (!forceRefresh && fetchedRef.current === date || !isMountedRef.current) return
     
-    if (cacheRef.current[date]) {
+    if (!forceRefresh && cacheRef.current[date]) {
       if (isMountedRef.current) {
         setProgress(cacheRef.current[date])
         setLoading(false)
@@ -26,14 +26,18 @@ export function useDailyProgress(date: string) {
     try {
       setLoading(true)
       fetchedRef.current = date
+      console.log('Fetching progress for date:', date)
       const response = await fetch(`/api/progress?date=${date}`)
+      console.log('API response status:', response.status, 'for date:', date)
       if (!response.ok) {
+        console.log('API response not ok for date:', date)
         if (isMountedRef.current) {
           setProgress(null)
         }
         return
       }
       const data = await response.json()
+      console.log('API response data for date:', date, data)
       if (isMountedRef.current) {
         cacheRef.current[date] = data
         setProgress(data)
@@ -91,7 +95,7 @@ export function useDailyProgress(date: string) {
     }
   }, [fetchProgress, date])
 
-  return { progress, loading, updateProgress, refetch: fetchProgress }
+  return { progress, loading, updateProgress, refetch: () => fetchProgress(true) }
 }
 
 export function useProgressRange(startDate: string, endDate: string) {

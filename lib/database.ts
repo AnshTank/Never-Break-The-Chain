@@ -103,6 +103,7 @@ export class DatabaseService {
     }
     
     let progress = await db.collection<DailyProgress>('dailyProgress').findOne({ userId, date })
+    
     const userSettings = await this.getUserSettings(userId)
     const currentConfigs = userSettings?.mnzdConfigs || []
     

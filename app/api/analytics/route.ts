@@ -15,6 +15,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const monthParam = searchParams.get('month')
 
+    // Get user settings for minimum requirements
+    const userSettings = await DatabaseService.getUserSettings(user.userId)
+    const mnzdConfigs = userSettings?.mnzdConfigs || []
+
     // Get all data for streak calculation
     const allData = await DatabaseService.getProgressRange(
       user.userId, 
@@ -44,50 +48,87 @@ export async function GET(request: NextRequest) {
 
     // Calculate metrics from database data
     const totalHours = monthlyData.reduce((sum, day) => sum + (day.totalHours || 0), 0)
-    // Count only days with actual progress (totalHours > 0)
     const totalDays = monthlyData.filter(day => (day.totalHours || 0) > 0).length
     
-    // Calculate MNZD streaks
+    // Calculate MNZD streaks - only count days where ALL 4 tasks are completed
     const completedDays = allData.filter(day => {
       if (!day.tasks || day.tasks.length < 4) return false
-      return day.tasks.every(task => task.minutes > 0)
+      
+      // Check if all 4 MNZD tasks are marked as completed
+      return day.tasks.every(task => task.completed === true)
     }).sort((a, b) => a.date.localeCompare(b.date))
     
     let currentStreak = 0
     let longestStreak = 0
     
-    // Calculate current streak (excluding today)
-    const today = new Date().toISOString().split('T')[0]
-    let checkDate = new Date(today)
-    checkDate.setDate(checkDate.getDate() - 1) // Start from yesterday
+    // Calculate current streak (including today if completed)
+    // Use local date calculation to match frontend (assuming UTC+5:30 IST)
+    const now = new Date()
+    const localOffset = 5.5 * 60 * 60 * 1000 // IST offset in milliseconds
+    const localTime = new Date(now.getTime() + localOffset)
+    const today = `${localTime.getFullYear()}-${String(localTime.getMonth() + 1).padStart(2, '0')}-${String(localTime.getDate()).padStart(2, '0')}`
+    let checkDate = new Date(today + 'T00:00:00')
     
-    while (true) {
-      const dayStr = checkDate.toISOString().split('T')[0]
-      const dayData = completedDays.find(d => d.date === dayStr)
+    // Check if today is completed first
+    const todayData = completedDays.find(d => d.date === today)
+    
+    if (todayData) {
+      currentStreak = 1
+      checkDate.setDate(checkDate.getDate() - 1) // Move to yesterday
       
-      if (dayData) {
-        currentStreak++
-        checkDate.setDate(checkDate.getDate() - 1)
-      } else {
-        break
+      // Continue checking backwards
+      while (true) {
+        const dayStr = checkDate.toISOString().split('T')[0]
+        const dayData = completedDays.find(d => d.date === dayStr)
+        
+        if (dayData) {
+          currentStreak++
+          checkDate.setDate(checkDate.getDate() - 1)
+        } else {
+          break
+        }
+      }
+    } else {
+      // Today not completed, check from yesterday
+      checkDate.setDate(checkDate.getDate() - 1)
+      
+      while (true) {
+        const dayStr = checkDate.toISOString().split('T')[0]
+        const dayData = completedDays.find(d => d.date === dayStr)
+        
+        if (dayData) {
+          currentStreak++
+          checkDate.setDate(checkDate.getDate() - 1)
+        } else {
+          break
+        }
       }
     }
     
-    // Calculate longest streak
-    let streak = 0
-    let prevDate: Date | null = null
+    // Calculate longest streak correctly
+    let tempStreak = 0
+    let prevDateObj: Date | null = null
     
     for (const day of completedDays) {
-      const currentDate = new Date(day.date)
+      const currentDateObj = new Date(day.date + 'T00:00:00')
       
-      if (prevDate && (currentDate.getTime() - prevDate.getTime()) === 24 * 60 * 60 * 1000) {
-        streak++
+      if (prevDateObj) {
+        const dayDiff = Math.floor((currentDateObj.getTime() - prevDateObj.getTime()) / (24 * 60 * 60 * 1000))
+        
+        if (dayDiff === 1) {
+          // Consecutive day
+          tempStreak++
+        } else {
+          // Gap in streak, start new streak
+          tempStreak = 1
+        }
       } else {
-        streak = 1
+        // First day
+        tempStreak = 1
       }
       
-      longestStreak = Math.max(longestStreak, streak)
-      prevDate = currentDate
+      longestStreak = Math.max(longestStreak, tempStreak)
+      prevDateObj = currentDateObj
     }
     
     return NextResponse.json({
@@ -98,7 +139,7 @@ export async function GET(request: NextRequest) {
     })
     
   } catch (error) {
-    // console.error('Error fetching analytics:', error)
+    console.error('Error fetching analytics:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

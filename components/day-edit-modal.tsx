@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
-import { useUserSettings, useGlobalDailyProgress } from "@/hooks/use-data";
+import { useUserSettings, useDailyProgress } from "@/hooks/use-data";
 import type { DayEntry, MNZDTask } from "@/lib/types";
 
 interface DayEditModalProps {
@@ -14,7 +14,7 @@ interface DayEditModalProps {
   initialEntry: DayEntry | undefined;
 }
 
-const createEmptyEntry = (date: Date, settings?: any): DayEntry => {
+const createEmptyEntry = (dateStr: string, settings?: any): DayEntry => {
   const defaultTasks = [
     { id: "move", name: "Move", completed: false, minutes: 0 },
     { id: "nourish", name: "Nourish", completed: false, minutes: 0 },
@@ -30,7 +30,7 @@ const createEmptyEntry = (date: Date, settings?: any): DayEntry => {
   })) : defaultTasks;
   
   return {
-    date: date.toISOString().split("T")[0],
+    date: dateStr,
     tasks: tasks as MNZDTask[],
     totalHours: 0,
     note: "",
@@ -89,41 +89,23 @@ export default function DayEditModal({
 }: DayEditModalProps) {
   const { settings } = useUserSettings();
   const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  // console.log('Day edit modal - Date received:', date, 'DateStr:', dateStr);
-  const { loadProgressForDate, updateProgressForDate, getTodayProgress } = useGlobalDailyProgress();
+  
+  const { progress: fetchedEntry, loading: isLoading, updateProgress } = useDailyProgress(dateStr);
   
   const [entry, setEntry] = useState<DayEntry | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (settings && isOpen) {
-      const today = new Date().toISOString().split('T')[0]
-      
-      if (dateStr === today) {
-        // Use today's cached data
-        const todayData = getTodayProgress()
-        if (todayData) {
-          const freshEntry = migrateEntry(todayData, settings)
-          setEntry(freshEntry)
-          setIsLoading(false)
-        }
+    if (settings && (fetchedEntry || !isLoading)) {
+      if (fetchedEntry) {
+        const migratedEntry = migrateEntry(fetchedEntry, settings);
+        setEntry(migratedEntry);
       } else {
-        // Load data for other dates
-        setIsLoading(true)
-        loadProgressForDate(dateStr).then(progress => {
-          if (progress) {
-            const freshEntry = migrateEntry(progress, settings)
-            setEntry(freshEntry)
-          } else {
-            const emptyEntry = createEmptyEntry(date, settings)
-            setEntry(emptyEntry)
-          }
-          setIsLoading(false)
-        })
+        const emptyEntry = createEmptyEntry(dateStr, settings);
+        setEntry(emptyEntry);
       }
     }
-  }, [settings, dateStr, isOpen]);
+  }, [settings, fetchedEntry, isLoading, dateStr]);
 
   if (!settings) {
     return null;
@@ -272,7 +254,7 @@ export default function DayEditModal({
       // });
       
       // Save to database
-      await updateProgressForDate(dateStr, finalEntry);
+      await updateProgress(finalEntry);
       
       // Trigger parent refresh with optimistic update
       onSave(finalEntry);
