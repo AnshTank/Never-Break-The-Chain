@@ -1,4 +1,12 @@
 import nodemailer from "nodemailer";
+import { 
+  getMorningMotivationTemplate, 
+  getEveningCheckinTemplate, 
+  getMilestoneTemplate, 
+  getStreakRecoveryTemplate,
+  getWeeklySummaryTemplate,
+  EmailTemplateData 
+} from './email-templates';
 
 // Email transporter configuration
 const transporter = nodemailer.createTransport({
@@ -172,7 +180,7 @@ export async function sendOTPEmail(
                 </a>
               </div>
               <p style="color: #94a3b8; margin: 0; font-size: 12px;">
-                © 2024 Never Break The Chain. Keep building your habits! 🚀
+                © 2026 Never Break The Chain. Keep building your habits! 🚀
               </p>
             </div>
           </div>
@@ -506,7 +514,7 @@ export async function sendWelcomeFlowReminder(
                 </a>
               </div>
               <p style="color: #94a3b8; margin: 0; font-size: 12px;">
-                © 2024 Never Break The Chain by Ansh Tank. Start your transformation today! 🚀
+                © 2026 Never Break The Chain by Ansh Tank. Start your transformation today! 🚀
               </p>
             </div>
           </div>
@@ -638,6 +646,144 @@ export async function testEmailConnection(): Promise<boolean> {
     return true;
   } catch (error) {
     console.error("Email connection test failed:", error);
+    return false;
+  }
+}
+
+// Enhanced notification email functions for cron-job.org integration
+export async function sendMorningMotivationEmail(
+  userName: string,
+  userEmail: string,
+  streakCount: number = 0,
+  motivationalMessage?: string
+): Promise<boolean> {
+  try {
+    const templateData: EmailTemplateData = {
+      userName,
+      userEmail,
+      streakCount,
+      motivationalMessage,
+      actionUrl: 'https://never-break-the-chain.vercel.app/dashboard'
+    };
+
+    const htmlContent = getMorningMotivationTemplate(templateData);
+    
+    return await sendEmail({
+      to: userEmail,
+      subject: `🌅 Good Morning ${userName} - Never Break The Chain`,
+      html: htmlContent
+    });
+  } catch (error) {
+    console.error('Morning motivation email error:', error);
+    return false;
+  }
+}
+
+export async function sendEveningCheckinEmail(
+  userName: string,
+  userEmail: string,
+  completedToday: number = 0,
+  totalHabits: number = 4
+): Promise<boolean> {
+  try {
+    const templateData: EmailTemplateData = {
+      userName,
+      userEmail,
+      completedToday,
+      totalHabits,
+      actionUrl: 'https://never-break-the-chain.vercel.app/dashboard'
+    };
+
+    const htmlContent = getEveningCheckinTemplate(templateData);
+    
+    return await sendEmail({
+      to: userEmail,
+      subject: `🌙 Evening Check-in ${userName} - Never Break The Chain`,
+      html: htmlContent
+    });
+  } catch (error) {
+    console.error('Evening checkin email error:', error);
+    return false;
+  }
+}
+
+export async function sendMilestoneEmail(
+  userName: string,
+  userEmail: string,
+  streakCount: number
+): Promise<boolean> {
+  try {
+    const templateData: EmailTemplateData = {
+      userName,
+      userEmail,
+      streakCount,
+      actionUrl: 'https://never-break-the-chain.vercel.app/dashboard'
+    };
+
+    const htmlContent = getMilestoneTemplate(templateData);
+    
+    return await sendEmail({
+      to: userEmail,
+      subject: `🎉 ${streakCount} Day Milestone Achieved! - Never Break The Chain`,
+      html: htmlContent
+    });
+  } catch (error) {
+    console.error('Milestone email error:', error);
+    return false;
+  }
+}
+
+export async function sendStreakRecoveryEmail(
+  userName: string,
+  userEmail: string
+): Promise<boolean> {
+  try {
+    const templateData: EmailTemplateData = {
+      userName,
+      userEmail,
+      actionUrl: 'https://never-break-the-chain.vercel.app/dashboard'
+    };
+
+    const htmlContent = getStreakRecoveryTemplate(templateData);
+    
+    return await sendEmail({
+      to: userEmail,
+      subject: `🌱 Fresh Start ${userName} - Never Break The Chain`,
+      html: htmlContent
+    });
+  } catch (error) {
+    console.error('Streak recovery email error:', error);
+    return false;
+  }
+}
+
+export async function sendWeeklySummaryEmail(
+  userName: string,
+  userEmail: string,
+  weeklyStats: {
+    daysCompleted: number;
+    totalDays: number;
+    topHabit: string;
+    improvementArea: string;
+  }
+): Promise<boolean> {
+  try {
+    const templateData = {
+      userName,
+      userEmail,
+      weeklyStats,
+      actionUrl: 'https://never-break-the-chain.vercel.app/dashboard'
+    };
+
+    const htmlContent = getWeeklySummaryTemplate(templateData);
+    
+    return await sendEmail({
+      to: userEmail,
+      subject: `📊 Weekly Summary ${userName} - Never Break The Chain`,
+      html: htmlContent
+    });
+  } catch (error) {
+    console.error('Weekly summary email error:', error);
     return false;
   }
 }

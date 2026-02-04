@@ -1,49 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import { verifyToken } from '@/lib/jwt';
 import { ObjectId } from 'mongodb';
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth-token')?.value || request.cookies.get('token')?.value;
-    if (!token) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = verifyToken(token);
-    if (!decoded) {
-      return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
+    const userId = request.headers.get('x-user-id');
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { db } = await connectToDatabase();
-    const userId = new ObjectId(decoded.userId);
-
+    const currentDeviceId = request.headers.get('x-device-id') || request.cookies.get('device-id')?.value;
+    
+    // Get user's email notification setting
+    const user = await db.collection('users').findOne(
+      { _id: new ObjectId(userId) },
+      { projection: { emailNotifications: 1 } }
+    );
+    
     const devices = await db.collection('devices')
-      .find({ userId, isActive: true })
+      .find({ userId: new ObjectId(userId), isActive: true })
       .sort({ lastActive: -1 })
       .toArray();
 
-    const deviceList = devices.map(device => ({
+    const devicesWithStatus = devices.map(device => ({
       deviceId: device.deviceId,
       deviceName: device.deviceName,
       deviceType: device.deviceType,
-      browser: device.currentBrowser || device.browser,
+      browser: device.browser,
       os: device.os,
       lastActive: device.lastActive,
-      lastLogin: device.lastLogin,
-      registeredAt: device.registeredAt,
-      hasNotifications: !!device.pushSubscription,
-      rememberMe: device.rememberMe || false,
-      rememberMeExpiry: device.rememberMeExpiry
+      isCurrentDevice: device.deviceId === currentDeviceId,
+      hasNotifications: user?.emailNotifications !== false
     }));
 
-    return NextResponse.json({ devices: deviceList });
-
+    return NextResponse.json({ 
+      devices: devicesWithStatus,
+      emailNotifications: user?.emailNotifications !== false
+    });
   } catch (error) {
     console.error('Device list error:', error);
-    return NextResponse.json(
-      { message: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

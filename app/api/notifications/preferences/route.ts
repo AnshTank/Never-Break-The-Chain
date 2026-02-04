@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { verifyToken } from '@/lib/jwt';
 import { ObjectId } from 'mongodb';
-import { NotificationScheduler } from '@/lib/notification-scheduler';
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,13 +23,11 @@ export async function GET(request: NextRequest) {
     }
 
     const defaultPreferences = {
-      morningReminder: { enabled: true, time: '07:00' },
-      eveningReminder: { enabled: true, time: '20:00' },
-      missedDayReminder: { enabled: true },
-      milestoneAlerts: { enabled: true },
-      streakAlerts: { enabled: true },
       emailNotifications: { enabled: true },
-      pushNotifications: { enabled: true }
+      morningEmail: { enabled: true, time: '07:00' },
+      eveningEmail: { enabled: true, time: '20:00' },
+      milestoneEmails: { enabled: true },
+      streakEmails: { enabled: true }
     };
 
     return NextResponse.json({
@@ -61,30 +58,24 @@ export async function POST(request: NextRequest) {
     const preferences = await request.json();
     const { db } = await connectToDatabase();
 
-    // Validate preferences structure
+    // Validate email notification preferences only
     const validPreferences = {
-      morningReminder: {
-        enabled: Boolean(preferences.morningReminder?.enabled),
-        time: preferences.morningReminder?.time || '07:00'
-      },
-      eveningReminder: {
-        enabled: Boolean(preferences.eveningReminder?.enabled),
-        time: preferences.eveningReminder?.time || '20:00'
-      },
-      missedDayReminder: {
-        enabled: Boolean(preferences.missedDayReminder?.enabled)
-      },
-      milestoneAlerts: {
-        enabled: Boolean(preferences.milestoneAlerts?.enabled)
-      },
-      streakAlerts: {
-        enabled: Boolean(preferences.streakAlerts?.enabled)
-      },
       emailNotifications: {
-        enabled: Boolean(preferences.emailNotifications?.enabled)
+        enabled: Boolean(preferences.emailNotifications?.enabled !== false)
       },
-      pushNotifications: {
-        enabled: Boolean(preferences.pushNotifications?.enabled)
+      morningEmail: {
+        enabled: Boolean(preferences.morningEmail?.enabled !== false),
+        time: preferences.morningEmail?.time || '07:00'
+      },
+      eveningEmail: {
+        enabled: Boolean(preferences.eveningEmail?.enabled !== false),
+        time: preferences.eveningEmail?.time || '20:00'
+      },
+      milestoneEmails: {
+        enabled: Boolean(preferences.milestoneEmails?.enabled !== false)
+      },
+      streakEmails: {
+        enabled: Boolean(preferences.streakEmails?.enabled !== false)
       }
     };
 
@@ -99,12 +90,8 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    // Reschedule notifications based on new preferences
-    try {
-      await NotificationScheduler.setupUserNotifications(decoded.userId);
-    } catch (error) {
-      console.warn('Failed to reschedule notifications:', error);
-    }
+    // Email notification preferences only
+    console.log('Email notification preferences updated for user:', decoded.userId);
 
     return NextResponse.json({
       message: 'Preferences updated successfully',

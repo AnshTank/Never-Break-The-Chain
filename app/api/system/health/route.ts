@@ -12,29 +12,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const stats = performanceMonitor.getStats();
+    const stats = {
+      uptime: performanceMonitor.getUptime(),
+      memory: performanceMonitor.getMemoryUsage()
+    };
     
     return NextResponse.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
       performance: {
-        requests: stats.requests,
-        errors: stats.errors,
-        errorRate: stats.errorRate,
-        avgResponseTime: parseFloat(stats.avgResponseTime.toFixed(2)),
-        requestsPerMinute: parseFloat(stats.requestsPerMinute.toFixed(2)),
         uptime: stats.uptime
       },
-      cache: stats.cache,
-      rateLimit: stats.rateLimit,
-      memory: {
+      memory: stats.memory || {
         used: process.memoryUsage().heapUsed / 1024 / 1024, // MB
         total: process.memoryUsage().heapTotal / 1024 / 1024, // MB
       },
       system: {
         nodeVersion: process.version,
-        platform: process.platform,
-        cpuUsage: process.cpuUsage()
+        platform: process.platform
       }
     });
   } catch (error) {

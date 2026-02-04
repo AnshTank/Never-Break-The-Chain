@@ -65,7 +65,7 @@ export default function CoolLoading({
       75,
       canvas.clientWidth / canvas.clientHeight,
       0.1,
-      1000
+      1000,
     );
     const renderer = new THREE.WebGLRenderer({
       canvas,
@@ -193,7 +193,7 @@ export default function CoolLoading({
         (stair.material as THREE.MeshBasicMaterial).color.setHSL(
           hue,
           0.85,
-          0.65
+          0.65,
         );
       });
 
@@ -216,7 +216,7 @@ export default function CoolLoading({
         const targetScale = 1 + Math.sin(t * 2) * 0.3;
         const currentScale = p.mesh.scale.x;
         p.mesh.scale.setScalar(
-          currentScale + (targetScale - currentScale) * 0.1
+          currentScale + (targetScale - currentScale) * 0.1,
         );
 
         // Update opacity based on progress
@@ -282,15 +282,17 @@ export default function CoolLoading({
 
   // Sync message with current loading step
   useEffect(() => {
-    const currentStepIndex = loadingSteps.findIndex(step => !step.completed);
+    const currentStepIndex = loadingSteps.findIndex((step) => !step.completed);
     if (currentStepIndex !== -1) {
       const stepMessages = [
         "Building your journey...",
-        "Preparing your MNZD dashboard...", 
+        "Preparing your MNZD dashboard...",
         "Loading your progress...",
-        "Setting up your chain..."
+        "Setting up your chain...",
       ];
-      setCurrentMessage(stepMessages[currentStepIndex] || "Almost ready to track...");
+      setCurrentMessage(
+        stepMessages[currentStepIndex] || "Almost ready to track...",
+      );
     } else if (progress === 100) {
       setCurrentMessage("Almost ready to track...");
     }
@@ -301,7 +303,7 @@ export default function CoolLoading({
       setCurrentQuote(
         motivationalQuotes[
           Math.floor(Math.random() * motivationalQuotes.length)
-        ]
+        ],
       );
     }, 4000);
 
@@ -317,17 +319,20 @@ export default function CoolLoading({
       const updateStep = (
         index: number,
         progress: number,
-        completed: boolean = false
+        completed: boolean = false,
       ) => {
         if (!mounted) return;
         setLoadingSteps((prev) =>
           prev.map((step, i) =>
-            i === index ? { ...step, progress, completed } : step
-          )
+            i === index ? { ...step, progress, completed } : step,
+          ),
         );
 
         const totalProgress = Math.round(index * 25 + progress * 0.25);
-        setProgress(Math.min(totalProgress, 100));
+        // Prevent progress from going backwards
+        setProgress((prevProgress) =>
+          Math.max(prevProgress, Math.min(totalProgress, 100)),
+        );
       };
 
       try {
@@ -380,7 +385,7 @@ export default function CoolLoading({
         updateStep(3, 50);
         const today = new Date();
         const todayStr = `${today.getFullYear()}-${String(
-          today.getMonth() + 1
+          today.getMonth() + 1,
         ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
         const progressResponse = await fetch(`/api/progress?date=${todayStr}`);
@@ -425,7 +430,10 @@ export default function CoolLoading({
   }, [onLoadingComplete]);
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-purple-950/30 dark:to-indigo-950/30" data-loading="true">
+    <div
+      className="min-h-screen relative overflow-hidden bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-slate-950 dark:via-purple-950/30 dark:to-indigo-950/30"
+      data-loading="true"
+    >
       {/* Smooth Animated Background */}
       <div className="absolute inset-0">
         <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-gradient-to-r from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl animate-blob-smooth"></div>
@@ -501,8 +509,8 @@ export default function CoolLoading({
                     step.completed
                       ? "bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 border-emerald-400/40 shadow-lg shadow-emerald-500/10"
                       : step.progress > 0
-                      ? "bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 border-purple-400/40 shadow-lg shadow-purple-500/10"
-                      : "bg-white/60 dark:bg-slate-800/60 border-gray-200 dark:border-slate-700"
+                        ? "bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 border-purple-400/40 shadow-lg shadow-purple-500/10"
+                        : "bg-white/60 dark:bg-slate-800/60 border-gray-200 dark:border-slate-700"
                   }`}
                 >
                   {/* Step Indicator - Smaller */}
@@ -512,8 +520,8 @@ export default function CoolLoading({
                         step.completed
                           ? "bg-gradient-to-br from-emerald-400 to-teal-500 shadow-md shadow-emerald-500/50"
                           : step.progress > 0
-                          ? "bg-gradient-to-br from-blue-500 to-purple-600 shadow-md shadow-purple-500/50"
-                          : "bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700"
+                            ? "bg-gradient-to-br from-blue-500 to-purple-600 shadow-md shadow-purple-500/50"
+                            : "bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700"
                       }`}
                     >
                       {step.completed ? (
@@ -553,8 +561,8 @@ export default function CoolLoading({
                         step.completed
                           ? "text-emerald-600 dark:text-emerald-400"
                           : step.progress > 0
-                          ? "text-purple-700 dark:text-purple-300"
-                          : "text-gray-500 dark:text-gray-400"
+                            ? "text-purple-700 dark:text-purple-300"
+                            : "text-gray-500 dark:text-gray-400"
                       }`}
                     >
                       {step.name}

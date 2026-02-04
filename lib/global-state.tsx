@@ -177,6 +177,8 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
   }
 
   const refetchAnalytics = useCallback(async (month?: Date) => {
+    // Always allow fresh analytics fetch
+    fetchedRef.current.analytics = null
     await fetchAnalytics(month)
   }, [])
 
@@ -404,13 +406,8 @@ export function useUserSettings() {
 
 export function useAnalytics() {
   const { analytics, analyticsLoading, refetchAnalytics } = useGlobalState()
-  const lastRefetchRef = useRef<string | null>(null)
   
-  const refetch = useCallback((month?: Date) => {
-    const monthKey = month ? month.toISOString().split('T')[0].substring(0, 7) : 'current'
-    if (lastRefetchRef.current === monthKey) return Promise.resolve()
-    
-    lastRefetchRef.current = monthKey
+  const refetch = useCallback(async (month?: Date) => {
     return refetchAnalytics(month)
   }, [refetchAnalytics])
   

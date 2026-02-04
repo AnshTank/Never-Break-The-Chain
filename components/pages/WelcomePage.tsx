@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNotifications } from '@/lib/notifications/use-notifications';
-import NotificationService from '@/lib/notifications/notification-service';
 import TermsAcceptance from '@/components/TermsAcceptance';
 
 // Types
@@ -164,7 +163,7 @@ const BubbleEffect = ({ seed = 0 }: { seed?: number }) => {
 
 const WelcomePage = () => {
   const router = useRouter();
-  const { enableNotifications, scheduleSmartNotifications, sendWelcomeNotification } = useNotifications();
+  const { requestPermission, scheduleSmartNotifications, sendWelcomeNotification } = useNotifications();
   const [currentPhase, setCurrentPhase] = useState(0);
   const [completedPhases, setCompletedPhases] = useState<number[]>([]);
   const [unlockedPhases, setUnlockedPhases] = useState<number[]>([0]); // Track unlocked phases
@@ -562,7 +561,7 @@ const WelcomePage = () => {
         
         // Request notification permissions and setup smart notifications
         try {
-          const granted = await enableNotifications();
+          const granted = await requestPermission();
           if (granted) {
             // Send immediate welcome notification
             await sendWelcomeNotification();

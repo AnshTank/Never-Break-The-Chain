@@ -87,6 +87,22 @@ export async function POST(request: NextRequest) {
 
     const message = messages[type as keyof typeof messages] || messages.morning;
 
+    // Check for recent email to prevent duplicates
+    const recentEmailCheck = await db.collection('email_log').findOne({
+      userId,
+      type,
+      sentAt: { $gte: new Date(Date.now() - 5 * 60 * 1000) } // Within last 5 minutes
+    });
+
+    if (recentEmailCheck) {
+      return NextResponse.json({
+        message: `Email already sent recently for ${type}`,
+        sent: 0,
+        failed: 0,
+        duplicate: true
+      });
+    }
+
     // Send real email
     if (user?.email) {
       try {
@@ -154,12 +170,20 @@ export async function POST(request: NextRequest) {
                 </div>
                 <div style="text-align: center; color: rgba(255,255,255,0.8); font-size: 14px;">
                   <p style="margin: 0 0 10px;">Keep building your chain, one day at a time! 🔗✨</p>
-                  <p style="margin: 0; font-size: 12px; opacity: 0.7;">© 2024 Never Break The Chain by Ansh Tank</p>
+                  <p style="margin: 0; font-size: 12px; opacity: 0.7;">© 2026 Never Break The Chain by Ansh Tank</p>
                 </div>
               </div>
             </body>
             </html>
           `
+        });
+        
+        // Log email sent to prevent duplicates
+        await db.collection('email_log').insertOne({
+          userId,
+          type,
+          email: user.email,
+          sentAt: new Date()
         });
         
         emailSent = 1;

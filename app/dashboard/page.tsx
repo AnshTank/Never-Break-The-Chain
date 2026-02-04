@@ -21,7 +21,31 @@ export default function Home() {
     "calendar"
   );
   const [loadedData, setLoadedData] = useState<any>({});
-  const { scheduleSmartNotifications, isEnabled, sendWelcomeNotification } = useNotifications();
+  const { isEnabled } = useNotifications();
+
+  // Device registration function
+  const registerDevice = useCallback(async () => {
+    try {
+      // Ensure device ID is set before registration
+      const { getDeviceId } = await import('@/lib/device-id');
+      const deviceId = getDeviceId();
+      
+      await fetch('/api/devices/register-dashboard', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-device-id': deviceId,
+        },
+      });
+    } catch (error) {
+      console.error('Device registration failed:', error);
+    }
+  }, []);
+
+  // Register device on component mount and every refresh
+  useEffect(() => {
+    registerDevice();
+  }, [registerDevice]);
 
   // Memoize current month to prevent unnecessary re-renders
   const today = useMemo(() => new Date(), []);
@@ -52,30 +76,15 @@ export default function Home() {
     setLoadedData(data);
     setIsLoading(false);
     
+    // Register device automatically on dashboard access
+    registerDevice();
+    
     // Initialize smart notifications with user progress
     if (isEnabled && data) {
-      const userProgress = {
-        completed: data.todayProgress?.completed || 0,
-        streak: data.currentStreak || 0,
-        timeOfDay: (new Date().getHours() < 12 ? "morning" : "evening") as "morning" | "evening",
-        patterns: {
-          usualCompletionTime: "12:00",
-          strongestPillar: "Move",
-          weakestPillar: "Document",
-          weekdayPerformance: 75,
-          weekendPerformance: 60
-        }
-      };
-      scheduleSmartNotifications(userProgress);
-      
-      // Send welcome notification for new users (streak = 0 or 1)
-      if (data.currentStreak <= 1) {
-        setTimeout(() => {
-          sendWelcomeNotification();
-        }, 2000); // Delay to ensure dashboard is loaded
-      }
+      // Email notifications are handled by server-side cron jobs
+      console.log('Email notifications handled by server-side cron jobs');
     }
-  }, [isEnabled, scheduleSmartNotifications, sendWelcomeNotification]);
+  }, [isEnabled, registerDevice]);
 
   // Early return for loading states - no duplicate API calls
   if (isLoading) {

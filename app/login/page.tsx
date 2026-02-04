@@ -233,6 +233,8 @@ function LoginForm() {
   const [incompleteEmail, setIncompleteEmail] = useState("");
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
+  const [showDeviceSelectionModal, setShowDeviceSelectionModal] = useState(false);
+  const [deviceSelectionData, setDeviceSelectionData] = useState<any>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -288,10 +290,14 @@ function LoginForm() {
     setError("");
 
     try {
+      // Get device ID for device limit checking
+      const deviceId = DeviceManager.getDeviceId();
+      
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-device-id": deviceId
         },
         body: JSON.stringify({
           email,
@@ -310,7 +316,20 @@ function LoginForm() {
           router.push("/dashboard");
         }
       } else {
-        if (data.needsVerification) {
+        console.log('Login failed, response data:', data); // Debug log
+        if (data.deviceLimitReached) {
+          console.log('Device limit reached, showing modal with devices:', data.activeDevices); // Debug log
+          // Show device selection modal instead of just error
+          setDeviceSelectionData({
+            email,
+            password,
+            rememberMe,
+            activeDevices: data.activeDevices,
+            message: data.message
+          });
+          setShowDeviceSelectionModal(true);
+          setError(""); // Clear error since we're showing modal
+        } else if (data.needsVerification) {
           setLoginEmail(email);
           setShowVerificationModal(true);
         } else if (data.needsPasswordSetup && data.email) {
@@ -323,6 +342,56 @@ function LoginForm() {
       }
     } catch (err) {
       setError("Failed to sign in");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeviceRemoval = async (deviceIdToRemove: string) => {
+    if (!deviceSelectionData) return;
+    
+    try {
+      setIsLoading(true);
+      
+      const response = await fetch('/api/devices/remove-for-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          deviceIdToRemove,
+          email: deviceSelectionData.email,
+          password: deviceSelectionData.password
+        })
+      });
+      
+      if (response.ok) {
+        setShowDeviceSelectionModal(false);
+        
+        // Retry login immediately
+        const deviceId = DeviceManager.getDeviceId();
+        const loginResponse = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-device-id": deviceId
+          },
+          body: JSON.stringify({
+            email: deviceSelectionData.email,
+            password: deviceSelectionData.password,
+            rememberMe: deviceSelectionData.rememberMe,
+          }),
+        });
+        
+        if (loginResponse.ok) {
+          router.push("/dashboard");
+        } else {
+          const loginData = await loginResponse.json();
+          setError(loginData.error || "Login failed after device removal");
+        }
+      } else {
+        setError("Failed to remove device");
+      }
+    } catch (error) {
+      setError("Failed to remove device");
     } finally {
       setIsLoading(false);
     }
@@ -664,6 +733,81 @@ function LoginForm() {
         onVerified={handleEmailVerified}
         onClose={() => setShowVerificationModal(false)}
       />
+      
+      {/* Device Selection Modal */}
+      {showDeviceSelectionModal && deviceSelectionData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <motion.div 
+            className="w-full max-w-md bg-white dark:bg-slate-800 rounded-xl shadow-xl"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/20 rounded-full flex items-center justify-center">
+                  <span className="text-amber-600 dark:text-amber-400 text-lg">⚠️</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Device Limit Reached
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    You can only be logged in on 2 devices
+                  </p>
+                </div>
+              </div>
+              
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+                Please select a device to remove and continue:
+              </p>
+              
+              <div className="space-y-2 mb-6">
+                {deviceSelectionData.activeDevices?.map((device: any) => (
+                  <div 
+                    key={device.deviceId}
+                    className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="text-gray-600 dark:text-gray-400">
+                        {device.deviceType === 'mobile' ? '📱' : '💻'}
+                      </div>
+                      <div>
+                        <div className="font-medium text-gray-900 dark:text-white text-sm">
+                          {device.deviceName}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {device.browser} • Last active: {new Date(device.lastActive).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDeviceRemoval(device.deviceId)}
+                      disabled={isLoading}
+                      className="px-3 py-1.5 text-xs bg-red-100 text-red-700 hover:bg-red-200 rounded transition-colors disabled:opacity-50"
+                    >
+                      {isLoading ? 'Removing...' : 'Remove'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeviceSelectionModal(false);
+                    setDeviceSelectionData(null);
+                  }}
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user exists
-    const existingUser = await UserService.findUserByEmail(sanitizedEmail);
+    const existingUser = await UserService.findByEmail(sanitizedEmail);
     if (!existingUser) {
       return NextResponse.json(
         { error: 'No account found with this email address. Please check your email or create a new account.' },
@@ -76,7 +76,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Store OTP in database
-    await UserService.setOTP(sanitizedEmail, otp);
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    await UserService.updateOTP(sanitizedEmail, otp, expiresAt);
 
     return NextResponse.json({
       message: 'Password reset code sent to your email',

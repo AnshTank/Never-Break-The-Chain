@@ -3,9 +3,10 @@
 import { useRouter } from "next/navigation"
 import { useState, useEffect, useRef } from "react"
 import { logout } from "@/lib/auth-utils"
-import { Link2, User, LogOut, Settings, Bell } from "lucide-react"
+import { Link2, User, LogOut, Settings, Bell, Smartphone } from "lucide-react"
 import ProfileSettingsModal from "./profile-settings-modal"
 import NotificationSettings from "./NotificationSettings"
+import DevicesModal from "./DevicesModal"
 
 export default function Header() {
   const router = useRouter()
@@ -13,6 +14,7 @@ export default function Header() {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showNotificationModal, setShowNotificationModal] = useState(false)
+  const [showDevicesModal, setShowDevicesModal] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -66,6 +68,11 @@ export default function Header() {
     document.body.style.overflow = 'hidden'
   }
 
+  const handleDevicesModal = () => {
+    setShowUserMenu(false)
+    setShowDevicesModal(true)
+  }
+
   return (
     <>
       <header className="flex items-center justify-between py-4 mb-6">
@@ -107,6 +114,13 @@ export default function Header() {
                 Profile Settings
               </button>
               <button 
+                onClick={handleDevicesModal}
+                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                <Smartphone className="w-4 h-4" />
+                Devices
+              </button>
+              <button 
                 onClick={handleNotificationSettings}
                 className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
               >
@@ -128,6 +142,11 @@ export default function Header() {
       <ProfileSettingsModal 
         isOpen={showProfileModal} 
         onClose={() => setShowProfileModal(false)} 
+      />
+      
+      <DevicesModal 
+        isOpen={showDevicesModal} 
+        onClose={() => setShowDevicesModal(false)} 
       />
       
       {/* Notification Settings Modal */}

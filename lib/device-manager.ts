@@ -1,4 +1,5 @@
 import { ObjectId } from 'mongodb';
+import { getDeviceId } from './device-id';
 
 export interface DeviceInfo {
   _id?: ObjectId;
@@ -30,28 +31,9 @@ export class DeviceManager {
   private static activityTimer: NodeJS.Timeout | null = null;
   private static readonly INACTIVITY_TIMEOUT = 12 * 60 * 60 * 1000;
 
-  // Get or create device ID that works across browsers
   static getDeviceId(): string {
-    // Try to get from localStorage first
-    let deviceId = localStorage.getItem(this.DEVICE_ID_KEY);
-    if (deviceId) return deviceId;
-
-    // Try to get from cookie (shared across browsers)
-    deviceId = this.getCookieValue(this.DEVICE_ID_KEY);
-    if (deviceId) {
-      localStorage.setItem(this.DEVICE_ID_KEY, deviceId);
-      return deviceId;
-    }
-
-    // Generate new device ID based on hardware
-    const hardware = this.getHardwareFingerprint();
-    deviceId = `device_${hardware}_${Date.now().toString(36)}`;
-    
-    // Store in both localStorage and cookie
-    localStorage.setItem(this.DEVICE_ID_KEY, deviceId);
-    this.setCookie(this.DEVICE_ID_KEY, deviceId);
-    
-    return deviceId;
+    // Use the centralized device ID utility
+    return getDeviceId();
   }
 
   // Cookie utilities
@@ -312,11 +294,12 @@ export class DeviceManager {
   }
 
   static getStoredDeviceId(): string | null {
-    return localStorage.getItem('deviceId');
+    return getDeviceId();
   }
 
   static setStoredDeviceId(deviceId: string): void {
-    localStorage.setItem('deviceId', deviceId);
+    // This is handled by the centralized device ID utility
+    console.log('Device ID management handled by centralized utility');
   }
 
   static getStoredPhysicalDeviceId(): string | null {

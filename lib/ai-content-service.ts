@@ -1,0 +1,466 @@
+// AI Service Integration for Dynamic Content Generation
+// Supports multiple AI providers: OpenAI, Google Gemini, Anthropic Claude
+
+interface AIProvider {
+  generateContent(prompt: string, context: any): Promise<string>;
+}
+
+interface UserContext {
+  name: string;
+  currentStreak: number;
+  longestStreak: number;
+  completionRate: number;
+  weakestHabit: string;
+  strongestHabit: string;
+  daysSinceJoin: number;
+  timeOfDay: 'morning' | 'afternoon' | 'evening' | 'night';
+  lastActivity: Date;
+  milestoneReached?: number;
+}
+
+// Google Gemini AI Provider
+class GeminiAIProvider implements AIProvider {
+  private apiKey: string;
+  private baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+  }
+
+  async generateContent(prompt: string, context: UserContext): Promise<string> {
+    try {
+      const response = await fetch(`${this.baseUrl}?key=${this.apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: this.buildPrompt(prompt, context)
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 200,
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Gemini API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || this.getFallbackContent(prompt, context);
+    } catch (error) {
+      console.error('Gemini AI error:', error);
+      return this.getFallbackContent(prompt, context);
+    }
+  }
+
+  private buildPrompt(basePrompt: string, context: UserContext): string {
+    return `${basePrompt}
+
+User Context:
+- Name: ${context.name}
+- Current Streak: ${context.currentStreak} days
+- Longest Streak: ${context.longestStreak} days
+- Completion Rate: ${Math.round(context.completionRate * 100)}%
+- Strongest Habit: ${context.strongestHabit}
+- Weakest Habit: ${context.weakestHabit}
+- Days Since Join: ${context.daysSinceJoin}
+- Time of Day: ${context.timeOfDay}
+- Last Activity: ${context.lastActivity.toDateString()}
+${context.milestoneReached ? `- Milestone Reached: ${context.milestoneReached} days` : ''}
+
+Requirements:
+- Keep response under 150 words
+- Be encouraging and personal
+- Reference specific user data
+- Use MNZD methodology (Meditation, Nutrition, Zone, Discipline)
+- Include relevant emojis
+- End with a call to action`;
+  }
+
+  private getFallbackContent(prompt: string, context: UserContext): string {
+    // Fallback content when AI fails
+    const fallbacks = {
+      morning: `Good morning ${context.name}! 🌅 You're ${context.currentStreak} days strong. Today, let's focus on your ${context.weakestHabit} practice and keep building that amazing streak!`,
+      evening: `Great work today ${context.name}! 🌙 You've maintained a ${Math.round(context.completionRate * 100)}% completion rate. Reflect on your progress and prepare for tomorrow's success!`,
+      milestone: `🎉 Incredible achievement ${context.name}! ${context.milestoneReached} days of consistency shows your dedication to the MNZD methodology. You're building something extraordinary!`,
+      recovery: `Hey ${context.name}! 🌱 Your ${context.longestStreak}-day streak shows what you're capable of. Every expert was once a beginner. Today is perfect for a fresh start!`,
+      weekly: `Week summary for ${context.name}: ${Math.round(context.completionRate * 100)}% completion rate! 📊 Your strongest area is ${context.strongestHabit}. Let's focus on improving ${context.weakestHabit} next week.`
+    };
+
+    return fallbacks[prompt as keyof typeof fallbacks] || fallbacks.morning;
+  }
+}
+
+// OpenAI Provider (if you prefer)
+class OpenAIProvider implements AIProvider {
+  private apiKey: string;
+  private baseUrl = 'https://api.openai.com/v1/chat/completions';
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+  }
+
+  async generateContent(prompt: string, context: UserContext): Promise<string> {
+    try {
+      const response = await fetch(this.baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: [{
+            role: 'system',
+            content: 'You are a motivational habit coach for the Never Break The Chain app using MNZD methodology.'
+          }, {
+            role: 'user',
+            content: this.buildPrompt(prompt, context)
+          }],
+          max_tokens: 150,
+          temperature: 0.7
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content || this.getFallbackContent(prompt, context);
+    } catch (error) {
+      console.error('OpenAI error:', error);
+      return this.getFallbackContent(prompt, context);
+    }
+  }
+
+  private buildPrompt(prompt: string, context: UserContext): string {
+    return `Generate a personalized ${prompt} message for ${context.name} who has a ${context.currentStreak}-day streak (best: ${context.longestStreak}), ${Math.round(context.completionRate * 100)}% completion rate, strongest in ${context.strongestHabit}, needs work on ${context.weakestHabit}. Time: ${context.timeOfDay}. Keep it under 150 words, encouraging, and include a call to action.`;
+  }
+
+  private getFallbackContent(prompt: string, context: UserContext): string {
+    // Same fallback as Gemini
+    const fallbacks = {
+      morning: `Good morning ${context.name}! 🌅 You're ${context.currentStreak} days strong. Today, let's focus on your ${context.weakestHabit} practice and keep building that amazing streak!`,
+      evening: `Great work today ${context.name}! 🌙 You've maintained a ${Math.round(context.completionRate * 100)}% completion rate. Reflect on your progress and prepare for tomorrow's success!`,
+      milestone: `🎉 Incredible achievement ${context.name}! ${context.milestoneReached} days of consistency shows your dedication to the MNZD methodology. You're building something extraordinary!`,
+      recovery: `Hey ${context.name}! 🌱 Your ${context.longestStreak}-day streak shows what you're capable of. Every expert was once a beginner. Today is perfect for a fresh start!`,
+      weekly: `Week summary for ${context.name}: ${Math.round(context.completionRate * 100)}% completion rate! 📊 Your strongest area is ${context.strongestHabit}. Let's focus on improving ${context.weakestHabit} next week.`
+    };
+
+    return fallbacks[prompt as keyof typeof fallbacks] || fallbacks.morning;
+  }
+}
+
+// Main AI Content Service
+export class AIContentService {
+  private provider: AIProvider | null = null;
+  private isEnabled: boolean = false;
+
+  constructor() {
+    // Initialize based on available API keys
+    const geminiKey = process.env.GEMINI_API_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY;
+
+    if (geminiKey) {
+      this.provider = new GeminiAIProvider(geminiKey);
+      this.isEnabled = true;
+      console.log('🤖 AI Content Service initialized with Gemini');
+    } else if (openaiKey) {
+      this.provider = new OpenAIProvider(openaiKey);
+      this.isEnabled = true;
+      console.log('🤖 AI Content Service initialized with OpenAI');
+    } else {
+      this.isEnabled = false;
+      console.log('⚠️ AI Content Service disabled - no API keys found');
+    }
+  }
+
+  async generateMorningMotivation(context: UserContext): Promise<{
+    subject: string;
+    message: string;
+    focusArea: string;
+  }> {
+    if (!this.isEnabled || !this.provider) {
+      return this.getFallbackMorningContent(context);
+    }
+
+    try {
+      const prompt = 'morning motivation';
+      const aiMessage = await this.provider.generateContent(prompt, context);
+      
+      return {
+        subject: `🌅 Day ${context.currentStreak + 1} - ${this.getMotivationalTitle(context)}`,
+        message: aiMessage,
+        focusArea: context.weakestHabit
+      };
+    } catch (error) {
+      console.error('AI morning motivation error:', error);
+      return this.getFallbackMorningContent(context);
+    }
+  }
+
+  async generateEveningReflection(context: UserContext): Promise<{
+    subject: string;
+    message: string;
+    reflection: string;
+  }> {
+    if (!this.isEnabled || !this.provider) {
+      return this.getFallbackEveningContent(context);
+    }
+
+    try {
+      const prompt = 'evening reflection';
+      const aiMessage = await this.provider.generateContent(prompt, context);
+      
+      return {
+        subject: `🌙 Day ${context.currentStreak} Complete - Reflection Time`,
+        message: aiMessage,
+        reflection: 'Take a moment to appreciate your progress and plan for tomorrow.'
+      };
+    } catch (error) {
+      console.error('AI evening reflection error:', error);
+      return this.getFallbackEveningContent(context);
+    }
+  }
+
+  async generateMilestoneMessage(context: UserContext): Promise<{
+    subject: string;
+    message: string;
+    achievement: string;
+    nextGoal: string;
+  }> {
+    if (!this.isEnabled || !this.provider) {
+      return this.getFallbackMilestoneContent(context);
+    }
+
+    try {
+      const prompt = 'milestone celebration';
+      const aiMessage = await this.provider.generateContent(prompt, context);
+      
+      const milestoneTitle = this.getMilestoneTitle(context.milestoneReached || context.currentStreak);
+      const nextMilestone = this.getNextMilestone(context.currentStreak);
+      
+      return {
+        subject: `🎉 ${context.currentStreak} Days - ${milestoneTitle} Achieved!`,
+        message: aiMessage,
+        achievement: `${milestoneTitle} - ${context.currentStreak} Days`,
+        nextGoal: `Next milestone: ${nextMilestone.title} at ${nextMilestone.days} days`
+      };
+    } catch (error) {
+      console.error('AI milestone message error:', error);
+      return this.getFallbackMilestoneContent(context);
+    }
+  }
+
+  async generateWeeklySummary(context: UserContext, weeklyData: any): Promise<{
+    subject: string;
+    insights: string[];
+    recommendations: string[];
+    nextWeekGoals: string[];
+  }> {
+    if (!this.isEnabled || !this.provider) {
+      return this.getFallbackWeeklyContent(context, weeklyData);
+    }
+
+    try {
+      const prompt = 'weekly summary';
+      const aiContent = await this.provider.generateContent(prompt, context);
+      
+      // Parse AI content into structured format
+      const insights = this.extractInsights(aiContent, context);
+      const recommendations = this.extractRecommendations(aiContent, context);
+      const goals = this.extractGoals(aiContent, context);
+      
+      return {
+        subject: `📊 Week ${this.getWeekNumber()} Summary - Your MNZD Journey`,
+        insights,
+        recommendations,
+        nextWeekGoals: goals
+      };
+    } catch (error) {
+      console.error('AI weekly summary error:', error);
+      return this.getFallbackWeeklyContent(context, weeklyData);
+    }
+  }
+
+  async generateComebackMessage(context: UserContext, daysSinceLastActivity: number): Promise<{
+    subject: string;
+    message: string;
+    motivation: string;
+  }> {
+    if (!this.isEnabled || !this.provider) {
+      return this.getFallbackComebackContent(context, daysSinceLastActivity);
+    }
+
+    try {
+      const prompt = 'comeback encouragement';
+      const aiMessage = await this.provider.generateContent(prompt, {
+        ...context,
+        daysSinceJoin: daysSinceLastActivity
+      });
+      
+      return {
+        subject: `🌟 Welcome Back ${context.name} - Your Journey Awaits`,
+        message: aiMessage,
+        motivation: 'Every comeback story starts with a single step. Take it today!'
+      };
+    } catch (error) {
+      console.error('AI comeback message error:', error);
+      return this.getFallbackComebackContent(context, daysSinceLastActivity);
+    }
+  }
+
+  // Helper methods
+  private getMotivationalTitle(context: UserContext): string {
+    const titles = [
+      'Unstoppable Force',
+      'Chain Builder',
+      'Habit Master',
+      'Consistency King',
+      'MNZD Warrior',
+      'Progress Pioneer'
+    ];
+    return titles[context.currentStreak % titles.length];
+  }
+
+  // Get milestone title with medically-proven intervals
+  private getMilestoneTitle(days: number): string {
+    const milestones = [
+      { days: 366, title: 'LEGENDARY MASTER', emoji: '👑', reset: true },
+      { days: 300, title: 'TRANSFORMATION TITAN', emoji: '🌟' },
+      { days: 240, title: 'CONSISTENCY CHAMPION', emoji: '🏆' },
+      { days: 180, title: 'HABIT HERO', emoji: '⚡' },
+      { days: 120, title: 'DISCIPLINE MASTER', emoji: '💎' },
+      { days: 90, title: 'QUARTER WARRIOR', emoji: '⚔️' },
+      { days: 66, title: 'NEURAL ARCHITECT', emoji: '🧠' }, // Neural pathway formation
+      { days: 45, title: 'MOMENTUM MASTER', emoji: '🚀' }, // Habit automation
+      { days: 30, title: 'MONTHLY CHAMPION', emoji: '🎯' },
+      { days: 21, title: 'HABIT FORMER', emoji: '💪' }, // Classic 21-day rule
+      { days: 14, title: 'FORTNIGHT FIGHTER', emoji: '🔥' },
+      { days: 7, title: 'WEEK WARRIOR', emoji: '⭐' },
+      { days: 3, title: 'STARTER STRONG', emoji: '🌱' }
+    ];
+    
+    return milestones.find(m => m.days <= days)?.title || 'BEGINNER';
+  }
+
+  private getNextMilestone(currentDays: number): { days: number; title: string } {
+    const milestones = [3, 7, 14, 21, 30, 45, 66, 90, 120, 180, 240, 300, 366];
+    const nextDays = milestones.find(m => m > currentDays) || (currentDays < 366 ? 366 : currentDays + 30);
+    return {
+      days: nextDays,
+      title: this.getMilestoneTitle(nextDays)
+    };
+  }
+
+  private getWeekNumber(): number {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 1);
+    const diff = now.getTime() - start.getTime();
+    return Math.ceil(diff / (7 * 24 * 60 * 60 * 1000));
+  }
+
+  // Extract structured data from AI content
+  private extractInsights(content: string, context: UserContext): string[] {
+    return [
+      `Current streak: ${context.currentStreak} days`,
+      `Completion rate: ${Math.round(context.completionRate * 100)}%`,
+      `Strongest habit: ${context.strongestHabit}`,
+      `Focus area: ${context.weakestHabit}`
+    ];
+  }
+
+  private extractRecommendations(content: string, context: UserContext): string[] {
+    const habitTips = {
+      meditation: 'Try 5-minute morning mindfulness sessions',
+      nutrition: 'Prep healthy snacks for the week',
+      zone: 'Schedule workouts like important meetings',
+      discipline: 'Use the Pomodoro Technique for focus'
+    };
+
+    return [
+      habitTips[context.weakestHabit.toLowerCase() as keyof typeof habitTips] || 'Focus on consistency over perfection',
+      'Track your progress daily for better awareness'
+    ];
+  }
+
+  private extractGoals(content: string, context: UserContext): string[] {
+    const targetRate = Math.min(context.completionRate * 100 + 15, 100);
+    return [
+      `Achieve ${Math.round(targetRate)}% completion rate`,
+      `Improve ${context.weakestHabit} consistency`,
+      `Extend streak to ${context.currentStreak + 7} days`
+    ];
+  }
+
+  // Fallback content methods
+  private getFallbackMorningContent(context: UserContext) {
+    return {
+      subject: `🌅 Day ${context.currentStreak + 1} - Rise and Shine!`,
+      message: `Good morning ${context.name}! You're ${context.currentStreak} days strong. Today, let's focus on your ${context.weakestHabit} practice and keep building that amazing streak! Your consistency is the foundation of transformation.`,
+      focusArea: context.weakestHabit
+    };
+  }
+
+  private getFallbackEveningContent(context: UserContext) {
+    return {
+      subject: `🌙 Day ${context.currentStreak} Complete - Well Done!`,
+      message: `Great work today ${context.name}! You've maintained a ${Math.round(context.completionRate * 100)}% completion rate. Your dedication to MNZD is building something extraordinary. Reflect on today's wins and prepare for tomorrow's success!`,
+      reflection: 'Every day of consistency brings you closer to your goals.'
+    };
+  }
+
+  private getFallbackMilestoneContent(context: UserContext) {
+    const milestoneTitle = this.getMilestoneTitle(context.currentStreak);
+    const nextMilestone = this.getNextMilestone(context.currentStreak);
+    
+    return {
+      subject: `🎉 ${context.currentStreak} Days - ${milestoneTitle} Achieved!`,
+      message: `Incredible achievement ${context.name}! ${context.currentStreak} days of consistency shows your dedication to the MNZD methodology. You're not just building habits, you're building character. Keep this momentum going!`,
+      achievement: `${milestoneTitle} - ${context.currentStreak} Days`,
+      nextGoal: `Next milestone: ${nextMilestone.title} at ${nextMilestone.days} days`
+    };
+  }
+
+  private getFallbackWeeklyContent(context: UserContext, weeklyData: any) {
+    return {
+      subject: `📊 Week ${this.getWeekNumber()} Summary - Your MNZD Journey`,
+      insights: [
+        `Current streak: ${context.currentStreak} days`,
+        `Weekly completion: ${Math.round(context.completionRate * 100)}%`,
+        `Strongest habit: ${context.strongestHabit}`,
+        `Growth area: ${context.weakestHabit}`
+      ],
+      recommendations: [
+        `Focus on improving ${context.weakestHabit} consistency`,
+        'Maintain your strong performance in ' + context.strongestHabit,
+        'Track daily progress for better awareness'
+      ],
+      nextWeekGoals: [
+        `Achieve ${Math.min(Math.round(context.completionRate * 100) + 15, 100)}% completion rate`,
+        `Extend streak to ${context.currentStreak + 7} days`,
+        `Master ${context.weakestHabit} practice`
+      ]
+    };
+  }
+
+  private getFallbackComebackContent(context: UserContext, daysSinceLastActivity: number) {
+    return {
+      subject: `🌟 Welcome Back ${context.name} - Your Journey Awaits`,
+      message: `It's been ${daysSinceLastActivity} days since your last visit, but your ${context.longestStreak}-day streak shows what you're capable of! Every expert was once a beginner, and every comeback story starts with a single step. Today is perfect for a fresh start with MNZD!`,
+      motivation: 'Your potential is unlimited. Your comeback story starts now!'
+    };
+  }
+}
+
+// Export singleton instance
+export const aiContentService = new AIContentService();

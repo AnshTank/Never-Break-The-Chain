@@ -5,6 +5,9 @@ import { generateTokens } from '@/lib/jwt'
 import { checkAdvancedRateLimit } from '@/lib/advanced-rate-limit'
 import { validateRequest, loginSchema } from '@/lib/validation'
 import { cache, CacheKeys, CacheTTL } from '@/lib/cache'
+import { getDeviceId } from '@/lib/device-id'
+import { DeviceSessionManager } from '@/lib/device-session-manager'
+import { ObjectId } from 'mongodb'
 
 export const runtime = 'nodejs'
 
@@ -20,6 +23,30 @@ function getClientIP(request: NextRequest): string {
     return realIP;
   }
   return 'unknown';
+}
+
+// Device detection helpers
+function getDeviceType(userAgent: string): string {
+  if (/tablet|ipad|playbook|silk/i.test(userAgent)) return 'tablet';
+  if (/mobile|iphone|ipod|android|blackberry|opera|mini|windows\sce|palm|smartphone|iemobile/i.test(userAgent)) return 'mobile';
+  return 'desktop';
+}
+
+function getBrowserName(userAgent: string): string {
+  if (userAgent.includes('Chrome')) return 'Chrome';
+  if (userAgent.includes('Firefox')) return 'Firefox';
+  if (userAgent.includes('Safari')) return 'Safari';
+  if (userAgent.includes('Edge')) return 'Edge';
+  return 'Unknown';
+}
+
+function getOSName(userAgent: string): string {
+  if (userAgent.includes('Windows')) return 'Windows';
+  if (userAgent.includes('Mac')) return 'macOS';
+  if (userAgent.includes('Linux')) return 'Linux';
+  if (userAgent.includes('Android')) return 'Android';
+  if (userAgent.includes('iOS')) return 'iOS';
+  return 'Unknown';
 }
 
 // Input validation and sanitization
@@ -148,11 +175,28 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Check device limits before allowing login
+    const deviceId = request.headers.get('x-device-id') || 'unknown';
+    const userId = new ObjectId(user._id);
+    
     // Generate secure JWT tokens with Remember Me consideration
     const { accessToken, refreshToken, accessTokenMaxAge, refreshTokenMaxAge } = generateTokens({
       userId: user._id.toString(),
       email: user.email
     }, rememberMe)
+
+    // Register device after successful authentication
+    const userAgent = request.headers.get('user-agent') || '';
+    const deviceInfo = {
+      deviceId,
+      deviceName: `${getBrowserName(userAgent)} on ${getOSName(userAgent)}`,
+      deviceType: getDeviceType(userAgent) as 'mobile' | 'tablet' | 'desktop',
+      browser: getBrowserName(userAgent),
+      os: getOSName(userAgent),
+      rememberMe: rememberMe || false
+    };
+    
+    await DeviceSessionManager.registerDevice(user._id.toString(), deviceInfo, true);
 
     // Create secure response with HTTP-only cookies
     const response = NextResponse.json({ 

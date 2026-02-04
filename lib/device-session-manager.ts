@@ -32,19 +32,23 @@ export class DeviceSessionManager {
       now.getTime() + (deviceInfo.rememberMe ? this.REMEMBER_ME_DURATION : this.DEFAULT_DURATION)
     );
 
-    // Check if device already exists
+    // Check if exact device already exists by deviceId
     const existingDevice = await db.collection('devices').findOne({
       userId: userObjectId,
-      deviceId: deviceInfo.deviceId
+      deviceId: deviceInfo.deviceId,
+      isActive: true
     });
 
     if (existingDevice) {
-      // Update existing device
+      // Update existing device with latest info
       await db.collection('devices').updateOne(
-        { userId: userObjectId, deviceId: deviceInfo.deviceId },
+        { _id: existingDevice._id },
         {
           $set: {
-            ...deviceInfo,
+            deviceName: deviceInfo.deviceName,
+            browser: deviceInfo.browser,
+            os: deviceInfo.os,
+            deviceType: deviceInfo.deviceType,
             lastActive: now,
             expiresAt,
             isActive: true
@@ -54,32 +58,29 @@ export class DeviceSessionManager {
       return { success: true };
     }
 
-    // Check active devices count
-    const activeDevices = await db.collection('devices')
-      .find({ userId: userObjectId, isActive: true, expiresAt: { $gt: now } })
-      .toArray();
+    // Check for similar device (same browser+OS combo) to prevent duplicates
+    const similarDevice = await db.collection('devices').findOne({
+      userId: userObjectId,
+      browser: deviceInfo.browser,
+      os: deviceInfo.os,
+      deviceName: deviceInfo.deviceName,
+      isActive: true
+    });
 
-    if (activeDevices.length >= this.MAX_DEVICES && !forceRegister) {
-      return {
-        success: false,
-        requiresSelection: true,
-        existingDevices: activeDevices.map(d => ({
-          deviceId: d.deviceId,
-          deviceName: d.deviceName,
-          deviceType: d.deviceType,
-          browser: d.browser,
-          lastActive: d.lastActive
-        }))
-      };
-    }
-
-    // If force register and at limit, remove oldest device
-    if (forceRegister && activeDevices.length >= this.MAX_DEVICES) {
-      const oldestDevice = activeDevices.sort((a, b) => 
-        new Date(a.lastActive).getTime() - new Date(b.lastActive).getTime()
-      )[0];
-      
-      await this.removeDevice(userId, oldestDevice.deviceId);
+    if (similarDevice) {
+      // Update the similar device with new deviceId
+      await db.collection('devices').updateOne(
+        { _id: similarDevice._id },
+        {
+          $set: {
+            deviceId: deviceInfo.deviceId,
+            lastActive: now,
+            expiresAt,
+            isActive: true
+          }
+        }
+      );
+      return { success: true };
     }
 
     // Register new device

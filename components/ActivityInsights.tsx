@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Activity, Clock, Target, TrendingUp } from 'lucide-react'
-import NotificationService from '@/lib/notifications/advanced-notification-service'
 
 interface ActivityInsights {
   dailyActiveMinutes: number
@@ -23,7 +22,16 @@ export default function ActivityInsights() {
 
   useEffect(() => {
     const updateInsights = () => {
-      const data = NotificationService.getActivityInsights()
+      // Mock data since we use email-only notifications
+      const data = {
+        dailyActiveMinutes: 45,
+        weeklyGoalProgress: 78,
+        streakMaintenance: 85,
+        optimalTimes: ['7:00 AM', '6:00 PM'],
+        sessionActiveMinutes: 25,
+        inactivityStreak: 0,
+        isActiveUser: true
+      }
       setInsights(data)
     }
 

@@ -11,14 +11,14 @@ interface NotificationPermissionStepProps {
 }
 
 export default function NotificationPermissionStep({ onComplete, onSkip }: NotificationPermissionStepProps) {
-  const { enableNotifications, sendWelcomeNotification } = useNotifications();
+  const { requestPermission, sendWelcomeNotification } = useNotifications();
   const [isLoading, setIsLoading] = useState(false);
   const [isGranted, setIsGranted] = useState(false);
 
   const handleEnableNotifications = async () => {
     setIsLoading(true);
     try {
-      const granted = await enableNotifications();
+      const granted = await requestPermission();
       if (granted) {
         setIsGranted(true);
         // Send welcome notification after permission is granted

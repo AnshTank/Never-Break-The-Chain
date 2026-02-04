@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const { email, type } = validation.data;
 
     // Check if user exists for reset, or doesn't exist for verification
-    const existingUser = await UserService.findUserByEmail(email);
+    const existingUser = await UserService.findByEmail(email);
     
     if (type === 'reset' && !existingUser) {
       return NextResponse.json(
@@ -73,11 +73,13 @@ export async function POST(request: NextRequest) {
 
     // Store OTP in database
     if (existingUser) {
-      await UserService.setOTP(email, otp);
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+      await UserService.updateOTP(email, otp, expiresAt);
     } else {
       // For new users, create temporary user record
       await UserService.createUser(email, 'temp-password');
-      await UserService.setOTP(email, otp);
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+      await UserService.updateOTP(email, otp, expiresAt);
     }
 
     return NextResponse.json({

@@ -18,6 +18,7 @@ interface Device {
   hasNotifications: boolean;
   rememberMe: boolean;
   rememberMeExpiry?: string;
+  browserInfo?: string;
 }
 
 export default function DeviceManagerComponent() {
@@ -55,6 +56,7 @@ export default function DeviceManagerComponent() {
     setRemoving(device.deviceId);
     try {
       const currentDeviceId = getDeviceId();
+      const isCurrentDevice = device.deviceId === currentDeviceId;
       
       const response = await fetch('/api/devices/register', {
         method: 'DELETE',
@@ -70,7 +72,8 @@ export default function DeviceManagerComponent() {
       if (response.ok) {
         const data = await response.json();
         
-        if (data.shouldLogout) {
+        if (isCurrentDevice || data.shouldLogout) {
+          // Clear localStorage and redirect to login
           try {
             localStorage.clear();
           } catch {
@@ -80,7 +83,11 @@ export default function DeviceManagerComponent() {
           return;
         }
         
+        // Remove from local state if not current device
         setDevices(devices.filter(d => d.deviceId !== device.deviceId));
+      } else {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to remove device' }));
+        console.error('Device removal failed:', errorData);
       }
     } catch (error) {
       console.error('Failed to remove device:', error);
@@ -148,10 +155,6 @@ export default function DeviceManagerComponent() {
     return device.deviceId === currentDeviceId;
   };
 
-  const getBrowserList = (browserSessions?: any[]) => {
-    return null; // Simplified - no browser sessions
-  };
-
   if (loading) {
     return (
       <div className="space-y-2">
@@ -167,15 +170,20 @@ export default function DeviceManagerComponent() {
         <h3 className="text-sm font-medium text-gray-900 dark:text-white">
           Registered Devices ({devices.length}/2)
         </h3>
-        <span className="text-xs text-gray-500 dark:text-gray-400">
-          Notifications enabled on all devices
-        </span>
+        {devices.some(d => d.hasNotifications) ? (
+          <span className="text-xs text-green-600 dark:text-green-400">
+            Notifications enabled on {devices.filter(d => d.hasNotifications).length} device{devices.filter(d => d.hasNotifications).length !== 1 ? 's' : ''}
+          </span>
+        ) : (
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            No notifications enabled
+          </span>
+        )}
       </div>
 
       <div className="space-y-2">
         {devices.map((device) => {
           const isThisDevice = isCurrentDevice(device);
-          const browserList = getBrowserList();
           
           return (
             <div
@@ -207,10 +215,10 @@ export default function DeviceManagerComponent() {
                       {formatLastActive(device.lastActive)}
                     </div>
                     
-                    {browserList && (
+                    {device.browserInfo && (
                       <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                         <Globe className="w-3 h-3" />
-                        <span>{browserList}</span>
+                        <span>{device.browserInfo}</span>
                       </div>
                     )}
                     
@@ -218,12 +226,12 @@ export default function DeviceManagerComponent() {
                       {device.hasNotifications ? (
                         <>
                           <Wifi className="w-3 h-3 text-green-500" />
-                          <span className="text-green-600 dark:text-green-400">Notifications</span>
+                          <span className="text-green-600 dark:text-green-400">Push notifications</span>
                         </>
                       ) : (
                         <>
                           <WifiOff className="w-3 h-3 text-gray-400" />
-                          <span className="text-gray-500">No notifications</span>
+                          <span className="text-gray-500">No push notifications</span>
                         </>
                       )}
                     </div>
@@ -313,7 +321,7 @@ export default function DeviceManagerComponent() {
       )}
 
       <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 p-2 rounded">
-        💡 You can have up to 2 devices. Multiple browsers on the same device are grouped together. Notifications are sent to all registered devices.
+        💡 You can have up to 2 devices. Each browser/app creates a separate device entry. Notifications are sent to all registered devices with notifications enabled.
       </div>
     </div>
   );

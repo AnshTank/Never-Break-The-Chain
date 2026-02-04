@@ -33,6 +33,7 @@ const publicPaths = [
   "/api/auth/send-otp",
   "/api/auth/complete-signup",
   "/api/auth/reset-password",
+  "/api/devices/remove-for-login",
   "/api/contact",
   "/api/feedback",
   "/api/about-contact",
@@ -308,8 +309,8 @@ export async function middleware(request: NextRequest) {
           );
         }
         
-        // For dashboard and other protected pages, redirect to login with device selection
-        const response = NextResponse.redirect(new URL("/login?error=device_removed&show_devices=true", request.url));
+        // For dashboard and other protected pages, redirect to login
+        const response = NextResponse.redirect(new URL("/login?error=device_removed", request.url));
         response.cookies.set("auth-token", "", { maxAge: 0, path: "/" });
         response.cookies.set("refresh-token", "", { maxAge: 0, path: "/" });
         response.cookies.set("device-id", "", { maxAge: 0, path: "/" });

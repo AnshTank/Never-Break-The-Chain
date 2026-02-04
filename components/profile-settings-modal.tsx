@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { X, User, Mail, Check } from "lucide-react"
-import DeviceManager from "./device-manager"
 
 interface ProfileSettingsModalProps {
   isOpen: boolean
@@ -115,11 +114,6 @@ export default function ProfileSettingsModal({ isOpen, onClose }: ProfileSetting
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   Email cannot be changed
                 </p>
-              </div>
-
-              {/* Device Management Section */}
-              <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
-                <DeviceManager />
               </div>
             </>
           )}

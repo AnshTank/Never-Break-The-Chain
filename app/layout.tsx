@@ -9,8 +9,8 @@ import "./globals.css";
 import { Caveat, Merriweather, Space_Mono } from "next/font/google";
 
 // Initialize enterprise features
-if (typeof window === 'undefined') {
-  import('@/lib/enterprise-init');
+if (typeof window === "undefined") {
+  import("@/lib/enterprise-init");
 }
 
 const caveat = Caveat({
@@ -35,7 +35,8 @@ const spaceMono = Space_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Habit Tracker - Never Break The Chain by Ansh Tank | Best Free Habit Tracking App",
+    default:
+      "Habit Tracker - Never Break The Chain by Ansh Tank | Best Free Habit Tracking App",
     template: "%s | Habit Tracker by Ansh Tank - Never Break The Chain",
   },
   description:
@@ -51,8 +52,8 @@ export const metadata: Metadata = {
     "habit tracker online",
     "habit tracker web app",
     "habit tracker free",
-    "habit tracker 2025",
-    
+    "habit tracker 2026",
+
     // Ansh Tank Keywords
     "Ansh Tank",
     "Ansh Tank habit tracker",
@@ -69,7 +70,7 @@ export const metadata: Metadata = {
     "Ansh Tank software engineer",
     "Ansh Tank applications",
     "Ansh Tank coding projects",
-    
+
     // University & Location
     "Parul University",
     "Parul University student",
@@ -77,7 +78,7 @@ export const metadata: Metadata = {
     "Parul University developer",
     "Gujarat developer",
     "India developer",
-    
+
     // App-specific Keywords
     "Never Break The Chain",
     "MNZD methodology",
@@ -94,7 +95,7 @@ export const metadata: Metadata = {
     "routine tracker",
     "goal tracker",
     "progress tracker",
-    
+
     // Methodology Keywords
     "meditation tracker",
     "nutrition tracker",
@@ -105,7 +106,7 @@ export const metadata: Metadata = {
     "wellness tracker",
     "health tracker",
     "lifestyle tracker",
-    
+
     // Technical Keywords
     "Next.js app",
     "TypeScript application",
@@ -115,7 +116,7 @@ export const metadata: Metadata = {
     "progressive web app",
     "PWA habit tracker",
     "responsive web app",
-    
+
     // Behavioral & Psychology
     "behavioral change",
     "habit psychology",
@@ -128,7 +129,7 @@ export const metadata: Metadata = {
     "success habits",
     "positive habits",
     "habit formation science",
-    
+
     // Productivity Keywords
     "productivity app",
     "productivity system",
@@ -142,7 +143,7 @@ export const metadata: Metadata = {
     "daily routine",
     "morning routine",
     "evening routine",
-    
+
     // Competitive Keywords
     "habitica alternative",
     "streaks app alternative",
@@ -152,7 +153,7 @@ export const metadata: Metadata = {
     "loop habit tracker alternative",
     "strides alternative",
     "coach.me alternative",
-    
+
     // Long-tail Keywords
     "how to track habits",
     "best way to build habits",
@@ -182,8 +183,7 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   openGraph: {
-    title:
-      "Best Free Habit Tracker App - Never Break The Chain by Ansh Tank",
+    title: "Best Free Habit Tracker App - Never Break The Chain by Ansh Tank",
     description:
       "Professional habit tracker app by Ansh Tank from Parul University. Track daily habits, build streaks, and transform your life with MNZD methodology. Free online habit tracking application built with Next.js, TypeScript, and MongoDB.",
     url: "https://never-break-the-chain.vercel.app",
@@ -201,8 +201,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title:
-      "Best Free Habit Tracker App - Never Break The Chain by Ansh Tank",
+    title: "Best Free Habit Tracker App - Never Break The Chain by Ansh Tank",
     description:
       "Professional habit tracker app by Ansh Tank from Parul University. Track daily habits, build streaks with MNZD methodology. Built with Next.js & TypeScript.",
     images: ["/og-image.png"],
@@ -230,7 +229,8 @@ export const metadata: Metadata = {
     google: "Aqx9NXcmzkZC__Sk0ldLYzihHFtIKKjokQtp7GWwHes",
   },
   category: "productivity",
-  classification: "Best Free Habit Tracker App by Ansh Tank from Parul University",
+  classification:
+    "Best Free Habit Tracker App by Ansh Tank from Parul University",
 };
 
 export default function RootLayout({
@@ -276,7 +276,10 @@ export default function RootLayout({
         <meta name="MobileOptimized" content="320" />
         <meta name="format-detection" content="telephone=no" />
       </head>
-      <body className={`${caveat.variable} ${merriweather.variable} ${spaceMono.variable} font-sans antialiased m-0 p-0`} suppressHydrationWarning>
+      <body
+        className={`${caveat.variable} ${merriweather.variable} ${spaceMono.variable} font-sans antialiased m-0 p-0`}
+        suppressHydrationWarning
+      >
         <AuthProvider>
           <div className="min-h-screen">
             <main className="w-full">{children}</main>
@@ -300,8 +303,8 @@ export default function RootLayout({
               operatingSystem: "Web",
               browserRequirements: "Requires JavaScript. Requires HTML5.",
               softwareVersion: "1.0.0",
-              datePublished: "2025-01-27",
-              dateModified: "2025-01-27",
+              datePublished: "2026-01-27",
+              dateModified: "2026-01-27",
               offers: {
                 "@type": "Offer",
                 price: "0",
@@ -321,8 +324,8 @@ export default function RootLayout({
                   "Full Stack Developer from Parul University specializing in Next.js, TypeScript, and MongoDB. Creator of Never Break The Chain habit tracking application and multiple web development projects.",
                 affiliation: {
                   "@type": "EducationalOrganization",
-                  name: "Parul University"
-                }
+                  name: "Parul University",
+                },
               },
               creator: {
                 "@type": "Person",
@@ -341,13 +344,13 @@ export default function RootLayout({
                   "A comprehensive approach to personal development focusing on four key pillars: Meditation (mindfulness), Nutrition (learning), Zone (exercise), and Discipline (focused work).",
               },
               keywords:
-                "habit tracker, Ansh Tank, Ansh Tank Parul University, Ansh Tank project, Ansh Tank github, best habit tracker, free habit tracker, daily habit tracker, habit tracking app, MNZD methodology, Parul University, Parul University student, Parul University project, meditation tracker, nutrition tracker, exercise tracker, discipline habits, productivity app, Next.js, TypeScript, MongoDB, consistency tracker, streak tracker, Jerry Seinfeld method, don't break the chain, habit formation, behavioral change, personal development, routine builder, atomic habits, habit stacking, mindfulness app, fitness tracker, wellness tracker, success habits, life transformation, habit tracker online, habit tracker web app, habit tracker 2025, Ansh Tank developer, Ansh Tank portfolio, Ansh Tank full stack developer, Gujarat developer, India developer",
+                "habit tracker, Ansh Tank, Ansh Tank Parul University, Ansh Tank project, Ansh Tank github, best habit tracker, free habit tracker, daily habit tracker, habit tracking app, MNZD methodology, Parul University, Parul University student, Parul University project, meditation tracker, nutrition tracker, exercise tracker, discipline habits, productivity app, Next.js, TypeScript, MongoDB, consistency tracker, streak tracker, Jerry Seinfeld method, don't break the chain, habit formation, behavioral change, personal development, routine builder, atomic habits, habit stacking, mindfulness app, fitness tracker, wellness tracker, success habits, life transformation, habit tracker online, habit tracker web app, habit tracker 2026, Ansh Tank developer, Ansh Tank portfolio, Ansh Tank full stack developer, Gujarat developer, India developer",
               inLanguage: "en-US",
               copyrightHolder: {
                 "@type": "Person",
                 name: "Ansh Tank",
               },
-              copyrightYear: "2025",
+              copyrightYear: "2026",
               license: "https://never-break-the-chain.vercel.app/license",
             }),
           }}

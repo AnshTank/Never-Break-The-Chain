@@ -29,9 +29,9 @@ export async function POST(request: NextRequest) {
     // Verify OTP
     const result = await UserService.verifyOTP(email, otp);
     
-    if (!result.success) {
+    if (!result) {
       return NextResponse.json(
-        { error: result.message },
+        { error: 'Invalid or expired verification code' },
         { status: 400 }
       );
     }
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     await UserService.updateUser(email, { emailVerified: true });
 
     return NextResponse.json({
-      message: result.message,
+      message: 'Email verified successfully',
       verified: true
     });
 
