@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     // Get all data for streak calculation
     const allData = await DatabaseService.getProgressRange(
-      user.email, 
+      user.userId, 
       '2020-01-01', 
       '2030-12-31'
     )
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     const endOfMonth = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
     
     const monthlyData = await DatabaseService.getProgressRange(
-      user.email, 
+      user.userId, 
       startOfMonth, 
       endOfMonth
     )
@@ -56,9 +56,10 @@ export async function GET(request: NextRequest) {
     let currentStreak = 0
     let longestStreak = 0
     
-    // Calculate current streak
+    // Calculate current streak (excluding today)
     const today = new Date().toISOString().split('T')[0]
     let checkDate = new Date(today)
+    checkDate.setDate(checkDate.getDate() - 1) // Start from yesterday
     
     while (true) {
       const dayStr = checkDate.toISOString().split('T')[0]
@@ -90,10 +91,10 @@ export async function GET(request: NextRequest) {
     }
     
     return NextResponse.json({
-      currentStreak,
-      longestStreak,
-      totalDays,
-      totalHours: Math.round(totalHours * 10) / 10
+      currentStreak: currentStreak || 0,
+      longestStreak: longestStreak || 0,
+      totalDays: totalDays || 0,
+      totalHours: totalHours ? Math.round(totalHours * 10) / 10 : 0
     })
     
   } catch (error) {

@@ -177,8 +177,9 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
   }
 
   const refetchAnalytics = useCallback(async (month?: Date) => {
-    // Always allow fresh analytics fetch
+    // Clear cache and force fresh fetch
     fetchedRef.current.analytics = null
+    setState(prev => ({ ...prev, analytics: null, analyticsLoading: true }))
     await fetchAnalytics(month)
   }, [])
 

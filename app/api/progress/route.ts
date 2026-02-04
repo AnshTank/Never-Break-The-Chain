@@ -25,10 +25,10 @@ export async function GET(request: NextRequest) {
     const { date, startDate, endDate } = queryValidation.data;
 
     if (date) {
-      const progress = await DatabaseService.getDailyProgress(email, date)
+      const progress = await DatabaseService.getDailyProgress(userId, date)
       return NextResponse.json(progress)
     } else if (startDate && endDate) {
-      const progress = await DatabaseService.getProgressRange(email, startDate, endDate)
+      const progress = await DatabaseService.getProgressRange(userId, startDate, endDate)
       return NextResponse.json(progress)
     }
     
@@ -57,7 +57,7 @@ export async function PUT(request: NextRequest) {
     
     const { date, updates } = validation.data;
     
-    await DatabaseService.updateDailyProgress(email, date, updates)
+    await DatabaseService.updateDailyProgress(userId, date, updates)
     
     return NextResponse.json({ success: true })
     
