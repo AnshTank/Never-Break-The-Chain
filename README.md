@@ -123,6 +123,8 @@ For reliable notifications, set up external cron jobs at [cron-job.org](https://
 URL: `https://your-domain.vercel.app/api/cron/notifications`
 Headers: `Authorization: Bearer your-cron-secret`
 
+**Alternative (No external cron service):** Use GitHub Actions scheduled workflow at `.github/workflows/cron-notifications.yml` and set repo secrets `CRON_ENDPOINT` and `CRON_SECRET`.
+
 ## Deployment
 
 ### Vercel (Recommended)

@@ -16,19 +16,41 @@ interface UserContext {
   timeOfDay: 'morning' | 'afternoon' | 'evening' | 'night';
   lastActivity: Date;
   milestoneReached?: number;
+  mnzdHabits?: Array<{
+    id: string;
+    name: string;
+    description: string;
+    completed: number;
+    total: number;
+    rate: number;
+  }>;
+  todayCompleted?: number;
+  totalHabits?: number;
 }
 
 // Google Gemini AI Provider
 class GeminiAIProvider implements AIProvider {
   private apiKey: string;
-  private baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+  private model: string;
+  private loggedStatusCodes = new Set<number>();
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, model?: string) {
     this.apiKey = apiKey;
+    this.model = (model || process.env.GEMINI_MODEL || 'gemini-1.5-flash').trim();
+  }
+
+  private get baseUrl(): string {
+    return `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent`;
   }
 
   async generateContent(prompt: string, context: UserContext): Promise<string> {
+    console.log(`🤖 DEBUG: Gemini AI request for prompt: ${prompt}`);
+    console.log(`🤖 DEBUG: Context data:`, JSON.stringify(context, null, 2));
+    
     try {
+      const fullPrompt = this.buildPrompt(prompt, context);
+      console.log(`🤖 DEBUG: Full prompt sent to Gemini:`, fullPrompt);
+      
       const response = await fetch(`${this.baseUrl}?key=${this.apiKey}`, {
         method: 'POST',
         headers: {
@@ -37,7 +59,7 @@ class GeminiAIProvider implements AIProvider {
         body: JSON.stringify({
           contents: [{
             parts: [{
-              text: this.buildPrompt(prompt, context)
+              text: fullPrompt
             }]
           }],
           generationConfig: {
@@ -50,39 +72,79 @@ class GeminiAIProvider implements AIProvider {
       });
 
       if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.status}`);
+        const responseBody = await response.text().catch(() => '');
+        console.log(`🤖 DEBUG: Gemini API error ${response.status}:`, responseBody);
+
+        if (!this.loggedStatusCodes.has(response.status)) {
+          this.loggedStatusCodes.add(response.status);
+          const hint =
+            response.status === 404
+              ? 'Model not found/available for this API key (try setting GEMINI_MODEL).'
+              : 'Gemini request failed.';
+          console.warn(`Gemini AI unavailable (${response.status}) using model "${this.model}". ${hint}`);
+          if (process.env.NODE_ENV !== 'production' && responseBody) {
+            console.warn(`Gemini error body (truncated): ${responseBody.slice(0, 400)}`);
+          }
+        }
+
+        const fallback = this.getFallbackContent(prompt, context);
+        console.log(`🤖 DEBUG: Using fallback content:`, fallback);
+        return fallback;
       }
 
       const data = await response.json();
-      return data.candidates?.[0]?.content?.parts?.[0]?.text || this.getFallbackContent(prompt, context);
+      console.log(`🤖 DEBUG: Gemini API response:`, JSON.stringify(data, null, 2));
+      
+      const aiContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (aiContent) {
+        console.log(`🤖 DEBUG: AI generated content:`, aiContent);
+        return aiContent;
+      } else {
+        console.log(`🤖 DEBUG: No AI content in response, using fallback`);
+        const fallback = this.getFallbackContent(prompt, context);
+        console.log(`🤖 DEBUG: Fallback content:`, fallback);
+        return fallback;
+      }
     } catch (error) {
-      console.error('Gemini AI error:', error);
-      return this.getFallbackContent(prompt, context);
+      console.log(`🤖 DEBUG: Gemini AI request exception:`, error);
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('Gemini AI request failed; using fallback content.');
+      }
+      const fallback = this.getFallbackContent(prompt, context);
+      console.log(`🤖 DEBUG: Exception fallback content:`, fallback);
+      return fallback;
     }
   }
 
   private buildPrompt(basePrompt: string, context: UserContext): string {
+    const mnzdDetails = context.mnzdHabits?.map(habit => 
+      `${habit.name}: ${Math.round(habit.rate * 100)}% completion (${habit.completed}/${habit.total} days)`
+    ).join(', ') || 'No habit data available';
+
     return `${basePrompt}
 
 User Context:
 - Name: ${context.name}
 - Current Streak: ${context.currentStreak} days
 - Longest Streak: ${context.longestStreak} days
-- Completion Rate: ${Math.round(context.completionRate * 100)}%
+- Overall Completion Rate: ${Math.round(context.completionRate * 100)}%
 - Strongest Habit: ${context.strongestHabit}
 - Weakest Habit: ${context.weakestHabit}
 - Days Since Join: ${context.daysSinceJoin}
 - Time of Day: ${context.timeOfDay}
 - Last Activity: ${context.lastActivity.toDateString()}
+- Today's Progress: ${context.todayCompleted || 0}/${context.totalHabits || 4} habits completed
+- MNZD Habit Details: ${mnzdDetails}
 ${context.milestoneReached ? `- Milestone Reached: ${context.milestoneReached} days` : ''}
 
 Requirements:
 - Keep response under 150 words
 - Be encouraging and personal
-- Reference specific user data
-- Use MNZD methodology (Meditation, Nutrition, Zone, Discipline)
+- Reference specific user data and habit names
+- Use the user's actual MNZD habit names (not generic ones)
 - Include relevant emojis
-- End with a call to action`;
+- End with a call to action
+- Make it feel personal and motivating`;
   }
 
   private getFallbackContent(prompt: string, context: UserContext): string {
@@ -171,7 +233,7 @@ export class AIContentService {
     const openaiKey = process.env.OPENAI_API_KEY;
 
     if (geminiKey) {
-      this.provider = new GeminiAIProvider(geminiKey);
+      this.provider = new GeminiAIProvider(geminiKey, process.env.GEMINI_MODEL);
       this.isEnabled = true;
       console.log('🤖 AI Content Service initialized with Gemini');
     } else if (openaiKey) {
@@ -189,22 +251,31 @@ export class AIContentService {
     message: string;
     focusArea: string;
   }> {
+    console.log(`🤖 DEBUG: generateMorningMotivation called with context:`, JSON.stringify(context, null, 2));
+    
     if (!this.isEnabled || !this.provider) {
+      console.log(`🤖 DEBUG: AI disabled, using fallback`);
       return this.getFallbackMorningContent(context);
     }
 
     try {
       const prompt = 'morning motivation';
+      console.log(`🤖 DEBUG: Calling AI provider with prompt: ${prompt}`);
       const aiMessage = await this.provider.generateContent(prompt, context);
+      console.log(`🤖 DEBUG: AI provider returned:`, aiMessage);
       
-      return {
+      const result = {
         subject: `🌅 Day ${context.currentStreak + 1} - ${this.getMotivationalTitle(context)}`,
         message: aiMessage,
         focusArea: context.weakestHabit
       };
+      console.log(`🤖 DEBUG: Final morning motivation result:`, result);
+      return result;
     } catch (error) {
-      console.error('AI morning motivation error:', error);
-      return this.getFallbackMorningContent(context);
+      console.error('🤖 DEBUG: AI morning motivation error:', error);
+      const fallback = this.getFallbackMorningContent(context);
+      console.log(`🤖 DEBUG: Using fallback due to error:`, fallback);
+      return fallback;
     }
   }
 
@@ -213,22 +284,31 @@ export class AIContentService {
     message: string;
     reflection: string;
   }> {
+    console.log(`🤖 DEBUG: generateEveningReflection called with context:`, JSON.stringify(context, null, 2));
+    
     if (!this.isEnabled || !this.provider) {
+      console.log(`🤖 DEBUG: AI disabled for evening, using fallback`);
       return this.getFallbackEveningContent(context);
     }
 
     try {
       const prompt = 'evening reflection';
+      console.log(`🤖 DEBUG: Calling AI provider for evening with prompt: ${prompt}`);
       const aiMessage = await this.provider.generateContent(prompt, context);
+      console.log(`🤖 DEBUG: AI provider returned for evening:`, aiMessage);
       
-      return {
+      const result = {
         subject: `🌙 Day ${context.currentStreak} Complete - Reflection Time`,
         message: aiMessage,
         reflection: 'Take a moment to appreciate your progress and plan for tomorrow.'
       };
+      console.log(`🤖 DEBUG: Final evening reflection result:`, result);
+      return result;
     } catch (error) {
-      console.error('AI evening reflection error:', error);
-      return this.getFallbackEveningContent(context);
+      console.error('🤖 DEBUG: AI evening reflection error:', error);
+      const fallback = this.getFallbackEveningContent(context);
+      console.log(`🤖 DEBUG: Using evening fallback due to error:`, fallback);
+      return fallback;
     }
   }
 

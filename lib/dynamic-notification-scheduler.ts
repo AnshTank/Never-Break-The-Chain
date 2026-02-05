@@ -42,34 +42,46 @@ interface UserProgress {
     emailNotifications: boolean;
   };
   habitStats: {
-    meditation: { completed: number; total: number };
-    nutrition: { completed: number; total: number };
-    zone: { completed: number; total: number };
-    discipline: { completed: number; total: number };
+    [key: string]: { completed: number; total: number; name: string };
   };
+  mnzdConfigs?: Array<{
+    id: string;
+    name: string;
+    description: string;
+    minMinutes: number;
+    color?: string;
+  }>;
 }
 
 // Dynamic content generation (will be enhanced with AI)
 export class DynamicContentGenerator {
   
   // Generate personalized morning motivation with AI
-  static async generateMorningMotivation(user: UserProgress): Promise<{
+  static async generateMorningMotivation(context: {
+    name: string;
+    currentStreak: number;
+    longestStreak: number;
+    completionRate: number;
+    weakestHabit: string;
+    strongestHabit: string;
+    daysSinceJoin: number;
+    timeOfDay: 'morning';
+    lastActivity: Date;
+    mnzdHabits?: Array<{
+      id: string;
+      name: string;
+      description: string;
+      completed: number;
+      total: number;
+      rate: number;
+    }>;
+    todayCompleted?: number;
+    totalHabits?: number;
+  }): Promise<{
     subject: string;
     message: string;
     focusArea: string;
   }> {
-    const context = {
-      name: user.name,
-      currentStreak: user.currentStreak,
-      longestStreak: user.longestStreak,
-      completionRate: user.weeklyCompletion,
-      weakestHabit: this.getWeakestHabit(user),
-      strongestHabit: this.getStrongestHabit(user),
-      daysSinceJoin: Math.floor((new Date().getTime() - user.joinDate.getTime()) / (1000 * 60 * 60 * 24)),
-      timeOfDay: 'morning' as const,
-      lastActivity: user.lastActivity
-    };
-
     return await aiContentService.generateMorningMotivation(context);
   }
 
@@ -205,14 +217,14 @@ export class DynamicContentGenerator {
   // Helper methods
   private static getWeakestHabit(user: UserProgress): string {
     const habits = user.habitStats;
-    let weakest = 'Meditation';
+    let weakest = user.mnzdConfigs?.[0]?.name || 'Meditation';
     let lowestRate = 1;
 
-    Object.entries(habits).forEach(([habit, stats]) => {
+    Object.entries(habits).forEach(([habitId, stats]) => {
       const rate = stats.total > 0 ? stats.completed / stats.total : 0;
       if (rate < lowestRate) {
         lowestRate = rate;
-        weakest = habit.charAt(0).toUpperCase() + habit.slice(1);
+        weakest = stats.name || habitId;
       }
     });
 
@@ -221,14 +233,14 @@ export class DynamicContentGenerator {
 
   private static getStrongestHabit(user: UserProgress): string {
     const habits = user.habitStats;
-    let strongest = 'Meditation';
+    let strongest = user.mnzdConfigs?.[0]?.name || 'Meditation';
     let highestRate = 0;
 
-    Object.entries(habits).forEach(([habit, stats]) => {
+    Object.entries(habits).forEach(([habitId, stats]) => {
       const rate = stats.total > 0 ? stats.completed / stats.total : 0;
       if (rate > highestRate) {
         highestRate = rate;
-        strongest = habit.charAt(0).toUpperCase() + habit.slice(1);
+        strongest = stats.name || habitId;
       }
     });
 
@@ -306,28 +318,56 @@ export class DynamicContentGenerator {
 export class EnhancedNotificationScheduler {
   
   // Main scheduling function called by cron
-  static async scheduleNotifications(): Promise<{
+  static async scheduleNotifications(options?: {
+    window?: 'auto' | 'morning' | 'evening' | 'weekly' | 'all';
+    now?: Date;
+    dryRun?: boolean;
+  }): Promise<{
     sent: number;
     failed: number;
     types: Record<string, number>;
+    skipped: number;
+    eligibleUsers: number;
+    window: 'auto' | 'morning' | 'evening' | 'weekly' | 'all';
+    nowIso: string;
   }> {
+    const window = options?.window ?? 'auto';
+    const now = options?.now ?? new Date();
+    const dryRun = options?.dryRun ?? false;
+
     const results = {
       sent: 0,
       failed: 0,
-      types: {} as Record<string, number>
+      types: {} as Record<string, number>,
+      skipped: 0,
+      eligibleUsers: 0,
+      window,
+      nowIso: now.toISOString()
     };
 
     try {
       const { db } = await connectToDatabase();
       const users = await this.getEligibleUsers(db);
+      results.eligibleUsers = users.length;
       
       console.log(`📧 Processing notifications for ${users.length} users`);
 
       for (const user of users) {
-        const notifications = await this.determineNotificationsForUser(user);
+        const notifications = await this.determineNotificationsForUser(user, { now, window });
         
         for (const notification of notifications) {
           try {
+            const shouldSkip = await this.wasNotificationSentRecently(db, user.userId, notification.type, now);
+            if (shouldSkip) {
+              results.skipped++;
+              continue;
+            }
+
+            if (dryRun) {
+              results.types[notification.type] = (results.types[notification.type] || 0) + 1;
+              continue;
+            }
+
             const success = await this.sendNotification(user, notification);
             if (success) {
               results.sent++;
@@ -337,10 +377,16 @@ export class EnhancedNotificationScheduler {
               await this.logNotification(db, user.userId, notification.type, true);
             } else {
               results.failed++;
+              await this.logNotification(db, user.userId, notification.type, false);
             }
           } catch (error) {
             console.error(`Failed to send ${notification.type} to ${user.email}:`, error);
             results.failed++;
+            try {
+              await this.logNotification(db, user.userId, notification.type, false);
+            } catch {
+              // ignore logging failure
+            }
           }
         }
       }
@@ -354,8 +400,353 @@ export class EnhancedNotificationScheduler {
     }
   }
 
+  // Generate AI-powered evening email HTML with user's custom MNZD names
+  private static generateAIEveningEmailHTML(user: UserProgress, content?: any): string {
+    const completionRate = user.totalHabits > 0 ? Math.round((user.completedToday / user.totalHabits) * 100) : 0;
+    
+    const mnzdHabits = user.mnzdConfigs || [
+      { id: 'meditation', name: 'Meditation', color: '#8b5cf6' },
+      { id: 'nutrition', name: 'Nutrition', color: '#06b6d4' },
+      { id: 'zone', name: 'Zone', color: '#f59e0b' },
+      { id: 'discipline', name: 'Discipline', color: '#10b981' }
+    ];
+    
+    // Use AI-generated message or fallback
+    const encouragementMessage = content?.message || (
+      completionRate >= 80 
+        ? "Outstanding work today! You're building incredible momentum!" 
+        : completionRate >= 50 
+        ? "Good progress! Every step counts toward your transformation!" 
+        : "Tomorrow is a fresh start! Small steps lead to big changes!"
+    );
+
+    const habitCards = mnzdHabits.map(habit => `
+      <div style="background: ${habit.color || '#8b5cf6'}15; border: 1px solid ${habit.color || '#8b5cf6'}40; border-radius: 6px; padding: 8px; text-align: center; margin: 2px;">
+        <div style="color: ${habit.color || '#8b5cf6'}; font-size: 13px; font-weight: 600;">${habit.name}</div>
+      </div>
+    `).join('');
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Evening Check-in</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; margin: 0; padding: 12px;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); padding: 16px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 18px; font-weight: 700;">Evening Check-in</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 4px 0 0; font-size: 12px;">Never Break The Chain</p>
+          </div>
+          
+          <!-- Content -->
+          <div style="padding: 16px;">
+            <h2 style="color: #1e293b; margin: 0 0 12px; font-size: 16px;">Hi ${user.name}!</h2>
+            
+            <!-- Progress Display -->
+            <div style="background: #f0f9ff; border: 1px solid #6366f1; border-radius: 8px; padding: 12px; margin: 12px 0; text-align: center;">
+              <div style="font-size: 24px; font-weight: 800; color: #4f46e5; margin-bottom: 2px;">
+                ${completionRate}%
+              </div>
+              <p style="color: #4338ca; margin: 0; font-size: 12px; font-weight: 600;">
+                Today's Progress
+              </p>
+              <p style="color: #6366f1; margin: 4px 0 0; font-size: 11px;">
+                ${user.completedToday} of ${user.totalHabits} habits completed
+              </p>
+            </div>
+            
+            <!-- Encouragement -->
+            <div style="background: ${completionRate >= 80 ? '#f0fdf4' : completionRate >= 50 ? '#fef3c7' : '#fef2f2'}; border-left: 3px solid ${completionRate >= 80 ? '#10b981' : completionRate >= 50 ? '#f59e0b' : '#ef4444'}; border-radius: 6px; padding: 12px; margin: 12px 0;">
+              <p style="color: ${completionRate >= 80 ? '#065f46' : completionRate >= 50 ? '#92400e' : '#991b1b'}; margin: 0; font-size: 14px; line-height: 1.4;">
+                ${encouragementMessage}
+              </p>
+            </div>
+            
+            <!-- Custom MNZD Habits -->
+            <div style="margin: 16px 0;">
+              <h3 style="color: #1e293b; margin: 0 0 8px; font-size: 14px; font-weight: 600; text-align: center;">
+                Your Focus Areas
+              </h3>
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px;">
+                ${habitCards}
+              </div>
+            </div>
+            
+            <!-- CTA -->
+            <div style="text-align: center; margin: 16px 0;">
+              <a href="https://never-break-the-chain.vercel.app/dashboard" 
+                 style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 13px;">
+                View Progress
+              </a>
+            </div>
+          </div>
+          
+          <!-- Footer -->
+          <div style="background: #f8fafc; padding: 12px; text-align: center; border-top: 1px solid #e2e8f0;">
+            <p style="color: #94a3b8; margin: 0; font-size: 10px;">
+              © 2026 Never Break The Chain by Ansh Tank
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  // Calculate proper weekly stats (Monday to Sunday)
+  private static calculateProperWeeklyStats(user: UserProgress) {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Days back to last Monday
+    
+    const lastMonday = new Date(today);
+    lastMonday.setDate(today.getDate() - daysToMonday);
+    
+    console.log(`📊 DEBUG: Week calculation - Today: ${today.toISOString().split('T')[0]}, Last Monday: ${lastMonday.toISOString().split('T')[0]}`);
+    console.log(`📊 DEBUG: User weekly completion rate: ${user.weeklyCompletion}`);
+    
+    // Get user's custom MNZD names using helper methods
+    const topHabit = this.getStrongestHabit(user);
+    const improvementArea = this.getWeakestHabit(user);
+    
+    console.log(`📊 DEBUG: Using custom habit names - Top: ${topHabit}, Improvement: ${improvementArea}`);
+    
+    // Calculate actual days completed this week
+    const actualDaysCompleted = Math.round(user.weeklyCompletion * 7);
+    console.log(`📊 DEBUG: Calculated days completed this week: ${actualDaysCompleted}`);
+    
+    return {
+      daysCompleted: actualDaysCompleted,
+      totalDays: 7,
+      topHabit,
+      improvementArea,
+      weekStart: lastMonday.toISOString().split('T')[0],
+      weekEnd: new Date(lastMonday.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    };
+  }
+
+  // Generate compact weekly summary HTML
+  private static generateCompactWeeklyHTML(user: UserProgress, weeklyStats: any): string {
+    const completionRate = Math.round((weeklyStats.daysCompleted / weeklyStats.totalDays) * 100);
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Weekly Summary</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; margin: 0; padding: 12px;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); padding: 16px; text-align: center;">
+            <div style="font-size: 32px; margin-bottom: 8px;">📊</div>
+            <h1 style="color: white; margin: 0; font-size: 18px; font-weight: 700;">Weekly Summary</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 4px 0 0; font-size: 12px;">Never Break The Chain</p>
+          </div>
+          
+          <!-- Content -->
+          <div style="padding: 16px;">
+            <h2 style="color: #1e293b; margin: 0 0 12px; font-size: 16px; text-align: center;">Hi ${user.name}! 📈</h2>
+            
+            <!-- Weekly Stats -->
+            <div style="background: #f0f9ff; border: 1px solid #6366f1; border-radius: 8px; padding: 16px; margin: 12px 0; text-align: center;">
+              <div style="font-size: 32px; font-weight: 800; color: #4f46e5; margin-bottom: 4px;">
+                ${completionRate}%
+              </div>
+              <p style="color: #4338ca; margin: 0; font-size: 12px; font-weight: 600;">
+                Weekly Completion Rate
+              </p>
+              <p style="color: #6366f1; margin: 4px 0 0; font-size: 11px;">
+                ${weeklyStats.daysCompleted} out of ${weeklyStats.totalDays} days completed
+              </p>
+            </div>
+            
+            <!-- Week Visualization - FIXED SPACING -->
+            <div style="margin: 16px 0;">
+              <h3 style="color: #1e293b; margin: 0 0 8px; font-size: 14px; font-weight: 600; text-align: center;">
+                ${weeklyStats.weekStart} to ${weeklyStats.weekEnd}
+              </h3>
+              <div style="display: flex; justify-content: space-between; gap: 4px; margin: 8px 0;">
+                ${Array.from({ length: 7 }, (_, i) => `
+                  <div style="flex: 1; height: 24px; border-radius: 4px; background-color: ${i < weeklyStats.daysCompleted ? '#10b981' : '#e5e7eb'}; display: flex; align-items: center; justify-content: center; color: ${i < weeklyStats.daysCompleted ? 'white' : '#6b7280'}; font-size: 11px; font-weight: 600;">
+                    ${i + 1}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+            
+            <!-- Insights with Custom MNZD Names -->
+            <div style="margin: 16px 0;">
+              <h3 style="color: #1e293b; margin: 0 0 8px; font-size: 14px; font-weight: 600; text-align: center;">
+                📈 Weekly Insights
+              </h3>
+              <div style="display: grid; grid-template-columns: 1fr; gap: 8px;">
+                <div style="background: #f0fdf4; border: 1px solid #10b981; border-radius: 6px; padding: 12px;">
+                  <h4 style="color: #065f46; margin: 0 0 4px; font-size: 13px; font-weight: 600;">
+                    🏆 Top Performing Habit
+                  </h4>
+                  <p style="color: #047857; margin: 0; font-size: 12px;">
+                    ${weeklyStats.topHabit} - Keep up the excellent work!
+                  </p>
+                </div>
+                <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 12px;">
+                  <h4 style="color: #92400e; margin: 0 0 4px; font-size: 13px; font-weight: 600;">
+                    🎯 Growth Opportunity
+                  </h4>
+                  <p style="color: #a16207; margin: 0; font-size: 12px;">
+                    ${weeklyStats.improvementArea} - Small improvements here will make a big difference!
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Next Week Goals -->
+            <div style="background: #f3e8ff; border: 1px solid #8b5cf6; border-radius: 8px; padding: 12px; margin: 12px 0;">
+              <h3 style="color: #6b21a8; margin: 0 0 8px; font-size: 14px; font-weight: 600; text-align: center;">
+                🎯 Next Week's Focus
+              </h3>
+              <ul style="color: #7c3aed; margin: 0; padding-left: 16px; font-size: 12px; line-height: 1.6;">
+                <li>Aim for ${Math.min(completionRate + 15, 100)}% completion rate</li>
+                <li>Focus extra attention on ${weeklyStats.improvementArea}</li>
+                <li>Maintain momentum in ${weeklyStats.topHabit}</li>
+                <li>Add one small improvement to your routine</li>
+              </ul>
+            </div>
+            
+            <!-- CTA -->
+            <div style="text-align: center; margin: 16px 0;">
+              <a href="https://never-break-the-chain.vercel.app/dashboard" 
+                 style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 13px;">
+                📊 View Analytics
+              </a>
+            </div>
+          </div>
+          
+          <!-- Footer -->
+          <div style="background: #f8fafc; padding: 12px; text-align: center; border-top: 1px solid #e2e8f0;">
+            <p style="color: #94a3b8; margin: 0; font-size: 10px;">
+              © 2026 Never Break The Chain by Ansh Tank
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  // Generate compact milestone email HTML
+  private static generateCompactMilestoneHTML(user: UserProgress, streakDays: number): string {
+    const getMilestoneEmoji = (days: number) => {
+      if (days >= 365) return "🌟";
+      if (days >= 100) return "👑";
+      if (days >= 30) return "💎";
+      if (days >= 21) return "💪";
+      if (days >= 14) return "🔥";
+      if (days >= 7) return "🎯";
+      return "✨";
+    };
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Milestone Achieved</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; margin: 0; padding: 12px;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); padding: 16px; text-align: center;">
+            <div style="font-size: 32px; margin-bottom: 8px;">${getMilestoneEmoji(streakDays)}</div>
+            <h1 style="color: white; margin: 0; font-size: 18px; font-weight: 700;">MILESTONE ACHIEVED!</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 4px 0 0; font-size: 12px;">Never Break The Chain</p>
+          </div>
+          
+          <!-- Content -->
+          <div style="padding: 16px;">
+            <h2 style="color: #1e293b; margin: 0 0 12px; font-size: 16px; text-align: center;">Congratulations ${user.name}!</h2>
+            
+            <!-- Milestone Display - NO CIRCLE, JUST RECTANGLE -->
+            <div style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); border-radius: 12px; padding: 20px; margin: 12px 0; text-align: center;">
+              <div style="font-size: 36px; font-weight: 800; color: white; margin-bottom: 4px;">
+                ${streakDays}
+              </div>
+              <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 14px; font-weight: 600;">
+                Day Streak!
+              </p>
+              <p style="color: rgba(255,255,255,0.8); margin: 4px 0 0; font-size: 12px;">
+                You've built a life-changing habit!
+              </p>
+            </div>
+            
+            <!-- Stats -->
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 16px 0;">
+              <div style="text-align: center; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <div style="font-size: 20px; font-weight: 700; color: #f59e0b; margin-bottom: 2px;">
+                  ${streakDays}
+                </div>
+                <div style="color: #64748b; font-size: 11px;">Consecutive Days</div>
+              </div>
+              <div style="text-align: center; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <div style="font-size: 20px; font-weight: 700; color: #10b981; margin-bottom: 2px;">
+                  ${Math.round(streakDays * 2.5)}
+                </div>
+                <div style="color: #64748b; font-size: 11px;">Hours Invested</div>
+              </div>
+            </div>
+            
+            <!-- Quote -->
+            <div style="background: #f0f9ff; border-left: 3px solid #0ea5e9; border-radius: 6px; padding: 12px; margin: 12px 0; text-align: center;">
+              <p style="color: #0369a1; margin: 0; font-size: 13px; font-style: italic;">
+                "Excellence is not an act, but a habit." — Aristotle
+              </p>
+            </div>
+            
+            <!-- Next Goal -->
+            <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px; margin: 12px 0; text-align: center;">
+              <h4 style="color: #92400e; margin: 0 0 4px; font-size: 14px; font-weight: 600;">
+                🎯 Next Milestone
+              </h4>
+              <p style="color: #a16207; margin: 0; font-size: 12px;">
+                ${streakDays < 30 ? `${30 - streakDays} more days to 30-day milestone!` : 'Keep going for life transformation!'}
+              </p>
+            </div>
+            
+            <!-- CTA -->
+            <div style="text-align: center; margin: 16px 0;">
+              <a href="https://never-break-the-chain.vercel.app/dashboard" 
+                 style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 13px;">
+                🎉 Continue Journey
+              </a>
+            </div>
+          </div>
+          
+          <!-- Footer -->
+          <div style="background: #f8fafc; padding: 12px; text-align: center; border-top: 1px solid #e2e8f0;">
+            <p style="color: #94a3b8; margin: 0; font-size: 10px;">
+              © 2026 Never Break The Chain by Ansh Tank
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
   // Get users eligible for notifications
   private static async getEligibleUsers(db: any): Promise<UserProgress[]> {
+    console.log('🔍 DEBUG: Starting getEligibleUsers...');
+    // Get users with email notifications enabled
     const users = await db.collection('users').find({
       email: { $exists: true, $nin: [null, ''] },
       emailNotifications: { $ne: false }
@@ -364,51 +755,124 @@ export class EnhancedNotificationScheduler {
     const userProgressList: UserProgress[] = [];
 
     for (const user of users) {
-      // Get user's progress data
-      const progress = await db.collection('progress').findOne({ userId: user._id });
-      const habits = await db.collection('habits').find({ userId: user._id }).toArray();
-      
-      // Calculate current streak and stats
-      const userProgress: UserProgress = {
-        userId: user._id.toString(),
-        name: user.name || 'Friend',
-        email: user.email,
-        currentStreak: progress?.currentStreak || 0,
-        longestStreak: progress?.longestStreak || 0,
-        lastActivity: progress?.lastActivity || new Date(),
-        completedToday: this.calculateCompletedToday(habits),
-        totalHabits: 4, // MNZD methodology
-        weeklyCompletion: this.calculateWeeklyCompletion(habits),
-        monthlyCompletion: this.calculateMonthlyCompletion(habits),
-        joinDate: user.createdAt || new Date(),
-        preferences: {
-          morningTime: user.preferences?.morningTime || '07:00',
-          eveningTime: user.preferences?.eveningTime || '20:00',
-          timezone: user.preferences?.timezone || 'UTC',
-          emailNotifications: user.emailNotifications !== false
-        },
-        habitStats: this.calculateHabitStats(habits)
-      };
+      try {
+        // Get user's MNZD settings for custom habit names
+        const userSettings = await db.collection('userSettings').findOne({ userId: user.email });
+        
+        // Get mnzdConfigs from userSettings
+        let mnzdConfigs = userSettings?.mnzdConfigs;
+        
+        // Final fallback to defaults
+        if (!mnzdConfigs || !Array.isArray(mnzdConfigs)) {
+          mnzdConfigs = [
+            { id: 'meditation', name: 'Meditation' },
+            { id: 'nutrition', name: 'Nutrition' },
+            { id: 'zone', name: 'Zone' },
+            { id: 'discipline', name: 'Discipline' }
+          ];
+        }
 
-      userProgressList.push(userProgress);
+        // Get user's daily progress for streak calculation
+        const progressData = await db.collection('dailyProgress')
+          .find({ userId: user._id.toString() })
+          .sort({ date: -1 })
+          .limit(100) // Last 100 days for streak calculation
+          .toArray();
+        console.log(`🔍 DEBUG: User ${user.email} has ${progressData.length} progress records`);
+
+        // Calculate current streak
+        const currentStreak = this.calculateCurrentStreak(progressData);
+        const longestStreak = this.calculateLongestStreak(progressData);
+        console.log(`🔍 DEBUG: User ${user.email} streaks - Current: ${currentStreak}, Longest: ${longestStreak}`);
+        
+        // Get today's progress
+        const today = new Date().toISOString().split('T')[0];
+        const todayProgress = progressData.find(p => p.date === today);
+        const completedToday = todayProgress ? todayProgress.tasks.filter(t => t.completed || t.minutes > 0).length : 0;
+        console.log(`🔍 DEBUG: User ${user.email} today (${today}) - Completed: ${completedToday}/${mnzdConfigs.length}`);
+        if (todayProgress) {
+          console.log(`🔍 DEBUG: Today's tasks:`, todayProgress.tasks.map(t => ({ id: t.id, completed: t.completed, minutes: t.minutes })));
+        }
+        
+        // Calculate weekly completion rate
+        const weeklyCompletion = this.calculateWeeklyCompletion(progressData, mnzdConfigs.length);
+        const monthlyCompletion = this.calculateMonthlyCompletion(progressData, mnzdConfigs.length);
+        
+        // Calculate habit stats with real MNZD names
+        const habitStats = this.calculateRealHabitStats(progressData, mnzdConfigs);
+        
+        // Get last activity date - FIX: Use most recent progress date
+        const lastActivity = progressData.length > 0 ? new Date(progressData[0].date + 'T00:00:00Z') : new Date();
+        const daysSinceLastActivity = Math.floor((new Date().getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24));
+        console.log(`🔍 DEBUG: User ${user.email} last activity: ${lastActivity.toISOString().split('T')[0]} (${daysSinceLastActivity} days ago)`);
+        console.log(`🔍 DEBUG: Most recent progress date: ${progressData[0]?.date || 'none'}`);
+        console.log(`🔍 DEBUG: Today's date: ${today}`);
+        
+        // FIX: If user has today's progress, they're active today
+        const actualDaysSinceActivity = todayProgress ? 0 : daysSinceLastActivity;
+        console.log(`🔍 DEBUG: Actual days since activity (corrected): ${actualDaysSinceActivity}`);
+        
+        const userProgress: UserProgress = {
+          userId: user._id.toString(),
+          name: user.name || user.email.split('@')[0] || 'Friend',
+          email: user.email,
+          currentStreak,
+          longestStreak,
+          lastActivity,
+          completedToday,
+          totalHabits: mnzdConfigs.length,
+          weeklyCompletion,
+          monthlyCompletion,
+          joinDate: user.createdAt || new Date(),
+          preferences: {
+            morningTime: '07:00',
+            eveningTime: '21:00',
+            timezone: 'UTC',
+            emailNotifications: user.emailNotifications !== false
+          },
+          habitStats: habitStats,
+          // Add MNZD config for AI personalization
+          mnzdConfigs: mnzdConfigs,
+          // FIX: Use corrected activity data
+          actualDaysSinceActivity: actualDaysSinceActivity
+        };
+
+        userProgressList.push(userProgress);
+      } catch (error) {
+        console.error(`Error processing user ${user.email}:`, error);
+        // Continue with next user
+      }
     }
 
     return userProgressList;
   }
 
   // Determine which notifications to send to a user
-  private static async determineNotificationsForUser(user: UserProgress): Promise<Array<{
+  private static async determineNotificationsForUser(
+    user: UserProgress,
+    ctx: { now: Date; window: 'auto' | 'morning' | 'evening' | 'weekly' | 'all' }
+  ): Promise<Array<{
     type: NotificationType;
     priority: number;
     scheduledTime?: Date;
   }>> {
     const notifications = [];
-    const now = new Date();
-    const hour = now.getHours();
+    const now = ctx.now;
+    const useUtc = ctx.window === 'auto';
+    const hour = useUtc ? now.getUTCHours() : now.getHours();
+    const dayOfWeek = useUtc ? now.getUTCDay() : now.getDay();
     const daysSinceLastActivity = Math.floor((now.getTime() - user.lastActivity.getTime()) / (1000 * 60 * 60 * 24));
 
+    const includeMorning = ctx.window === 'morning' || ctx.window === 'all' || (ctx.window === 'auto' && hour >= 7 && hour <= 9);
+    const includeEvening = ctx.window === 'evening' || ctx.window === 'all' || (ctx.window === 'auto' && hour >= 20 && hour <= 22);
+    const includeWeekly = ctx.window === 'weekly' || ctx.window === 'all' || (ctx.window === 'auto' && dayOfWeek === 1 && hour >= 9 && hour <= 11);
+
+    const includeMorning = ctx.window === 'morning' || ctx.window === 'all' || (ctx.window === 'auto' && hour >= 7 && hour <= 9);
+    const includeEvening = ctx.window === 'evening' || ctx.window === 'all' || (ctx.window === 'auto' && hour >= 20 && hour <= 22);
+    const includeWeekly = ctx.window === 'weekly' || ctx.window === 'all' || (ctx.window === 'auto' && dayOfWeek === 1 && hour >= 9 && hour <= 11);
+
     // Morning motivation (7-9 AM)
-    if (hour >= 7 && hour <= 9) {
+    if (includeMorning) {
       notifications.push({
         type: NotificationType.MORNING_MOTIVATION,
         priority: 1
@@ -416,14 +880,14 @@ export class EnhancedNotificationScheduler {
     }
 
     // Evening check-in (8-10 PM)
-    if (hour >= 20 && hour <= 22) {
+    if (includeEvening) {
       notifications.push({
         type: NotificationType.EVENING_CHECKIN,
         priority: 1
       });
     }
 
-    // Milestone celebrations (medically-proven intervals)
+    // Milestone celebrations (proven intervals: 3, 7, 14, 21, 30, 66, 90, 180, 365)
     const milestones = [3, 7, 14, 21, 30, 45, 66, 90, 120, 180, 240, 300, 366];
     if (milestones.includes(user.currentStreak)) {
       notifications.push({
@@ -432,7 +896,7 @@ export class EnhancedNotificationScheduler {
       });
     }
 
-    // Streak recovery (user broke streak)
+    // Streak recovery (user broke streak but had previous progress)
     if (user.currentStreak === 0 && user.longestStreak > 0 && daysSinceLastActivity <= 3) {
       notifications.push({
         type: NotificationType.STREAK_RECOVERY,
@@ -440,8 +904,8 @@ export class EnhancedNotificationScheduler {
       });
     }
 
-    // Weekly summary (Mondays)
-    if (now.getDay() === 1 && hour >= 9 && hour <= 11) {
+    // Weekly summary (Mondays 9-11 AM)
+    if (includeWeekly) {
       notifications.push({
         type: NotificationType.WEEKLY_SUMMARY,
         priority: 2
@@ -456,9 +920,9 @@ export class EnhancedNotificationScheduler {
       });
     }
 
-    // Random motivation (12-2 PM, 3-5 PM)
-    if ((hour >= 12 && hour <= 14) || (hour >= 15 && hour <= 17)) {
-      if (Math.random() < 0.3) { // 30% chance
+    // Random motivation (12-2 PM, 3-5 PM) - 30% chance
+    if (ctx.window === 'all' || ((hour >= 12 && hour <= 14) || (hour >= 15 && hour <= 17))) {
+      if (Math.random() < 0.3) {
         notifications.push({
           type: NotificationType.RANDOM_MOTIVATION,
           priority: 3
@@ -472,6 +936,30 @@ export class EnhancedNotificationScheduler {
       .slice(0, 2);
   }
 
+  private static async wasNotificationSentRecently(
+    db: any,
+    userId: string,
+    type: NotificationType,
+    now: Date
+  ): Promise<boolean> {
+    const lookbackHours =
+      type === NotificationType.WEEKLY_SUMMARY ? 7 * 24 :
+      type === NotificationType.MILESTONE_CELEBRATION ? 36 :
+      type === NotificationType.COMEBACK_ENCOURAGEMENT ? 24 :
+      20;
+
+    const since = new Date(now.getTime() - lookbackHours * 60 * 60 * 1000);
+
+    const existing = await db.collection('notification_logs').findOne({
+      userId: new ObjectId(userId),
+      type,
+      success: true,
+      sentAt: { $gte: since }
+    });
+
+    return Boolean(existing);
+  }
+
   // Send individual notification
   private static async sendNotification(user: UserProgress, notification: {
     type: NotificationType;
@@ -480,28 +968,77 @@ export class EnhancedNotificationScheduler {
     
     switch (notification.type) {
       case NotificationType.MORNING_MOTIVATION:
-        const morningContent = await DynamicContentGenerator.generateMorningMotivation(user);
-        return await sendMorningMotivationEmail(
-          user.name,
-          user.email,
-          user.currentStreak,
-          morningContent.message
-        );
+        console.log(`🤖 DEBUG: Generating AI morning motivation for ${user.email}`);
+        const morningContext = {
+          name: user.name,
+          currentStreak: user.currentStreak,
+          longestStreak: user.longestStreak,
+          completionRate: user.weeklyCompletion,
+          weakestHabit: this.getWeakestHabit(user),
+          strongestHabit: this.getStrongestHabit(user),
+          daysSinceJoin: Math.floor((new Date().getTime() - user.joinDate.getTime()) / (1000 * 60 * 60 * 24)),
+          timeOfDay: 'morning' as const,
+          lastActivity: user.lastActivity,
+          mnzdHabits: Object.entries(user.habitStats).map(([id, stats]) => ({
+            id,
+            name: stats.name,
+            description: user.mnzdConfigs?.find(c => c.id === id)?.description || '',
+            completed: stats.completed,
+            total: stats.total,
+            rate: stats.total > 0 ? stats.completed / stats.total : 0
+          })),
+          todayCompleted: user.completedToday,
+          totalHabits: user.totalHabits
+        };
+        console.log(`🤖 DEBUG: AI context for ${user.email}:`, JSON.stringify(morningContext, null, 2));
+        const morningContent = await DynamicContentGenerator.generateMorningMotivation(morningContext);
+        console.log(`🤖 DEBUG: AI generated content for ${user.email}:`, morningContent);
+        
+        // Create AI-powered morning email with user's custom MNZD names
+        const morningHtml = this.generateAIMorningEmailHTML(user, morningContent);
+        return await sendEmail({
+          to: user.email,
+          subject: morningContent.subject,
+          html: morningHtml
+        });
 
       case NotificationType.EVENING_CHECKIN:
-        return await sendEveningCheckinEmail(
-          user.name,
-          user.email,
-          user.completedToday,
-          user.totalHabits
-        );
+        console.log(`🌙 DEBUG: Generating AI evening check-in for ${user.email}`);
+        const eveningContext = {
+          name: user.name,
+          currentStreak: user.currentStreak,
+          longestStreak: user.longestStreak,
+          completionRate: user.weeklyCompletion,
+          weakestHabit: this.getWeakestHabit(user),
+          strongestHabit: this.getStrongestHabit(user),
+          daysSinceJoin: Math.floor((new Date().getTime() - user.joinDate.getTime()) / (1000 * 60 * 60 * 24)),
+          timeOfDay: 'evening' as const,
+          lastActivity: user.lastActivity,
+          mnzdHabits: Object.entries(user.habitStats).map(([id, stats]) => ({
+            id,
+            name: stats.name,
+            description: user.mnzdConfigs?.find(c => c.id === id)?.description || '',
+            completed: stats.completed,
+            total: stats.total,
+            rate: stats.total > 0 ? stats.completed / stats.total : 0
+          })),
+          todayCompleted: user.completedToday,
+          totalHabits: user.totalHabits
+        };
+        const eveningContent = await aiContentService.generateEveningReflection(eveningContext);
+        const eveningHtml = this.generateAIEveningEmailHTML(user, eveningContent);
+        return await sendEmail({
+          to: user.email,
+          subject: `🌙 Evening Check-in ${user.name}`,
+          html: eveningHtml
+        });
 
       case NotificationType.MILESTONE_CELEBRATION:
-        return await sendMilestoneEmail(
-          user.name,
-          user.email,
-          user.currentStreak
-        );
+        return await sendEmail({
+          to: user.email,
+          subject: `🎉 ${user.currentStreak} Days - Milestone Achieved!`,
+          html: this.generateCompactMilestoneHTML(user, user.currentStreak)
+        });
 
       case NotificationType.STREAK_RECOVERY:
         return await sendStreakRecoveryEmail(
@@ -510,16 +1047,23 @@ export class EnhancedNotificationScheduler {
         );
 
       case NotificationType.WEEKLY_SUMMARY:
-        const weeklyStats = {
-          daysCompleted: Math.floor(user.weeklyCompletion * 7),
-          totalDays: 7,
-          topHabit: DynamicContentGenerator['getStrongestHabit'](user),
-          improvementArea: DynamicContentGenerator['getWeakestHabit'](user)
-        };
-        return await sendWeeklySummaryEmail(user.name, user.email, weeklyStats);
+        const weeklyStats = this.calculateProperWeeklyStats(user);
+        console.log(`📊 DEBUG: Weekly stats for ${user.email}:`, weeklyStats);
+        return await sendEmail({
+          to: user.email,
+          subject: `📊 Weekly Summary - ${user.name}`,
+          html: this.generateCompactWeeklyHTML(user, weeklyStats)
+        });
 
       case NotificationType.COMEBACK_ENCOURAGEMENT:
         const daysSinceLastActivity = Math.floor((new Date().getTime() - user.lastActivity.getTime()) / (1000 * 60 * 60 * 24));
+        console.log(`🔍 DEBUG: Comeback email data for ${user.email}:`);
+        console.log(`  - Days since last activity: ${daysSinceLastActivity}`);
+        console.log(`  - Last activity date: ${user.lastActivity.toISOString().split('T')[0]}`);
+        console.log(`  - Current streak: ${user.currentStreak}`);
+        console.log(`  - Longest streak: ${user.longestStreak}`);
+        console.log(`  - Today completed: ${user.completedToday}/${user.totalHabits}`);
+        
         const comebackContent = DynamicContentGenerator.generateComebackMessage(user, daysSinceLastActivity);
         return await sendEmail({
           to: user.email,
@@ -536,7 +1080,92 @@ export class EnhancedNotificationScheduler {
     }
   }
 
-  // Generate comeback email HTML
+  // Generate AI-powered morning email HTML with user's custom MNZD names
+  private static generateAIMorningEmailHTML(user: UserProgress, content: any): string {
+    // FORCE USE ACTUAL USER MNZD CONFIGS
+    const mnzdHabits = user.mnzdConfigs && user.mnzdConfigs.length > 0 ? user.mnzdConfigs : [
+      { id: 'meditation', name: 'DSA', color: '#8b5cf6' },
+      { id: 'nutrition', name: 'Development', color: '#06b6d4' },
+      { id: 'zone', name: 'Communication', color: '#f59e0b' },
+      { id: 'discipline', name: 'Tech Update', color: '#10b981' }
+    ];
+    
+    console.log(`🎨 DEBUG: MORNING EMAIL - Using MNZD habits:`, mnzdHabits.map(h => h.name));
+
+    const habitCards = mnzdHabits.map(habit => `
+      <div style="background: ${habit.color || '#8b5cf6'}15; border: 1px solid ${habit.color || '#8b5cf6'}40; border-radius: 6px; padding: 8px; text-align: center; margin: 2px;">
+        <div style="color: ${habit.color || '#8b5cf6'}; font-size: 13px; font-weight: 600;">${habit.name}</div>
+      </div>
+    `).join('');
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Morning Motivation</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; margin: 0; padding: 12px;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 16px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 18px; font-weight: 700;">Good Morning!</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 4px 0 0; font-size: 12px;">Never Break The Chain</p>
+          </div>
+          
+          <!-- Content -->
+          <div style="padding: 16px;">
+            <h2 style="color: #1e293b; margin: 0 0 12px; font-size: 16px;">Hi ${user.name}!</h2>
+            
+            <!-- Streak Display -->
+            <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px; margin: 12px 0; text-align: center;">
+              <div style="font-size: 24px; font-weight: 800; color: #d97706; margin-bottom: 2px;">
+                ${user.currentStreak}
+              </div>
+              <p style="color: #92400e; margin: 0; font-size: 12px; font-weight: 600;">
+                Day Streak
+              </p>
+            </div>
+            
+            <!-- AI Message -->
+            <div style="background: #f0f9ff; border-left: 3px solid #0ea5e9; border-radius: 6px; padding: 12px; margin: 12px 0;">
+              <p style="color: #0369a1; margin: 0; font-size: 14px; line-height: 1.4;">
+                ${content.message}
+              </p>
+            </div>
+            
+            <!-- Custom MNZD Habits -->
+            <div style="margin: 16px 0;">
+              <h3 style="color: #1e293b; margin: 0 0 8px; font-size: 14px; font-weight: 600; text-align: center;">
+                Today's Focus Areas
+              </h3>
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px;">
+                ${habitCards}
+              </div>
+            </div>
+            
+            <!-- CTA -->
+            <div style="text-align: center; margin: 16px 0;">
+              <a href="https://never-break-the-chain.vercel.app/dashboard" 
+                 style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 13px;">
+                Start Today's Habits
+              </a>
+            </div>
+          </div>
+          
+          <!-- Footer -->
+          <div style="background: #f8fafc; padding: 12px; text-align: center; border-top: 1px solid #e2e8f0;">
+            <p style="color: #94a3b8; margin: 0; font-size: 10px;">
+              © 2026 Never Break The Chain by Ansh Tank
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
   private static generateComebackEmailHTML(user: UserProgress, content: any): string {
     return `
       <!DOCTYPE html>
@@ -546,38 +1175,84 @@ export class EnhancedNotificationScheduler {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${content.subject}</title>
       </head>
-      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px;">
-        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; margin: 0; padding: 12px;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
           
           <!-- Header -->
-          <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 30px; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">🌟 Welcome Back!</h1>
-            <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 16px;">Your journey continues...</p>
+          <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 16px; text-align: center;">
+            <div style="font-size: 32px; margin-bottom: 8px;">🌱</div>
+            <h1 style="color: white; margin: 0; font-size: 18px; font-weight: 700;">Fresh Start, ${user.name}!</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 4px 0 0; font-size: 12px;">Never Break The Chain</p>
           </div>
           
           <!-- Content -->
-          <div style="padding: 40px 30px;">
-            <h2 style="color: #1e293b; margin: 0 0 20px; font-size: 24px;">Hi ${user.name}! 👋</h2>
-            <p style="color: #64748b; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">${content.message}</p>
+          <div style="padding: 16px;">
+            <p style="color: #64748b; font-size: 14px; line-height: 1.5; margin: 0 0 12px; text-align: center;">Every master was once a beginner. Your comeback starts now! 💪</p>
             
-            <div style="background: #f0fdf4; border: 2px solid #10b981; border-radius: 12px; padding: 24px; margin: 30px 0;">
-              <h3 style="color: #065f46; margin: 0 0 16px; font-size: 18px;">💪 Your Strength</h3>
-              <p style="color: #065f46; margin: 0; font-size: 14px;">${content.motivation}</p>
+            <!-- Encouragement Message -->
+            <div style="background: #f0fdf4; border: 1px solid #10b981; border-radius: 8px; padding: 16px; margin: 12px 0; text-align: center;">
+              <div style="font-size: 24px; margin-bottom: 8px;">🔄</div>
+              <h3 style="color: #065f46; margin: 0 0 8px; font-size: 16px; font-weight: 700;">
+                Setbacks Are Setups for Comebacks
+              </h3>
+              <p style="color: #047857; margin: 0; font-size: 14px; line-height: 1.4;">
+                Missing a day doesn't erase your progress. It's not about perfection—it's about persistence. Today is your opportunity to restart stronger than before!
+              </p>
             </div>
             
-            <!-- CTA -->
-            <div style="text-align: center; margin: 30px 0;">
+            <!-- Recovery Strategy - FIXED NUMBERS -->
+            <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin: 16px 0;">
+              <h3 style="color: #1e293b; margin: 0 0 12px; font-size: 16px; font-weight: 600; text-align: center;">
+                🎯 Your Recovery Game Plan
+              </h3>
+              <div style="space-y: 12px;">
+                <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
+                  <div style="background: #10b981; color: white; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; margin-right: 12px; flex-shrink: 0; text-align: center; line-height: 20px;">1</div>
+                  <div>
+                    <h4 style="color: #1e293b; margin: 0 0 4px; font-size: 14px; font-weight: 600;">Start Small Today</h4>
+                    <p style="color: #64748b; margin: 0; font-size: 12px;">Pick just one habit and commit to 5 minutes. Build momentum gradually.</p>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
+                  <div style="background: #10b981; color: white; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; margin-right: 12px; flex-shrink: 0; text-align: center; line-height: 20px;">2</div>
+                  <div>
+                    <h4 style="color: #1e293b; margin: 0 0 4px; font-size: 14px; font-weight: 600;">Focus on Systems</h4>
+                    <p style="color: #64748b; margin: 0; font-size: 12px;">Create an environment that makes good habits easier and bad habits harder.</p>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
+                  <div style="background: #10b981; color: white; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; margin-right: 12px; flex-shrink: 0; text-align: center; line-height: 20px;">3</div>
+                  <div>
+                    <h4 style="color: #1e293b; margin: 0 0 4px; font-size: 14px; font-weight: 600;">Track Progress</h4>
+                    <p style="color: #64748b; margin: 0; font-size: 12px;">Use your dashboard to monitor daily wins and build visual momentum.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Motivational Quote -->
+            <div style="background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 6px; padding: 12px; margin: 12px 0; text-align: center;">
+              <p style="color: #92400e; margin: 0 0 8px; font-size: 14px; font-style: italic; font-weight: 500;">
+                "Success is not final, failure is not fatal: it is the courage to continue that counts."
+              </p>
+              <p style="color: #a16207; margin: 0; font-size: 12px;">
+                — Winston Churchill
+              </p>
+            </div>
+            
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 16px 0;">
               <a href="https://never-break-the-chain.vercel.app/dashboard" 
-                 style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; text-decoration: none; padding: 16px 32px; border-radius: 12px; font-weight: 600; font-size: 16px;">
-                🔗 Continue Your Journey
+                 style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 13px;">
+                🚀 Restart My Journey
               </a>
             </div>
           </div>
           
           <!-- Footer -->
-          <div style="background: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0;">
-            <p style="color: #94a3b8; margin: 0; font-size: 12px;">
-              © 2026 Never Break The Chain by Ansh Tank. Your comeback story starts now! 🚀
+          <div style="background: #f8fafc; padding: 12px; text-align: center; border-top: 1px solid #e2e8f0;">
+            <p style="color: #94a3b8; margin: 0; font-size: 10px;">
+              © 2026 Never Break The Chain by Ansh Tank
             </p>
           </div>
         </div>
@@ -654,74 +1329,161 @@ export class EnhancedNotificationScheduler {
     `;
   }
 
-  // Helper methods for calculating user stats
-  private static calculateCompletedToday(habits: any[]): number {
-    const today = new Date().toDateString();
-    return habits.filter(habit => 
-      habit.completedDates && 
-      habit.completedDates.some((date: string) => new Date(date).toDateString() === today)
-    ).length;
-  }
-
-  private static calculateWeeklyCompletion(habits: any[]): number {
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
+  // Helper to get strongest habit using actual MNZD names
+  private static getStrongestHabit(user: UserProgress): string {
+    if (!user.mnzdConfigs || user.mnzdConfigs.length === 0) {
+      return 'DSA'; // Your first custom habit
+    }
     
-    let totalPossible = habits.length * 7;
-    let totalCompleted = 0;
+    const habits = user.habitStats;
+    let strongest = user.mnzdConfigs[0].name; // Default to first habit
+    let highestRate = 0;
 
-    habits.forEach(habit => {
-      if (habit.completedDates) {
-        totalCompleted += habit.completedDates.filter((date: string) => 
-          new Date(date) >= weekAgo
-        ).length;
+    Object.entries(habits).forEach(([habitId, stats]) => {
+      const rate = stats.total > 0 ? stats.completed / stats.total : 0;
+      if (rate > highestRate) {
+        highestRate = rate;
+        const config = user.mnzdConfigs?.find(c => c.id === habitId);
+        strongest = config?.name || stats.name || habitId;
       }
     });
 
-    return totalPossible > 0 ? totalCompleted / totalPossible : 0;
+    return strongest;
   }
 
-  private static calculateMonthlyCompletion(habits: any[]): number {
-    const monthAgo = new Date();
-    monthAgo.setDate(monthAgo.getDate() - 30);
+  // Helper to get weakest habit using actual MNZD names
+  private static getWeakestHabit(user: UserProgress): string {
+    if (!user.mnzdConfigs || user.mnzdConfigs.length === 0) {
+      return 'Development'; // Your second custom habit
+    }
     
-    let totalPossible = habits.length * 30;
-    let totalCompleted = 0;
+    const habits = user.habitStats;
+    let weakest = user.mnzdConfigs[1]?.name || user.mnzdConfigs[0].name; // Default to second or first habit
+    let lowestRate = 1;
 
-    habits.forEach(habit => {
-      if (habit.completedDates) {
-        totalCompleted += habit.completedDates.filter((date: string) => 
-          new Date(date) >= monthAgo
-        ).length;
+    Object.entries(habits).forEach(([habitId, stats]) => {
+      const rate = stats.total > 0 ? stats.completed / stats.total : 0;
+      if (rate < lowestRate) {
+        lowestRate = rate;
+        const config = user.mnzdConfigs?.find(c => c.id === habitId);
+        weakest = config?.name || stats.name || habitId;
       }
     });
 
+    return weakest;
+  }
+  private static calculateCurrentStreak(progressData: any[]): number {
+    if (!progressData.length) return 0;
+    
+    let streak = 0;
+    const sortedData = progressData.sort((a, b) => b.date.localeCompare(a.date));
+    
+    for (const dayData of sortedData) {
+      // Check if all MNZD tasks were completed (at least some minutes)
+      const completedTasks = dayData.tasks?.filter(t => (t.minutes > 0 || t.completed)) || [];
+      if (completedTasks.length >= dayData.tasks?.length * 0.75) { // 75% completion threshold
+        streak++;
+      } else {
+        break;
+      }
+    }
+    
+    return streak;
+  }
+
+  private static calculateLongestStreak(progressData: any[]): number {
+    if (!progressData.length) return 0;
+    
+    let longestStreak = 0;
+    let currentStreak = 0;
+    const sortedData = progressData.sort((a, b) => a.date.localeCompare(b.date));
+    
+    for (const dayData of sortedData) {
+      const completedTasks = dayData.tasks?.filter(t => (t.minutes > 0 || t.completed)) || [];
+      if (completedTasks.length >= dayData.tasks?.length * 0.75) {
+        currentStreak++;
+        longestStreak = Math.max(longestStreak, currentStreak);
+      } else {
+        currentStreak = 0;
+      }
+    }
+    
+    return longestStreak;
+  }
+
+  private static calculateWeeklyCompletion(progressData: any[], totalHabits: number): number {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Days back to last Monday
+    
+    const lastMonday = new Date(today);
+    lastMonday.setDate(today.getDate() - daysToMonday);
+    const weekStartStr = lastMonday.toISOString().split('T')[0];
+    
+    console.log(`📊 DEBUG: Weekly calculation - Week starts: ${weekStartStr}, Today: ${today.toISOString().split('T')[0]}`);
+    
+    const weekData = progressData.filter(p => p.date >= weekStartStr);
+    console.log(`📊 DEBUG: Week progress data:`, weekData.map(d => ({ date: d.date, completed: d.tasks?.filter(t => t.completed || t.minutes > 0).length })));
+    
+    if (!weekData.length) {
+      console.log(`📊 DEBUG: No week data found`);
+      return 0;
+    }
+    
+    const totalPossible = weekData.length * totalHabits;
+    const totalCompleted = weekData.reduce((sum, day) => {
+      const completed = day.tasks?.filter(t => t.minutes > 0 || t.completed).length || 0;
+      return sum + completed;
+    }, 0);
+    
+    const weeklyRate = totalPossible > 0 ? totalCompleted / totalPossible : 0;
+    console.log(`📊 DEBUG: Weekly completion - ${totalCompleted}/${totalPossible} = ${Math.round(weeklyRate * 100)}%`);
+    
+    return weeklyRate;
+  }
+
+  private static calculateMonthlyCompletion(progressData: any[], totalHabits: number): number {
+    const monthAgo = new Date();
+    monthAgo.setDate(monthAgo.getDate() - 30);
+    const monthAgoStr = monthAgo.toISOString().split('T')[0];
+    
+    const monthData = progressData.filter(p => p.date >= monthAgoStr);
+    if (!monthData.length) return 0;
+    
+    const totalPossible = monthData.length * totalHabits;
+    const totalCompleted = monthData.reduce((sum, day) => {
+      return sum + (day.tasks?.filter(t => t.minutes > 0 || t.completed).length || 0);
+    }, 0);
+    
     return totalPossible > 0 ? totalCompleted / totalPossible : 0;
   }
 
-  private static calculateHabitStats(habits: any[]): UserProgress['habitStats'] {
-    const stats = {
-      meditation: { completed: 0, total: 0 },
-      nutrition: { completed: 0, total: 0 },
-      zone: { completed: 0, total: 0 },
-      discipline: { completed: 0, total: 0 }
-    };
-
+  private static calculateRealHabitStats(progressData: any[], mnzdConfigs: any[]): UserProgress['habitStats'] {
+    const stats: any = {};
+    
+    // Initialize stats for each MNZD config
+    mnzdConfigs.forEach(config => {
+      stats[config.id] = { completed: 0, total: 0, name: config.name };
+    });
+    
+    // Calculate stats from last 30 days
     const monthAgo = new Date();
     monthAgo.setDate(monthAgo.getDate() - 30);
-
-    habits.forEach(habit => {
-      const category = habit.category?.toLowerCase() || 'meditation';
-      if (stats[category as keyof typeof stats]) {
-        stats[category as keyof typeof stats].total += 30; // 30 days
-        if (habit.completedDates) {
-          stats[category as keyof typeof stats].completed += habit.completedDates.filter((date: string) => 
-            new Date(date) >= monthAgo
-          ).length;
+    const monthAgoStr = monthAgo.toISOString().split('T')[0];
+    
+    const monthData = progressData.filter(p => p.date >= monthAgoStr);
+    
+    monthData.forEach(day => {
+      day.tasks?.forEach((task: any) => {
+        if (stats[task.id]) {
+          stats[task.id].total += 1;
+          if (task.minutes > 0 || task.completed) {
+            stats[task.id].completed += 1;
+          }
         }
-      }
+      });
     });
-
+    
     return stats;
   }
 

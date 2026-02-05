@@ -1,0 +1,51 @@
+name: Cron - Email Notifications
+
+on:
+  schedule:
+    # Morning daily
+    - cron: "0 7 * * *"
+    # Evening daily
+    - cron: "0 21 * * *"
+    # Weekly summary (Mondays)
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Choose window
+        id: window
+        shell: bash
+        run: |
+          schedule="${{ github.event.schedule }}"
+          window="auto"
+
+          if [ "$schedule" = "0 7 * * *" ]; then window="morning"; fi
+          if [ "$schedule" = "0 21 * * *" ]; then window="evening"; fi
+          if [ "$schedule" = "0 9 * * 1" ]; then window="weekly"; fi
+
+          echo "window=$window" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger API
+        env:
+          CRON_ENDPOINT: ${{ secrets.CRON_ENDPOINT }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          WINDOW: ${{ steps.window.outputs.window }}
+        shell: bash
+        run: |
+          if [ -z "$CRON_ENDPOINT" ] || [ -z "$CRON_SECRET" ]; then
+            echo "Missing secrets: CRON_ENDPOINT and/or CRON_SECRET"
+            exit 1
+          fi
+
+          url="$CRON_ENDPOINT"
+          if [ "$WINDOW" != "auto" ]; then
+            url="${url}?window=${WINDOW}"
+          fi
+
+          curl -sS -X POST "$url" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            --fail
