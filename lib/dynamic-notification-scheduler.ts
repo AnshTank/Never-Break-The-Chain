@@ -357,7 +357,7 @@ export class EnhancedNotificationScheduler {
         
         for (const notification of notifications) {
           try {
-            const shouldSkip = await this.wasNotificationSentRecently(db, user.userId, notification.type, now);
+            const shouldSkip = await this.wasNotificationSentRecently(db, user.userId, notification.type, now, window);
             if (shouldSkip) {
               results.skipped++;
               continue;
@@ -861,9 +861,12 @@ export class EnhancedNotificationScheduler {
     const dayOfWeek = useUtc ? now.getUTCDay() : now.getDay();
     const daysSinceLastActivity = Math.floor((now.getTime() - user.lastActivity.getTime()) / (1000 * 60 * 60 * 24));
 
+    // FIXED: Force notifications when specific window is requested
     const includeMorning = ctx.window === 'morning' || ctx.window === 'all' || (ctx.window === 'auto' && hour >= 7 && hour <= 9);
-    const includeEvening = ctx.window === 'evening' || ctx.window === 'all' || (ctx.window === 'auto' && hour >= 20 && hour <= 22);
+    const includeEvening = ctx.window === 'evening' || ctx.window === 'all' || (ctx.window === 'auto' && hour >= 18 && hour <= 23);
     const includeWeekly = ctx.window === 'weekly' || ctx.window === 'all' || (ctx.window === 'auto' && dayOfWeek === 1 && hour >= 9 && hour <= 11);
+    
+    console.log(`🕐 DEBUG: User ${user.email} - Hour: ${hour}, Window: ${ctx.window}, Include Evening: ${includeEvening}`);
 
     // Morning motivation (7-9 AM)
     if (includeMorning) {
@@ -934,13 +937,19 @@ export class EnhancedNotificationScheduler {
     db: any,
     userId: string,
     type: NotificationType,
-    now: Date
+    now: Date,
+    forceWindow?: string
   ): Promise<boolean> {
-    const lookbackHours =
-      type === NotificationType.WEEKLY_SUMMARY ? 7 * 24 :
-      type === NotificationType.MILESTONE_CELEBRATION ? 36 :
-      type === NotificationType.COMEBACK_ENCOURAGEMENT ? 24 :
-      20;
+    // FIXED: Reduce lookback time for forced windows
+    const lookbackHours = forceWindow && forceWindow !== 'auto' ? 
+      (type === NotificationType.WEEKLY_SUMMARY ? 6 * 24 :
+       type === NotificationType.MILESTONE_CELEBRATION ? 12 :
+       type === NotificationType.COMEBACK_ENCOURAGEMENT ? 8 :
+       6) : // Shorter lookback for forced windows
+      (type === NotificationType.WEEKLY_SUMMARY ? 7 * 24 :
+       type === NotificationType.MILESTONE_CELEBRATION ? 36 :
+       type === NotificationType.COMEBACK_ENCOURAGEMENT ? 24 :
+       20);
 
     const since = new Date(now.getTime() - lookbackHours * 60 * 60 * 1000);
 
@@ -951,7 +960,11 @@ export class EnhancedNotificationScheduler {
       sentAt: { $gte: since }
     });
 
-    return Boolean(existing);
+    const wasRecent = Boolean(existing);
+    if (wasRecent) {
+      console.log(`⏰ DEBUG: ${type} for ${userId} was sent recently (within ${lookbackHours}h), skipping`);
+    }
+    return wasRecent;
   }
 
   // Send individual notification
