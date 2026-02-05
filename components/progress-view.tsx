@@ -1,310 +1,403 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useMemo } from "react"
-import type { JourneyData, DayEntry } from "@/lib/types"
-import CompactMonthView from "./compact-month-view"
-import YearHeatmap from "./year-heatmap"
-import JourneyGraph from "./journey-graph"
-import { useProgressData } from "@/hooks/use-progress-data"
+import { useState, useEffect } from "react";
+import type { JourneyData, DayEntry } from "@/lib/types";
+import CompactMonthView from "./compact-month-view";
+import YearHeatmap from "./year-heatmap";
+import JourneyGraph from "./journey-graph";
+import { useProgressData } from "@/hooks/use-progress-data";
 
 interface ProgressViewProps {
-  onDayEntry?: (date: Date, entry: DayEntry) => void
+  onDayEntry?: (date: Date, entry: DayEntry) => void;
 }
 
-export default function ProgressView({ onDayEntry = () => {} }: ProgressViewProps) {
-  const [selectedMonth, setSelectedMonth] = useState(new Date())
-  const [viewMode, setViewMode] = useState<"calendar" | "year" | "journey">("calendar")
-  const [today, setToday] = useState(new Date())
-  const { data: monthlyData, loading, refetch } = useProgressData(selectedMonth)
+export default function ProgressView({
+  onDayEntry = () => {},
+}: ProgressViewProps) {
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [monthLoading, setMonthLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<"calendar" | "year" | "journey">(
+    "calendar",
+  );
+  const [today, setToday] = useState(new Date());
+
+  // ALWAYS call useProgressData - hooks must be called unconditionally
+  const {
+    data: monthlyData,
+    loading,
+    refetch,
+  } = useProgressData(selectedMonth);
+
+  // Force immediate refresh for current month on mount
+  useEffect(() => {
+    if (isCurrentMonth(selectedMonth)) {
+      refetch?.(selectedMonth);
+    }
+  }, []);
+
+  // Listen for progress updates and refresh immediately
+  useEffect(() => {
+    const handleProgressUpdate = () => {
+      if (isCurrentMonth(selectedMonth)) {
+        refetch?.(selectedMonth);
+      }
+    };
+
+    window.addEventListener("progressUpdated", handleProgressUpdate);
+    return () =>
+      window.removeEventListener("progressUpdated", handleProgressUpdate);
+  }, [selectedMonth, refetch]);
 
   // Update today every minute to handle date changes
   useEffect(() => {
     const interval = setInterval(() => {
-      const newToday = new Date()
+      const newToday = new Date();
       if (newToday.toDateString() !== today.toDateString()) {
-        setToday(newToday)
+        setToday(newToday);
         // Force refresh monthly data when date changes
-        refetch?.(selectedMonth)
+        refetch?.(selectedMonth);
       }
-    }, 60000)
-    
-    return () => clearInterval(interval)
-  }, [today, selectedMonth, refetch])
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [today, selectedMonth, refetch]);
 
   // Clear any localStorage cache on component mount
   useEffect(() => {
-    localStorage.removeItem('progressCache')
-    localStorage.removeItem('trackedDays')
-  }, [])
+    localStorage.removeItem("progressCache");
+    localStorage.removeItem("trackedDays");
+  }, []);
 
   const isCurrentMonth = (month: Date) => {
-    return month.getFullYear() === today.getFullYear() && month.getMonth() === today.getMonth()
-  }
+    return (
+      month.getFullYear() === today.getFullYear() &&
+      month.getMonth() === today.getMonth()
+    );
+  };
 
   const isFutureMonth = (month: Date) => {
-    return month > today || (month.getFullYear() === today.getFullYear() && month.getMonth() > today.getMonth())
-  }
+    return (
+      month > today ||
+      (month.getFullYear() === today.getFullYear() &&
+        month.getMonth() > today.getMonth())
+    );
+  };
 
   const getMonthStatus = (month: Date) => {
-    if (isCurrentMonth(month)) return "current"
-    if (isFutureMonth(month)) return "future"
-    return "past"
-  }
+    if (isCurrentMonth(month)) return "current";
+    if (isFutureMonth(month)) return "future";
+    return "past";
+  };
 
-  const monthNames = ["January", "February", "March", "April", "May", "June", 
-                     "July", "August", "September", "October", "November", "December"]
+  const monthNames = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  // Calculate month stats directly without useMemo
+  const getMonthStats = () => {
+    if (loading || !monthlyData) {
+      return {
+        completedDays: 0,
+        partialDays: 0,
+        missedDays: 0,
+        totalHours: 0,
+      };
+    }
+
+    const year = selectedMonth.getFullYear();
+    const month = selectedMonth.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const todayDate = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+    );
+    const isCurrentMonthView =
+      selectedMonth.getMonth() === today.getMonth() &&
+      selectedMonth.getFullYear() === today.getFullYear();
+
+    let completedDays = 0;
+    let totalHours = 0;
+    let partialDays = 0;
+    let missedDays = 0;
+
+    const minRequirements = {
+      meditation: 30,
+      nutrition: 20,
+      zone: 45,
+      discipline: 15,
+    };
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      const currentDate = new Date(year, month, day);
+
+      if (isCurrentMonthView && currentDate > todayDate) {
+        continue;
+      }
+
+      const entry = monthlyData[dateStr];
+
+      if (
+        entry &&
+        entry.tasks &&
+        Array.isArray(entry.tasks) &&
+        entry.tasks.length > 0
+      ) {
+        totalHours += entry.totalHours || 0;
+
+        const completedTasks = entry.tasks.filter((task) => {
+          const minRequired =
+            minRequirements[task.id as keyof typeof minRequirements] || 0;
+          return (task.minutes || 0) >= minRequired;
+        }).length;
+
+        const hasAnyProgress = entry.tasks.some(
+          (task) => (task.minutes || 0) > 0,
+        );
+
+        if (completedTasks === 4) {
+          completedDays++;
+        } else if (hasAnyProgress) {
+          partialDays++;
+        } else {
+          missedDays++;
+        }
+      } else {
+        missedDays++;
+      }
+    }
+
+    return {
+      completedDays,
+      partialDays,
+      missedDays,
+      totalHours,
+    };
+  };
+
+  const monthStats = getMonthStats();
 
   return (
-    <div className="space-y-8 animate-in fade-in-50 duration-700">
-      {/* Enhanced View Mode Tabs */}
-      <div className="flex items-center justify-between">
-        <div className="flex gap-2 overflow-x-auto">
-          <button
-            onClick={() => setViewMode("calendar")}
-            className={`flex-shrink-0 px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-              viewMode === "calendar"
-                ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg"
-                : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600"
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              Calendar View
-            </div>
-          </button>
-          <button
-            onClick={() => setViewMode("year")}
-            className={`flex-shrink-0 px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-              viewMode === "year"
-                ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg"
-                : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600"
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 00-2-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              Year Heatmap
-            </div>
-          </button>
-          <button
-            onClick={() => setViewMode("journey")}
-            className={`flex-shrink-0 px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-              viewMode === "journey"
-                ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg"
-                : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600"
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-              Analytics
-            </div>
-          </button>
-        </div>
+    <div className="space-y-6">
+      {/* View Mode Tabs */}
+      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+        <button
+          onClick={() => setViewMode("calendar")}
+          className={`flex-shrink-0 px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+            viewMode === "calendar"
+              ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg"
+              : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600"
+          }`}
+        >
+          Calendar View
+        </button>
+        <button
+          onClick={() => setViewMode("year")}
+          className={`flex-shrink-0 px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+            viewMode === "year"
+              ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg"
+              : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600"
+          }`}
+        >
+          Year Heatmap
+        </button>
+        <button
+          onClick={() => setViewMode("journey")}
+          className={`flex-shrink-0 px-6 py-3 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+            viewMode === "journey"
+              ? "bg-gradient-to-r from-teal-400 to-teal-400 text-purple-700 shadow-lg"
+              : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600"
+          }`}
+        >
+          Analytics
+        </button>
       </div>
 
-      {viewMode === "calendar" && (
-        <div className="space-y-8 animate-in slide-in-from-left-5 duration-500">
-          {/* Enhanced Month Navigation */}
-          <div className="flex items-center justify-between">
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent">
-              Monthly Progress
-            </h2>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1))}
-                className="group relative overflow-hidden rounded-xl bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <span className="relative flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Previous
-                </span>
-              </button>
-              <button
-                onClick={() => setSelectedMonth(new Date())}
-                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:from-blue-600 hover:to-indigo-600"
-              >
-                <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300" />
-                <span className="relative">Current Month</span>
-              </button>
-              <button
-                onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1))}
-                className="group relative overflow-hidden rounded-xl bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <span className="relative flex items-center gap-2">
-                  Next
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </span>
-              </button>
-            </div>
-          </div>
-
-          {/* Current Month Status */}
-          <div className="bg-card rounded-lg border border-border p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-foreground">
-                {monthNames[selectedMonth.getMonth()]} {selectedMonth.getFullYear()}
-              </h3>
-              <div className="flex items-center gap-3">
-                <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  getMonthStatus(selectedMonth) === "current" 
-                    ? "bg-blue-100 text-blue-800" 
-                    : getMonthStatus(selectedMonth) === "future"
-                    ? "bg-purple-100 text-purple-800"
-                    : "bg-gray-100 text-gray-800"
-                }`}>
-                  {getMonthStatus(selectedMonth) === "current" && "Current Month - MNZD Active"}
-                  {getMonthStatus(selectedMonth) === "future" && "Future Month - Track Progress"}
-                  {getMonthStatus(selectedMonth) === "past" && "Past Month"}
-                </div>
+      <div className="transition-all duration-500 ease-in-out">
+        {viewMode === "calendar" && (
+          <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                Monthly Progress
+              </h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setMonthLoading(true);
+                    setSelectedMonth(
+                      new Date(
+                        selectedMonth.getFullYear(),
+                        selectedMonth.getMonth() - 1,
+                      ),
+                    );
+                    setTimeout(() => setMonthLoading(false), 300);
+                  }}
+                  className="group relative overflow-hidden rounded-xl bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5"
+                >
+                  ← Previous
+                </button>
+                <button
+                  onClick={() => {
+                    setMonthLoading(true);
+                    setSelectedMonth(new Date());
+                    setTimeout(() => setMonthLoading(false), 300);
+                  }}
+                  className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:from-blue-600 hover:to-indigo-600"
+                >
+                  Current Month
+                </button>
+                <button
+                  onClick={() => {
+                    setMonthLoading(true);
+                    setSelectedMonth(
+                      new Date(
+                        selectedMonth.getFullYear(),
+                        selectedMonth.getMonth() + 1,
+                      ),
+                    );
+                    setTimeout(() => setMonthLoading(false), 300);
+                  }}
+                  className="group relative overflow-hidden rounded-xl bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5"
+                >
+                  Next →
+                </button>
               </div>
             </div>
 
-            <CompactMonthView 
-              month={selectedMonth} 
-              journeyData={monthlyData} 
-              onDayEntry={onDayEntry} 
+            <CompactMonthView
+              month={selectedMonth || new Date()}
+              journeyData={monthlyData || {}}
+              onDayEntry={onDayEntry}
             />
 
-            {/* Month Summary */}
-            <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-              {(() => {
-                if (loading) {
-                  return Array.from({ length: 4 }, (_, i) => (
-                    <div key={i} className="text-center p-4 bg-gray-50 rounded-lg animate-pulse">
-                      <div className="h-8 bg-gray-200 rounded mb-2"></div>
-                      <div className="h-4 bg-gray-200 rounded"></div>
-                    </div>
-                  ))
-                }
-                
-                // Memoize the calculation to prevent multiple renders with inconsistent data
-                const monthStats = useMemo(() => {
-                  const year = selectedMonth.getFullYear()
-                  const month = selectedMonth.getMonth()
-                  const daysInMonth = new Date(year, month + 1, 0).getDate()
-                  const todayStr = today.toISOString().split('T')[0]
-                  const isCurrentMonth = selectedMonth.getMonth() === today.getMonth() && selectedMonth.getFullYear() === today.getFullYear()
-                  
-                  let completedDays = 0
-                  let totalHours = 0
-                  let partialDays = 0
-                  let missedDays = 0
-                  
-                  for (let day = 1; day <= daysInMonth; day++) {
-                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-                    const entry = monthlyData[dateStr]
-                    
-                    // Skip future days in current month
-                    if (isCurrentMonth && dateStr > todayStr) {
-                      continue
-                    }
-                    
-                    if (entry && entry.tasks && entry.tasks.length > 0) {
-                      totalHours += entry.totalHours || 0
-                      
-                      const completedTasks = entry.tasks.filter(task => {
-                        const minRequirements = { meditation: 30, nutrition: 20, zone: 45, discipline: 15 }
-                        const minRequired = minRequirements[task.id as keyof typeof minRequirements] || 0
-                        return (task.minutes || 0) >= minRequired
-                      }).length
-                      
-                      const hasAnyProgress = entry.tasks.some(task => (task.minutes || 0) > 0)
-                      
-                      if (completedTasks === 4) {
-                        completedDays++
-                      } else if (hasAnyProgress) {
-                        partialDays++
-                      } else {
-                        missedDays++
-                      }
-                    } else {
-                      missedDays++
-                    }
-                  }
-                  
-                  return { completedDays, partialDays, missedDays, totalHours }
-                }, [selectedMonth, monthlyData, today.toDateString()])
-                
-                return (
-                  <>
-                    <div className="text-center p-4 bg-emerald-50 rounded-lg">
-                      <div className="text-2xl font-bold text-emerald-600">{monthStats.completedDays}</div>
-                      <div className="text-sm text-emerald-700">Complete Days</div>
-                    </div>
-                    <div className="text-center p-4 bg-amber-50 rounded-lg">
-                      <div className="text-2xl font-bold text-amber-600">{monthStats.partialDays}</div>
-                      <div className="text-sm text-amber-700">Partial Days</div>
-                    </div>
-                    <div className="text-center p-4 bg-red-50 rounded-lg">
-                      <div className="text-2xl font-bold text-red-600">{monthStats.missedDays}</div>
-                      <div className="text-sm text-red-700">Missed Days</div>
-                    </div>
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">{monthStats.totalHours.toFixed(1)}</div>
-                      <div className="text-sm text-blue-700">Total Hours</div>
-                    </div>
-                  </>
-                )
-              })()}
+            <div className="mt-6">
+              <div className="mb-6 text-center">
+                <h3 className="text-3xl font-bold text-slate-800 dark:text-white mb-2">
+                  {selectedMonth
+                    ? monthNames[selectedMonth.getMonth()]
+                    : "Loading"}{" "}
+                  {selectedMonth ? selectedMonth.getFullYear() : ""}
+                </h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  {selectedMonth &&
+                    getMonthStatus(selectedMonth) === "current" &&
+                    "Current Month - MNZD Active"}
+                  {selectedMonth &&
+                    getMonthStatus(selectedMonth) === "future" &&
+                    "Future Month - Track Progress"}
+                  {selectedMonth &&
+                    getMonthStatus(selectedMonth) === "past" &&
+                    "Past Month"}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 transition-all duration-500 min-h-[120px]">
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-4 border border-green-200 dark:border-green-800">
+                  <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+                    {loading ? "..." : monthStats.completedDays}
+                  </div>
+                  <div className="text-sm text-green-700 dark:text-green-300">
+                    Complete Days
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-yellow-200 dark:border-yellow-800">
+                  <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
+                    {loading ? "..." : monthStats.partialDays}
+                  </div>
+                  <div className="text-sm text-yellow-700 dark:text-yellow-300">
+                    Partial Days
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 rounded-xl p-4 border border-red-200 dark:border-red-800">
+                  <div className="text-3xl font-bold text-red-600 dark:text-red-400">
+                    {loading ? "..." : monthStats.missedDays}
+                  </div>
+                  <div className="text-sm text-red-700 dark:text-red-300">
+                    Missed Days
+                  </div>
+                </div>
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                  <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                    {loading ? "..." : monthStats.totalHours.toFixed(1)}
+                  </div>
+                  <div className="text-sm text-blue-700 dark:text-blue-300">
+                    Total Hours
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-4">
+                  Quick Jump
+                </h3>
+                <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                  {selectedMonth &&
+                    Array.from({ length: 12 }, (_, i) => {
+                      const monthDate = new Date(
+                        selectedMonth.getFullYear(),
+                        i,
+                        1,
+                      );
+                      const isSelected = selectedMonth.getMonth() === i;
+                      const status = getMonthStatus(monthDate);
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => {
+                            setMonthLoading(true);
+                            setSelectedMonth(monthDate);
+                            setTimeout(() => setMonthLoading(false), 300);
+                          }}
+                          className={`p-3 rounded-lg text-sm font-medium transition-all ${
+                            isSelected
+                              ? "bg-primary text-primary-foreground"
+                              : status === "current"
+                                ? "bg-blue-100 text-blue-800 hover:bg-blue-200"
+                                : status === "future"
+                                  ? "bg-purple-100 text-purple-800 hover:bg-purple-200"
+                                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+                          }`}
+                        >
+                          {monthNames[i].slice(0, 3)}
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
             </div>
           </div>
+        )}
 
-          {/* Quick Month Selector */}
-          <div className="bg-card rounded-lg border border-border p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Quick Jump</h3>
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-              {Array.from({ length: 12 }, (_, i) => {
-                const monthDate = new Date(selectedMonth.getFullYear(), i, 1)
-                const isSelected = selectedMonth.getMonth() === i
-                const status = getMonthStatus(monthDate)
-                
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedMonth(monthDate)}
-                    className={`p-3 rounded-lg text-sm font-medium transition-all ${
-                      isSelected
-                        ? "bg-primary text-primary-foreground"
-                        : status === "current"
-                        ? "bg-blue-100 text-blue-800 hover:bg-blue-200"
-                        : status === "future"
-                        ? "bg-purple-100 text-purple-800 hover:bg-purple-200"
-                        : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    }`}
-                  >
-                    {monthNames[i].slice(0, 3)}
-                  </button>
-                )
-              })}
-            </div>
+        {viewMode === "year" && (
+          <div className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-6">
+              Year at a Glance
+            </h2>
+            <YearHeatmap journeyData={monthlyData || {}} />
           </div>
-        </div>
-      )}
+        )}
 
-      {viewMode === "year" && (
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-foreground">Year at a Glance</h2>
-          <YearHeatmap journeyData={monthlyData} />
-        </div>
-      )}
-
-      {viewMode === "journey" && (
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-foreground">Your Journey</h2>
-          <JourneyGraph journeyData={monthlyData} />
-        </div>
-      )}
+        {viewMode === "journey" && (
+          <div className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-6">
+              Your Journey
+            </h2>
+            <JourneyGraph journeyData={monthlyData || {}} />
+          </div>
+        )}
+      </div>
     </div>
-  )
+  );
 }

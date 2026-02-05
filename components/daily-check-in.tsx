@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { mnzdEvents } from "@/lib/mnzd-events";
 import MNZDCustomizeModal from "./mnzd-customize-modal";
 
@@ -37,10 +37,10 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
   const [settings, setSettings] = useState<any>(preloadedData?.settings || null);
   const [loading, setLoading] = useState(!preloadedData?.settings);
   
-  const todayStr = useMemo(() => {
+  const todayStr = (() => {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  }, []);
+  })();
   
   const handleCustomizeComplete = useCallback(() => {
     setShowMNZDModal(false);
@@ -53,7 +53,7 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
 
   const currentProgress = localProgress || preloadedData?.todayProgress;
   
-  const { taskConfigs, completedTasks, todayCompleted, todayAllCompleted } = useMemo(() => {
+  const getTaskData = () => {
     if (!settings?.mnzdConfigs) {
       return { taskConfigs: [], completedTasks: [], todayCompleted: 0, todayAllCompleted: false };
     }
@@ -69,7 +69,9 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
     const todayAllCompleted = todayCompleted === taskConfigs.length;
     
     return { taskConfigs, completedTasks, todayCompleted, todayAllCompleted };
-  }, [settings, currentProgress]);
+  };
+  
+  const { taskConfigs, completedTasks, todayCompleted, todayAllCompleted } = getTaskData();
   
   const handleProgressUpdate = useCallback(() => {
     setLocalProgress(null);

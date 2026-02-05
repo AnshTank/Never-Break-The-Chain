@@ -3,7 +3,7 @@
 import { useAnalytics } from "@/hooks/use-data"
 import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useEffect, useMemo, useCallback, useRef } from "react"
+import { useEffect, useCallback, useRef } from "react"
 import { mnzdEvents } from "@/lib/mnzd-events"
 
 interface ProgressSummaryProps {
@@ -15,16 +15,11 @@ export default function ProgressSummary({ currentMonth }: ProgressSummaryProps) 
   const lastMonthRef = useRef<string | null>(null)
   const isInitialMount = useRef(true)
 
-  // Memoize month key to prevent unnecessary recalculations
-  const monthKey = useMemo(() => {
-    if (!currentMonth) return null
-    return `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`
-  }, [currentMonth])
+  // Calculate month key directly
+  const monthKey = currentMonth ? `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}` : null
   
-  // Memoize month name to prevent recalculation
-  const monthName = useMemo(() => {
-    return currentMonth ? currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Current Month'
-  }, [currentMonth])
+  // Calculate month name directly
+  const monthName = currentMonth ? currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Current Month'
   
   // Optimize refresh handler with useCallback
   const handleRefresh = useCallback(async () => {

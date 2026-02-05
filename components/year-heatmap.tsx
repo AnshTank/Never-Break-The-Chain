@@ -147,62 +147,78 @@ export default function YearHeatmap({ journeyData }: YearHeatmapProps) {
       {/* GitHub-style Heatmap */}
       <div className="bg-card rounded-lg border border-border p-4">
         <h3 className="text-sm font-semibold text-foreground mb-4">{selectedYear} Activity</h3>
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {Array.from({ length: 3 }, (_, rowIdx) => (
-              <div key={rowIdx} className="grid grid-cols-4 gap-6">
-                {Array.from({ length: 4 }, (_, colIdx) => {
-                  const monthIdx = rowIdx * 4 + colIdx
-                  if (monthIdx >= 12) return null
-                  
-                  const daysInMonth = new Date(selectedYear, monthIdx + 1, 0).getDate()
-                  const firstDay = new Date(selectedYear, monthIdx, 1).getDay()
-                  
-                  return (
-                    <div key={monthIdx} className="space-y-2 p-3 rounded-lg bg-gradient-to-br from-gray-50/50 to-gray-100/30 dark:from-gray-800/30 dark:to-gray-700/20">
-                      <div className="text-xs font-medium text-muted-foreground text-center">
-                        {monthNames[monthIdx]}
-                      </div>
+        <div className="space-y-6 min-h-[400px]">
+          {loading ? (
+            // Skeleton for heatmap
+            <div className="space-y-6">
+              {Array.from({ length: 3 }, (_, rowIdx) => (
+                <div key={rowIdx} className="grid grid-cols-4 gap-6">
+                  {Array.from({ length: 4 }, (_, colIdx) => (
+                    <div key={colIdx} className="space-y-2 p-3 rounded-lg bg-gradient-to-br from-gray-50/50 to-gray-100/30 dark:from-gray-800/30 dark:to-gray-700/20">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
                       <div className="grid grid-cols-7 gap-1">
-                        {/* Empty cells for days before month starts */}
-                        {Array.from({ length: firstDay }, (_, i) => (
-                          <div key={`empty-${i}`} className="w-5 h-5" />
+                        {Array.from({ length: 35 }, (_, i) => (
+                          <div key={i} className="w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded-sm animate-pulse" />
                         ))}
-                        
-                        {/* Actual days */}
-                        {Array.from({ length: daysInMonth }, (_, dayIdx) => {
-                          const day = dayIdx + 1
-                          const date = new Date(selectedYear, monthIdx, day)
-                          const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-                          const entry = yearData[dateStr]
-                          const hours = entry?.totalHours || 0
-                          const isToday = date.toDateString() === new Date().toDateString()
-                          
-                          return (
-                            <div
-                              key={day}
-                              title={`${monthNames[monthIdx]} ${day}, ${selectedYear}: ${hours.toFixed(1)} hours${entry?.completed ? ' (MNZD Complete)' : ''}`}
-                              className={`
-                                w-5 h-5 rounded-sm cursor-default transition-all hover:scale-125 hover:z-10 relative
-                                ${getColorForHours(hours)}
-                                ${isToday ? 'ring-1 ring-blue-500 ring-offset-1' : ''}
-                                ${entry?.completed ? 'ring-1 ring-green-400' : ''}
-                              `}
-                            />
-                          )
-                        })}
                       </div>
                     </div>
-                  )
-                })}
-              </div>
-            ))}
-          </div>
-        )}
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {Array.from({ length: 3 }, (_, rowIdx) => (
+                <div key={rowIdx} className="grid grid-cols-4 gap-6">
+                  {Array.from({ length: 4 }, (_, colIdx) => {
+                    const monthIdx = rowIdx * 4 + colIdx
+                    if (monthIdx >= 12) return null
+                    
+                    const daysInMonth = new Date(selectedYear, monthIdx + 1, 0).getDate()
+                    const firstDay = new Date(selectedYear, monthIdx, 1).getDay()
+                    
+                    return (
+                      <div key={monthIdx} className="space-y-2 p-3 rounded-lg bg-gradient-to-br from-gray-50/50 to-gray-100/30 dark:from-gray-800/30 dark:to-gray-700/20">
+                        <div className="text-xs font-medium text-muted-foreground text-center">
+                          {monthNames[monthIdx]}
+                        </div>
+                        <div className="grid grid-cols-7 gap-1">
+                          {/* Empty cells for days before month starts */}
+                          {Array.from({ length: firstDay }, (_, i) => (
+                            <div key={`empty-${i}`} className="w-5 h-5" />
+                          ))}
+                          
+                          {/* Actual days */}
+                          {Array.from({ length: daysInMonth }, (_, dayIdx) => {
+                            const day = dayIdx + 1
+                            const date = new Date(selectedYear, monthIdx, day)
+                            const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+                            const entry = yearData[dateStr]
+                            const hours = entry?.totalHours || 0
+                            const isToday = date.toDateString() === new Date().toDateString()
+                            
+                            return (
+                              <div
+                                key={day}
+                                title={`${monthNames[monthIdx]} ${day}, ${selectedYear}: ${hours.toFixed(1)} hours${entry?.completed ? ' (MNZD Complete)' : ''}`}
+                                className={`
+                                  w-5 h-5 rounded-sm cursor-default transition-all hover:scale-125 hover:z-10 relative
+                                  ${getColorForHours(hours)}
+                                  ${isToday ? 'ring-1 ring-blue-500 ring-offset-1' : ''}
+                                  ${entry?.completed ? 'ring-1 ring-green-400' : ''}
+                                `}
+                              />
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         
         {/* Legend */}
         <div className="flex items-center justify-between mt-6 pt-4 border-t border-border">

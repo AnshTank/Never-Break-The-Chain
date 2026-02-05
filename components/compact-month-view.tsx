@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState } from "react"
 import type { JourneyData, DayEntry } from "@/lib/types"
 import DayDetailsModal from "./day-details-modal"
 
@@ -13,42 +13,36 @@ interface CompactMonthViewProps {
 export default function CompactMonthView({ month, journeyData }: CompactMonthViewProps) {
   const [selectedDay, setSelectedDay] = useState<{ date: Date; entry: DayEntry | undefined } | null>(null)
   
-  // Memoize calendar calculations to prevent recalculation on every render
-  const { daysInMonth, firstDay, weekDayLabels, today } = useMemo(() => {
-    const getDaysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
-    const getFirstDayOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay()
+  // Calculate calendar values directly
+  const getDaysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+  const getFirstDayOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay()
+  
+  const daysInMonth = getDaysInMonth(month)
+  const firstDay = getFirstDayOfMonth(month)
+  const weekDayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+  const today = new Date()
+
+  // Color calculation function
+  const getColorForDay = (date: Date) => {
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    const entry = journeyData[dateStr]
+    const isToday = date.getDate() === today.getDate() && 
+                   date.getMonth() === today.getMonth() && 
+                   date.getFullYear() === today.getFullYear()
+
+    if (isToday) return "bg-gradient-to-br from-blue-400 to-blue-600 text-white shadow-lg"
+    if (!entry || entry.totalHours <= 0) return "bg-gradient-to-br from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-800"
     
-    return {
-      daysInMonth: getDaysInMonth(month),
-      firstDay: getFirstDayOfMonth(month),
-      weekDayLabels: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-      today: new Date()
-    }
-  }, [month])
-
-  // Memoize color calculation function
-  const getColorForDay = useMemo(() => {
-    return (date: Date) => {
-      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-      const entry = journeyData[dateStr]
-      const isToday = date.getDate() === today.getDate() && 
-                     date.getMonth() === today.getMonth() && 
-                     date.getFullYear() === today.getFullYear()
-
-      if (isToday) return "bg-gradient-to-br from-blue-400 to-blue-600 text-white shadow-lg"
-      if (!entry || entry.totalHours <= 0) return "bg-gradient-to-br from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-800"
-      
-      const hours = entry.totalHours
-      if (hours < 0.5) return "bg-gradient-to-br from-red-100 to-red-200 text-red-800"
-      if (hours < 1) return "bg-gradient-to-br from-orange-100 to-orange-200 text-orange-800"
-      if (hours < 2) return "bg-gradient-to-br from-yellow-100 to-yellow-200 text-yellow-800"
-      if (hours < 3) return "bg-gradient-to-br from-lime-100 to-lime-200 text-lime-800"
-      if (hours < 4) return "bg-gradient-to-br from-green-200 to-green-300 text-green-800"
-      if (hours < 6) return "bg-gradient-to-br from-emerald-300 to-emerald-400 text-emerald-900"
-      if (hours < 8) return "bg-gradient-to-br from-teal-400 to-teal-500 text-white"
-      return "bg-gradient-to-br from-cyan-500 to-blue-600 text-white"
-    }
-  }, [journeyData, today])
+    const hours = entry.totalHours
+    if (hours < 0.5) return "bg-gradient-to-br from-red-100 to-red-200 text-red-800"
+    if (hours < 1) return "bg-gradient-to-br from-orange-100 to-orange-200 text-orange-800"
+    if (hours < 2) return "bg-gradient-to-br from-yellow-100 to-yellow-200 text-yellow-800"
+    if (hours < 3) return "bg-gradient-to-br from-lime-100 to-lime-200 text-lime-800"
+    if (hours < 4) return "bg-gradient-to-br from-green-200 to-green-300 text-green-800"
+    if (hours < 6) return "bg-gradient-to-br from-emerald-300 to-emerald-400 text-emerald-900"
+    if (hours < 8) return "bg-gradient-to-br from-teal-400 to-teal-500 text-white"
+    return "bg-gradient-to-br from-cyan-500 to-blue-600 text-white"
+  }
 
   return (
     <>

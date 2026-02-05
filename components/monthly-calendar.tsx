@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { getDaysInMonth, getFirstDayOfMonth } from "@/lib/date-utils";
 import { useProgressRange } from "@/hooks/use-data";
 import type { DayEntry } from "@/lib/types";
@@ -12,35 +12,27 @@ interface MonthlyCalendarProps {
 }
 
 export default function MonthlyCalendar({ month }: MonthlyCalendarProps) {
-  // Memoize date calculations to prevent recalculation on every render
-  const { year, monthNum, startDate, endDate } = useMemo(() => {
-    const year = month.getFullYear()
-    const monthNum = month.getMonth()
-    const startDate = `${year}-${String(monthNum + 1).padStart(2, '0')}-01`
-    const lastDay = new Date(year, monthNum + 1, 0).getDate()
-    const endDate = `${year}-${String(monthNum + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
-    return { year, monthNum, startDate, endDate }
-  }, [month])
+  // Calculate date values directly
+  const year = month.getFullYear()
+  const monthNum = month.getMonth()
+  const startDate = `${year}-${String(monthNum + 1).padStart(2, '0')}-01`
+  const lastDay = new Date(year, monthNum + 1, 0).getDate()
+  const endDate = `${year}-${String(monthNum + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
   
   const { progressData, loading, refetch } = useProgressRange(startDate, endDate);
   
-  // Memoize progress map to avoid recalculation
-  const progressMap = useMemo(() => {
-    return progressData.reduce((acc, entry) => {
-      acc[entry.date] = entry;
-      return acc;
-    }, {} as Record<string, DayEntry>);
-  }, [progressData])
+  // Create progress map directly
+  const progressMap = progressData.reduce((acc, entry) => {
+    acc[entry.date] = entry;
+    return acc;
+  }, {} as Record<string, DayEntry>);
   
-  // Memoize calendar structure
-  const { daysInMonth, firstDay, days, emptyDays, weekDayLabels } = useMemo(() => {
-    const daysInMonth = getDaysInMonth(month);
-    const firstDay = getFirstDayOfMonth(month);
-    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-    const emptyDays = Array.from({ length: firstDay }, () => null);
-    const weekDayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    return { daysInMonth, firstDay, days, emptyDays, weekDayLabels }
-  }, [month])
+  // Calculate calendar structure directly
+  const daysInMonth = getDaysInMonth(month);
+  const firstDay = getFirstDayOfMonth(month);
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const emptyDays = Array.from({ length: firstDay }, () => null);
+  const weekDayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   
   // Optimize event handlers with useCallback
   const handleProgressUpdate = useCallback(() => {

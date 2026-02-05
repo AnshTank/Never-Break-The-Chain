@@ -28,66 +28,12 @@ export default function JourneyGraph({ journeyData }: JourneyGraphProps) {
   const [viewMode, setViewMode] = useState<"month">("month")
   const [chartType, setChartType] = useState<"area" | "bar" | "line" | "scatter" | "composed">("area")
   const [selectedMonth, setSelectedMonth] = useState(new Date())
-  const [monthData, setMonthData] = useState<JourneyData>({})
-  const [loading, setLoading] = useState(false)
-
-  const fetchMonthData = async (month: Date) => {
-    setLoading(true)
-    try {
-      const year = month.getFullYear()
-      const monthNum = month.getMonth() + 1
-      const startDate = `${year}-${String(monthNum).padStart(2, '0')}-01`
-      const lastDay = new Date(year, monthNum, 0).getDate()
-      const endDate = `${year}-${String(monthNum).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
-      
-      const [progressResponse, settingsResponse] = await Promise.all([
-        fetch(`/api/progress-range?startDate=${startDate}&endDate=${endDate}`),
-        fetch('/api/settings')
-      ])
-      
-      if (!progressResponse.ok || !settingsResponse.ok) {
-        throw new Error('Failed to fetch data')
-      }
-      
-      const progressData = await progressResponse.json()
-      const settingsData = await settingsResponse.json()
-      const mnzdConfigs = settingsData.mnzdConfigs || []
-      
-      const transformedData: JourneyData = {}
-      progressData.forEach((dayProgress: any) => {
-        transformedData[dayProgress.date] = {
-          date: dayProgress.date,
-          tasks: dayProgress.tasks.map((task: any) => {
-            const config = mnzdConfigs.find((c: any) => c.id === task.id)
-            const minMinutes = config?.minMinutes || 0
-            return {
-              id: task.id,
-              name: task.name || config?.name || task.id,
-              completed: task.minutes >= minMinutes,
-              minutes: task.minutes,
-            }
-          }),
-          totalHours: dayProgress.totalHours || 0,
-          note: dayProgress.note || '',
-          completed: dayProgress.tasks.every((task: any) => {
-            const config = mnzdConfigs.find((c: any) => c.id === task.id)
-            return task.minutes >= (config?.minMinutes || 0)
-          })
-        }
-      })
-      
-      setMonthData(transformedData)
-    } catch (error) {
-      // console.error('Error fetching month data:', error)
-      setMonthData({})
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchMonthData(selectedMonth)
-  }, [selectedMonth])
+  
+  // Use the passed journeyData instead of fetching separately
+  const monthData = journeyData || {}
+  
+  // Check if data is empty to show loading state
+  const loading = Object.keys(monthData).length === 0
 
   const getFilteredData = () => {
     const year = selectedMonth.getFullYear()
@@ -120,31 +66,56 @@ export default function JourneyGraph({ journeyData }: JourneyGraphProps) {
 
   if (loading) {
     return (
-      <div className="bg-card rounded-lg border border-border p-8 text-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent dark:via-gray-800/50 animate-shimmer"></div>
-        <div className="relative space-y-4">
-          <div className="w-16 h-16 mx-auto bg-gradient-to-r from-blue-200 via-purple-200 to-green-200 dark:from-blue-800 dark:via-purple-800 dark:to-green-800 rounded-full animate-pulse"></div>
-          <div className="space-y-2">
-            <div className="h-4 w-32 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded mx-auto animate-pulse"></div>
-            <div className="h-3 w-48 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded mx-auto animate-pulse"></div>
+      <div className="space-y-4">
+        {/* Enhanced View Controls Skeleton */}
+        <div className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center gap-1 bg-white dark:bg-gray-900 rounded-lg p-1 shadow-inner">
+            {Array.from({ length: 5 }, (_, i) => (
+              <div key={i} className="h-10 w-16 bg-gray-200 dark:bg-gray-600 rounded-md animate-pulse"></div>
+            ))}
           </div>
-          <div className="flex justify-center space-x-2 mt-4">
-            <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
-            <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce animation-delay-200"></div>
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce animation-delay-400"></div>
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-24 bg-gray-200 dark:bg-gray-600 rounded-lg animate-pulse"></div>
+            <div className="flex items-center gap-2 bg-white dark:bg-gray-900 rounded-lg p-1 shadow-inner">
+              <div className="h-10 w-10 bg-gray-200 dark:bg-gray-600 rounded-md animate-pulse"></div>
+              <div className="h-6 w-32 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
+              <div className="h-10 w-10 bg-gray-200 dark:bg-gray-600 rounded-md animate-pulse"></div>
+            </div>
           </div>
         </div>
-        <style jsx>{`
-          @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-          }
-          .animate-shimmer {
-            animation: shimmer 2s infinite;
-          }
-          .animation-delay-200 { animation-delay: 200ms; }
-          .animation-delay-400 { animation-delay: 400ms; }
-        `}</style>
+
+        {/* Enhanced Stats Cards Skeleton */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 min-h-[80px]">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg border border-gray-200 animate-pulse">
+              <div className="h-8 bg-gray-200 rounded mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded w-20"></div>
+            </div>
+          ))}
+        </div>
+
+        {/* Chart Container Skeleton */}
+        <div className="bg-card rounded-lg border border-border p-6 min-h-[500px]">
+          <div className="flex items-center justify-between mb-6">
+            <div className="h-6 w-48 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
+          </div>
+          
+          <div className="h-[360px] bg-gray-50 dark:bg-gray-800 rounded-lg animate-pulse flex items-center justify-center">
+            <div className="space-y-4 text-center">
+              <div className="w-16 h-16 mx-auto bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+              <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded mx-auto animate-pulse"></div>
+            </div>
+          </div>
+          
+          <div className="mt-4 flex flex-wrap gap-4 justify-center">
+            {Array.from({ length: 5 }, (_, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-600 animate-pulse"></div>
+                <div className="h-4 w-16 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
@@ -256,33 +227,86 @@ export default function JourneyGraph({ journeyData }: JourneyGraphProps) {
       </div>
 
       {/* Enhanced Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
-          <div className="text-2xl font-bold text-blue-600">{totalHours.toFixed(1)}h</div>
-          <div className="text-sm text-blue-700">Total Hours</div>
-        </div>
-        <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 p-4 rounded-lg border border-emerald-200">
-          <div className="text-2xl font-bold text-emerald-600">{completedDays}</div>
-          <div className="text-sm text-emerald-700">Completed Days</div>
-        </div>
-        <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
-          <div className="text-2xl font-bold text-purple-600">{avgHours.toFixed(1)}h</div>
-          <div className="text-sm text-purple-700">Avg per Day</div>
-        </div>
-        <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg border border-orange-200">
-          <div className="text-2xl font-bold text-orange-600">{streak}</div>
-          <div className="text-sm text-orange-700">Current Streak</div>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 min-h-[80px]">
+        {loading ? (
+          // Skeleton for stats cards
+          Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg border border-gray-200 animate-pulse">
+              <div className="h-8 bg-gray-200 rounded mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded w-20"></div>
+            </div>
+          ))
+        ) : (
+          <>
+            <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+              <div className="text-2xl font-bold text-blue-600">{totalHours.toFixed(1)}h</div>
+              <div className="text-sm text-blue-700">Total Hours</div>
+            </div>
+            <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 p-4 rounded-lg border border-emerald-200">
+              <div className="text-2xl font-bold text-emerald-600">{completedDays}</div>
+              <div className="text-sm text-emerald-700">Completed Days</div>
+            </div>
+            <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
+              <div className="text-2xl font-bold text-purple-600">{avgHours.toFixed(1)}h</div>
+              <div className="text-sm text-purple-700">Avg per Day</div>
+            </div>
+            <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-4 rounded-lg border border-orange-200">
+              <div className="text-2xl font-bold text-orange-600">{streak}</div>
+              <div className="text-sm text-orange-700">Current Streak</div>
+            </div>
+          </>
+        )}
       </div>
 
-      <div className="bg-card rounded-lg border border-border p-6">
+      <div className="bg-card rounded-lg border border-border p-6 min-h-[500px]">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-foreground bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
             Hours Invested {viewMode === "month" ? "Each Day" : "Over Time"}
           </h3>
         </div>
         
-        <ResponsiveContainer width="100%" height={360}>
+        {loading ? (
+          // Skeleton matching exact graph layout
+          <div className="space-y-6">
+            {/* Chart controls skeleton */}
+            <div className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl p-4 shadow-sm">
+              <div className="flex items-center gap-1 bg-white dark:bg-gray-900 rounded-lg p-1 shadow-inner">
+                {Array.from({ length: 5 }, (_, i) => (
+                  <div key={i} className="h-10 w-16 bg-gray-200 dark:bg-gray-600 rounded-md animate-pulse"></div>
+                ))}
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-24 bg-gray-200 dark:bg-gray-600 rounded-lg animate-pulse"></div>
+                <div className="flex items-center gap-2 bg-white dark:bg-gray-900 rounded-lg p-1 shadow-inner">
+                  <div className="h-10 w-10 bg-gray-200 dark:bg-gray-600 rounded-md animate-pulse"></div>
+                  <div className="h-6 w-32 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
+                  <div className="h-10 w-10 bg-gray-200 dark:bg-gray-600 rounded-md animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Chart area skeleton */}
+            <div className="h-[360px] bg-gray-50 dark:bg-gray-800 rounded-lg animate-pulse">
+              <div className="flex items-center justify-center h-full">
+                <div className="space-y-4 text-center">
+                  <div className="w-16 h-16 mx-auto bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
+                  <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded mx-auto animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Legend skeleton */}
+            <div className="flex flex-wrap gap-4 justify-center">
+              {Array.from({ length: 5 }, (_, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-600 animate-pulse"></div>
+                  <div className="h-4 w-16 bg-gray-200 dark:bg-gray-600 rounded animate-pulse"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={360}>
           {chartType === "area" ? (
             <AreaChart data={data} margin={{ top: 5, right: 20, left: -20, bottom: 0 }}>
               <defs>
@@ -679,6 +703,7 @@ export default function JourneyGraph({ journeyData }: JourneyGraphProps) {
             </LineChart>
           )}
         </ResponsiveContainer>
+        )}
 
         {/* Legend */}
         <div className="mt-4 flex flex-wrap gap-4 justify-center text-sm">
