@@ -19,7 +19,7 @@ export default function ProgressSummary({ currentMonth }: ProgressSummaryProps) 
   const monthKey = useMemo(() => {
     if (!currentMonth) return null
     return `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`
-  }, [currentMonth?.getFullYear(), currentMonth?.getMonth()])
+  }, [currentMonth])
   
   // Memoize month name to prevent recalculation
   const monthName = useMemo(() => {
