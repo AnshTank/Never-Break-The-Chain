@@ -862,13 +862,14 @@ export class EnhancedNotificationScheduler {
     const daysSinceLastActivity = Math.floor((now.getTime() - user.lastActivity.getTime()) / (1000 * 60 * 60 * 24));
 
     // FIXED: Force notifications when specific window is requested
-    const includeMorning = ctx.window === 'morning' || ctx.window === 'all' || (ctx.window === 'auto' && hour >= 7 && hour <= 9);
-    const includeEvening = ctx.window === 'evening' || ctx.window === 'all' || (ctx.window === 'auto' && hour >= 18 && hour <= 23);
-    const includeWeekly = ctx.window === 'weekly' || ctx.window === 'all' || (ctx.window === 'auto' && dayOfWeek === 1 && hour >= 9 && hour <= 11);
+    const includeMorning = ctx.window === 'morning' || ctx.window === 'all' || (ctx.window === 'auto' && hour >= 1 && hour <= 2);
+    const includeMidday = ctx.window === 'all' || (ctx.window === 'auto' && hour >= 6 && hour <= 7);
+    const includeEvening = ctx.window === 'evening' || ctx.window === 'all' || (ctx.window === 'auto' && hour >= 12 && hour <= 13);
+    const includeWeekly = ctx.window === 'weekly' || ctx.window === 'all' || (ctx.window === 'auto' && dayOfWeek === 0 && hour >= 3 && hour <= 4);
     
-    console.log(`🕐 DEBUG: User ${user.email} - Hour: ${hour}, Window: ${ctx.window}, Include Evening: ${includeEvening}`);
+    console.log(`🕐 DEBUG: User ${user.email} - Hour: ${hour}, Window: ${ctx.window}, Morning: ${includeMorning}, Midday: ${includeMidday}, Evening: ${includeEvening}`);
 
-    // Morning motivation (7-9 AM)
+    // Morning motivation (7 AM IST)
     if (includeMorning) {
       notifications.push({
         type: NotificationType.MORNING_MOTIVATION,
@@ -876,29 +877,49 @@ export class EnhancedNotificationScheduler {
       });
     }
 
-    // Evening check-in (8-10 PM)
+    // Midday milestone check (12 PM IST) - ONLY milestones and special notifications
+    if (includeMidday) {
+      // Milestone celebrations
+      const milestones = [3, 7, 14, 21, 30, 45, 66, 90, 120, 180, 240, 300, 366];
+      if (milestones.includes(user.currentStreak)) {
+        notifications.push({
+          type: NotificationType.MILESTONE_CELEBRATION,
+          priority: 0
+        });
+      }
+
+      // Streak recovery
+      if (user.currentStreak === 0 && user.longestStreak > 0 && daysSinceLastActivity <= 3) {
+        notifications.push({
+          type: NotificationType.STREAK_RECOVERY,
+          priority: 1
+        });
+      }
+
+      // Comeback encouragement
+      if (daysSinceLastActivity >= 3) {
+        notifications.push({
+          type: NotificationType.COMEBACK_ENCOURAGEMENT,
+          priority: 2
+        });
+      }
+    }
+
+    // Evening check-in (6 PM IST)
     if (includeEvening) {
       notifications.push({
         type: NotificationType.EVENING_CHECKIN,
         priority: 1
       });
-    }
-
-    // Milestone celebrations (proven intervals: 3, 7, 14, 21, 30, 66, 90, 180, 365)
-    const milestones = [3, 7, 14, 21, 30, 45, 66, 90, 120, 180, 240, 300, 366];
-    if (milestones.includes(user.currentStreak)) {
-      notifications.push({
-        type: NotificationType.MILESTONE_CELEBRATION,
-        priority: 0 // Highest priority
-      });
-    }
-
-    // Streak recovery (user broke streak but had previous progress)
-    if (user.currentStreak === 0 && user.longestStreak > 0 && daysSinceLastActivity <= 3) {
-      notifications.push({
-        type: NotificationType.STREAK_RECOVERY,
-        priority: 1
-      });
+      
+      // Also check milestones in evening
+      const milestones = [3, 7, 14, 21, 30, 45, 66, 90, 120, 180, 240, 300, 366];
+      if (milestones.includes(user.currentStreak)) {
+        notifications.push({
+          type: NotificationType.MILESTONE_CELEBRATION,
+          priority: 0
+        });
+      }
     }
 
     // Weekly summary (Mondays 9-11 AM)
@@ -909,28 +930,8 @@ export class EnhancedNotificationScheduler {
       });
     }
 
-    // Inactive user comeback (3+ days inactive)
-    if (daysSinceLastActivity >= 3) {
-      notifications.push({
-        type: NotificationType.COMEBACK_ENCOURAGEMENT,
-        priority: 2
-      });
-    }
-
-    // Random motivation (12-2 PM, 3-5 PM) - 30% chance
-    if (ctx.window === 'all' || ((hour >= 12 && hour <= 14) || (hour >= 15 && hour <= 17))) {
-      if (Math.random() < 0.3) {
-        notifications.push({
-          type: NotificationType.RANDOM_MOTIVATION,
-          priority: 3
-        });
-      }
-    }
-
-    // Sort by priority and return top 2 to avoid spam
-    return notifications
-      .sort((a, b) => a.priority - b.priority)
-      .slice(0, 2);
+    // Sort by priority (send important ones first)
+    return notifications.sort((a, b) => a.priority - b.priority);
   }
 
   private static async wasNotificationSentRecently(
