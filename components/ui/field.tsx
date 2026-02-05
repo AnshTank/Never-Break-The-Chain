@@ -191,6 +191,11 @@ function FieldError({
 }: React.ComponentProps<'div'> & {
   errors?: Array<{ message?: string } | undefined>
 }) {
+  // Early return before any hooks to avoid conditional hook calls
+  if (!children && !errors) {
+    return null
+  }
+
   const content = useMemo(() => {
     if (children) {
       return children

@@ -5,7 +5,7 @@ import type { JourneyData, DayEntry } from "@/lib/types";
 import CompactMonthView from "./compact-month-view";
 import YearHeatmap from "./year-heatmap";
 import JourneyGraph from "./journey-graph";
-import { useProgressData } from "@/hooks/use-progress-data";
+import { useSharedData } from "@/lib/data-provider";
 
 interface ProgressViewProps {
   onDayEntry?: (date: Date, entry: DayEntry) => void;
@@ -15,58 +15,42 @@ export default function ProgressView({
   onDayEntry = () => {},
 }: ProgressViewProps) {
   const [selectedMonth, setSelectedMonth] = useState(new Date());
-  const [monthLoading, setMonthLoading] = useState(false);
   const [viewMode, setViewMode] = useState<"calendar" | "year" | "journey">(
     "calendar",
   );
   const [today, setToday] = useState(new Date());
 
-  // ALWAYS call useProgressData - hooks must be called unconditionally
-  const {
-    data: monthlyData,
-    loading,
-    refetch,
-  } = useProgressData(selectedMonth);
+  // Use shared data instead of individual fetching
+  const { currentMonthData, yearData, loading, refreshData } = useSharedData();
+  
+  // Get data for selected month from year data
+  const getMonthData = () => {
+    const year = selectedMonth.getFullYear()
+    const month = selectedMonth.getMonth() + 1
+    const result: JourneyData = {}
+    
+    Object.entries(yearData).forEach(([dateStr, entry]) => {
+      const entryDate = new Date(dateStr)
+      if (entryDate.getFullYear() === year && entryDate.getMonth() + 1 === month) {
+        result[dateStr] = entry
+      }
+    })
+    
+    return result
+  }
+  
+  const monthlyData = getMonthData()
 
-  // Force immediate refresh for current month on mount
-  useEffect(() => {
-    if (isCurrentMonth(selectedMonth)) {
-      refetch?.(selectedMonth);
-    }
-  }, []);
-
-  // Listen for progress updates and refresh immediately
+  // Listen for progress updates and refresh shared data
   useEffect(() => {
     const handleProgressUpdate = () => {
-      if (isCurrentMonth(selectedMonth)) {
-        refetch?.(selectedMonth);
-      }
+      refreshData()
     };
 
     window.addEventListener("progressUpdated", handleProgressUpdate);
     return () =>
       window.removeEventListener("progressUpdated", handleProgressUpdate);
-  }, [selectedMonth, refetch]);
-
-  // Update today every minute to handle date changes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const newToday = new Date();
-      if (newToday.toDateString() !== today.toDateString()) {
-        setToday(newToday);
-        // Force refresh monthly data when date changes
-        refetch?.(selectedMonth);
-      }
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, [today, selectedMonth, refetch]);
-
-  // Clear any localStorage cache on component mount
-  useEffect(() => {
-    localStorage.removeItem("progressCache");
-    localStorage.removeItem("trackedDays");
-  }, []);
+  }, [refreshData]);
 
   const isCurrentMonth = (month: Date) => {
     return (
@@ -226,7 +210,7 @@ export default function ProgressView({
       </div>
 
       <div className="transition-all duration-500 ease-in-out">
-        {viewMode === "calendar" && (
+        <div className={`${viewMode === "calendar" ? "block" : "hidden"}`}>
           <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
@@ -235,14 +219,12 @@ export default function ProgressView({
               <div className="flex gap-2">
                 <button
                   onClick={() => {
-                    setMonthLoading(true);
                     setSelectedMonth(
                       new Date(
                         selectedMonth.getFullYear(),
                         selectedMonth.getMonth() - 1,
                       ),
                     );
-                    setTimeout(() => setMonthLoading(false), 300);
                   }}
                   className="group relative overflow-hidden rounded-xl bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5"
                 >
@@ -250,9 +232,7 @@ export default function ProgressView({
                 </button>
                 <button
                   onClick={() => {
-                    setMonthLoading(true);
                     setSelectedMonth(new Date());
-                    setTimeout(() => setMonthLoading(false), 300);
                   }}
                   className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 hover:from-blue-600 hover:to-indigo-600"
                 >
@@ -260,14 +240,12 @@ export default function ProgressView({
                 </button>
                 <button
                   onClick={() => {
-                    setMonthLoading(true);
                     setSelectedMonth(
                       new Date(
                         selectedMonth.getFullYear(),
                         selectedMonth.getMonth() + 1,
                       ),
                     );
-                    setTimeout(() => setMonthLoading(false), 300);
                   }}
                   className="group relative overflow-hidden rounded-xl bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5"
                 >
@@ -356,9 +334,7 @@ export default function ProgressView({
                         <button
                           key={i}
                           onClick={() => {
-                            setMonthLoading(true);
                             setSelectedMonth(monthDate);
-                            setTimeout(() => setMonthLoading(false), 300);
                           }}
                           className={`p-3 rounded-lg text-sm font-medium transition-all ${
                             isSelected
@@ -378,25 +354,25 @@ export default function ProgressView({
               </div>
             </div>
           </div>
-        )}
+        </div>
 
-        {viewMode === "year" && (
+        <div className={`${viewMode === "year" ? "block" : "hidden"}`}>
           <div className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
             <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-6">
               Year at a Glance
             </h2>
-            <YearHeatmap journeyData={monthlyData || {}} />
+            <YearHeatmap journeyData={yearData} />
           </div>
-        )}
+        </div>
 
-        {viewMode === "journey" && (
+        <div className={`${viewMode === "journey" ? "block" : "hidden"}`}>
           <div className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
             <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-6">
               Your Journey
             </h2>
-            <JourneyGraph journeyData={monthlyData || {}} />
+            <JourneyGraph journeyData={monthlyData} />
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

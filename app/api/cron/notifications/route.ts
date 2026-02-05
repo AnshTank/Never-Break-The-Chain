@@ -49,9 +49,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🔍 Testing email connection...');
+
     const emailTest = await testEmailConnection();
-    console.log(`📧 Email test: ${emailTest ? 'SUCCESS' : 'FAILED'}`);
+
     
     if (!emailTest) {
       return NextResponse.json({ 
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    console.log('📧 Starting dynamic email notification delivery...');
+
     const now = new Date();
     const window = parseWindowParam(request.nextUrl.searchParams.get('window'));
     const dryRun = request.nextUrl.searchParams.get('dryRun') === '1';
@@ -125,7 +125,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('🧪 Manual dynamic email notification test...');
+
     
     const emailTest = await testEmailConnection();
     const now = new Date();

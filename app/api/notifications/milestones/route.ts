@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
             })
             
             if (!existingAchievement) {
-              console.log(`🔥 Streak milestone detected: User ${user._id} reached ${milestone.days} days!`)
+
               
               const result = await sendMilestoneNotification(user._id, {
                 ...milestone,
@@ -196,7 +196,7 @@ export async function POST(request: NextRequest) {
             })
             
             if (!existingAchievement) {
-              console.log(`📈 Total days milestone detected: User ${user._id} reached ${milestone.days} total days!`)
+
               
               const result = await sendMilestoneNotification(user._id, {
                 ...milestone,
@@ -227,7 +227,7 @@ export async function POST(request: NextRequest) {
             })
             
             if (!existingAchievement) {
-              console.log(`💎 Perfect days milestone detected: User ${user._id} reached ${milestone.count} perfect days!`)
+
               
               const result = await sendMilestoneNotification(user._id, {
                 ...milestone,

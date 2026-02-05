@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import type { JourneyData } from "@/lib/types"
+import { useSharedData } from "@/lib/data-provider"
 
 interface YearHeatmapProps {
   journeyData: JourneyData
@@ -9,58 +10,16 @@ interface YearHeatmapProps {
 
 export default function YearHeatmap({ journeyData }: YearHeatmapProps) {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
-  const [yearData, setYearData] = useState<JourneyData>({})
-  const [loading, setLoading] = useState(false)
-
-  const fetchYearData = async (year: number) => {
-    setLoading(true)
-    try {
-      const startDate = `${year}-01-01`
-      const endDate = `${year}-12-31`
-      
-      const response = await fetch(`/api/progress-range?startDate=${startDate}&endDate=${endDate}`)
-      if (!response.ok) throw new Error('Failed to fetch year data')
-      
-      const progressData = await response.json()
-      const settingsResponse = await fetch('/api/settings')
-      const settingsData = await settingsResponse.json()
-      const mnzdConfigs = settingsData.mnzdConfigs || []
-      
-      const transformedData: JourneyData = {}
-      progressData.forEach((dayProgress: any) => {
-        transformedData[dayProgress.date] = {
-          date: dayProgress.date,
-          tasks: dayProgress.tasks.map((task: any) => {
-            const config = mnzdConfigs.find((c: any) => c.id === task.id)
-            const minMinutes = config?.minMinutes || 0
-            return {
-              id: task.id,
-              name: task.name || config?.name || task.id,
-              completed: task.minutes >= minMinutes,
-              minutes: task.minutes,
-            }
-          }),
-          totalHours: dayProgress.totalHours || 0,
-          note: dayProgress.note || '',
-          completed: dayProgress.tasks.every((task: any) => {
-            const config = mnzdConfigs.find((c: any) => c.id === task.id)
-            return task.minutes >= (config?.minMinutes || 0)
-          })
-        }
-      })
-      
-      setYearData(transformedData)
-    } catch (error) {
-      // console.error('Error fetching year data:', error)
-      setYearData({})
-    } finally {
-      setLoading(false)
+  const { loading } = useSharedData()
+  
+  // Filter data for selected year
+  const yearData = Object.entries(journeyData).reduce((acc, [dateStr, entry]) => {
+    const entryYear = new Date(dateStr).getFullYear()
+    if (entryYear === selectedYear) {
+      acc[dateStr] = entry
     }
-  }
-
-  useEffect(() => {
-    fetchYearData(selectedYear)
-  }, [selectedYear])
+    return acc
+  }, {} as JourneyData)
 
   const getColorForHours = (hours: number) => {
     // console.log('getColorForHours - hours:', hours, 'type:', typeof hours)

@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Email notification preferences only
-    console.log('Email notification preferences updated for user:', decoded.userId);
+
 
     return NextResponse.json({
       message: 'Preferences updated successfully',

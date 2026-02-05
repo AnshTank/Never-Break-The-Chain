@@ -382,18 +382,32 @@ export default function CoolLoading({
 
         await new Promise((resolve) => setTimeout(resolve, 200));
 
-        updateStep(3, 50);
+        updateStep(3, 30);
         const today = new Date();
-        const todayStr = `${today.getFullYear()}-${String(
-          today.getMonth() + 1,
-        ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+        const year = today.getFullYear();
+        const month = today.getMonth() + 1;
+        const todayStr = `${year}-${String(month).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
-        const progressResponse = await fetch(`/api/progress?date=${todayStr}`);
-        updateStep(3, 90);
+        // Fetch today's progress and full calendar data in parallel
+        const [progressResponse, monthResponse, yearResponse] = await Promise.all([
+          fetch(`/api/progress?date=${todayStr}`),
+          fetch(`/api/progress-range?startDate=${year}-${String(month).padStart(2, '0')}-01&endDate=${year}-${String(month).padStart(2, '0')}-31`),
+          fetch(`/api/progress-range?startDate=${year}-01-01&endDate=${year}-12-31`)
+        ]);
+        updateStep(3, 80);
 
         let progressData = null;
+        let monthData = [];
+        let yearData = [];
+        
         if (progressResponse.ok) {
           progressData = await progressResponse.json();
+        }
+        if (monthResponse.ok) {
+          monthData = await monthResponse.json();
+        }
+        if (yearResponse.ok) {
+          yearData = await yearResponse.json();
         }
         updateStep(3, 100, true);
 
@@ -407,8 +421,13 @@ export default function CoolLoading({
             settings: settingsData,
             analytics: analyticsData,
             todayProgress: progressData,
+            monthData: monthData,
+            yearData: yearData,
           };
-          // console.log("Loading complete, passing data:", finalData);
+          
+          // Store data in localStorage for immediate access
+          localStorage.setItem('dashboardData', JSON.stringify(finalData));
+          
           onLoadingComplete(finalData);
         }
       } catch (error) {

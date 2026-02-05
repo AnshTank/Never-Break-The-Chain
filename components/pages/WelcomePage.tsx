@@ -526,7 +526,7 @@ const WelcomePage = () => {
     setIsLoading(true);
     
     try {
-      console.log('Starting password setup...');
+
       
       // Setup password with timeout
       const controller = new AbortController();
@@ -541,10 +541,10 @@ const WelcomePage = () => {
       });
       
       clearTimeout(timeoutId);
-      console.log('Password setup response:', response.status);
+
 
       if (response.ok) {
-        console.log('Password setup successful');
+
         
         // Save final MNZD configs to database
         try {
@@ -582,7 +582,7 @@ const WelcomePage = () => {
             scheduleSmartNotifications(userProgress);
           }
         } catch (error) {
-          console.log('Notification setup skipped:', error);
+
         }
         
         // Clear saved MNZD configs from localStorage

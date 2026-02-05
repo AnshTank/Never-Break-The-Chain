@@ -59,14 +59,14 @@ export async function POST(request: NextRequest) {
             }
           }
         );
-        console.log(`✅ Push subscription saved during device registration for ${deviceId}`);
+
       } catch (pushError) {
         console.error('Failed to save push subscription during registration:', pushError);
       }
     }
 
     // Email notifications only - no push notifications
-    console.log('Device registered successfully for user:', decoded.userId);
+
 
     return NextResponse.json({ 
       message: 'Device registered successfully',

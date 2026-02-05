@@ -22,10 +22,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Push subscription and device ID required' }, { status: 400 });
     }
 
-    console.log(`Registering push subscription for device ${deviceId}:`, {
-      endpoint: pushSubscription.endpoint,
-      hasKeys: !!pushSubscription.keys
-    });
+
 
     const { db } = await connectToDatabase();
     const userId = new ObjectId(decoded.userId);
@@ -42,16 +39,13 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    console.log(`Push subscription update result:`, {
-      matchedCount: result.matchedCount,
-      modifiedCount: result.modifiedCount
-    });
+
 
     if (result.matchedCount === 0) {
       return NextResponse.json({ message: 'Device not found' }, { status: 404 });
     }
 
-    console.log(`✅ Push subscription updated for device ${deviceId}`);
+
 
     return NextResponse.json({
       message: 'Push subscription registered successfully',

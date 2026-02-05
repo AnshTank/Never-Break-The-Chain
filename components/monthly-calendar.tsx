@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback } from "react";
 import { getDaysInMonth, getFirstDayOfMonth } from "@/lib/date-utils";
-import { useProgressRange } from "@/hooks/use-data";
+import { useSharedData } from "@/lib/data-provider";
 import type { DayEntry } from "@/lib/types";
 import DayCell from "./day-cell";
 import { mnzdEvents } from "@/lib/mnzd-events";
@@ -12,20 +12,31 @@ interface MonthlyCalendarProps {
 }
 
 export default function MonthlyCalendar({ month }: MonthlyCalendarProps) {
-  // Calculate date values directly
-  const year = month.getFullYear()
-  const monthNum = month.getMonth()
-  const startDate = `${year}-${String(monthNum + 1).padStart(2, '0')}-01`
-  const lastDay = new Date(year, monthNum + 1, 0).getDate()
-  const endDate = `${year}-${String(monthNum + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+  // Use shared data instead of individual API calls
+  const { currentMonthData, yearData, loading, refreshData } = useSharedData();
   
-  const { progressData, loading, refetch } = useProgressRange(startDate, endDate);
+  // Get data for the selected month
+  const getMonthData = () => {
+    const year = month.getFullYear()
+    const monthNum = month.getMonth() + 1
+    const result: Record<string, DayEntry> = {}
+    
+    // Check if it's current month, use currentMonthData, otherwise use yearData
+    const today = new Date()
+    const isCurrentMonth = year === today.getFullYear() && monthNum === today.getMonth() + 1
+    const sourceData = isCurrentMonth ? currentMonthData : yearData
+    
+    Object.entries(sourceData).forEach(([dateStr, entry]) => {
+      const entryDate = new Date(dateStr)
+      if (entryDate.getFullYear() === year && entryDate.getMonth() + 1 === monthNum) {
+        result[dateStr] = entry
+      }
+    })
+    
+    return result
+  }
   
-  // Create progress map directly
-  const progressMap = progressData.reduce((acc, entry) => {
-    acc[entry.date] = entry;
-    return acc;
-  }, {} as Record<string, DayEntry>);
+  const progressMap = getMonthData()
   
   // Calculate calendar structure directly
   const daysInMonth = getDaysInMonth(month);
@@ -36,17 +47,14 @@ export default function MonthlyCalendar({ month }: MonthlyCalendarProps) {
   
   // Optimize event handlers with useCallback
   const handleProgressUpdate = useCallback(() => {
-    refetch();
-  }, [refetch]);
+    // Refresh shared data
+    refreshData();
+  }, [refreshData]);
   
   const handleEntryChange = useCallback(async (date: Date, newEntry: DayEntry) => {
-    // Update local progress map immediately
-    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-    progressMap[dateStr] = newEntry
-    
-    // Force re-render by refreshing data
-    await refetch()
-  }, [progressMap, refetch]);
+    // Refresh shared data after entry change
+    setTimeout(() => refreshData(), 100)
+  }, [refreshData]);
   
   // Listen for progress updates with optimized dependencies
   useEffect(() => {
@@ -61,20 +69,20 @@ export default function MonthlyCalendar({ month }: MonthlyCalendarProps) {
     };
   }, [handleProgressUpdate]);
 
-  if (loading) {
+  if (loading || Object.keys(progressMap).length === 0) {
     return (
       <div className="bg-card rounded-lg border border-border p-3 sm:p-6">
-        <div className="animate-pulse">
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {weekDayLabels.map((day) => (
-              <div key={day} className="h-6 bg-gray-200 dark:bg-gray-700 rounded" />
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-3">
-            {Array.from({ length: 35 }).map((_, i) => (
-              <div key={i} className="h-12 sm:h-16 bg-gray-200 dark:bg-gray-700 rounded" />
-            ))}
-          </div>
+        <div className="grid grid-cols-7 gap-1 mb-2">
+          {weekDayLabels.map((day) => (
+            <div key={day} className="text-center text-xs font-semibold text-muted-foreground py-1 sm:py-2">
+              {day}
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-3">
+          {Array.from({ length: 35 }).map((_, i) => (
+            <div key={i} className="h-12 sm:h-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          ))}
         </div>
       </div>
     );

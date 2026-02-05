@@ -8,9 +8,7 @@ import MonthlyCalendar from "@/components/monthly-calendar";
 import DailyCheckIn from "@/components/daily-check-in";
 import ProgressSummary from "@/components/progress-summary";
 import ProgressView from "@/components/progress-view";
-import CoolLoading from "@/components/cool-loading";
 import MNZDInfoSection from "@/components/mnzd-info-section";
-import NotificationSettings from "@/components/NotificationSettings";
 import { GlobalStateProvider } from "@/lib/global-state";
 import { DataProvider } from "@/lib/data-provider";
 import { useNotifications } from "@/lib/notifications/use-notifications";
@@ -23,14 +21,15 @@ interface HomeProps {
   }
 }
 
-export default function Home() {
+export default function Home({ initialData }: HomeProps) {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"calendar" | "progress">(
     "calendar"
   );
-  const [loadedData, setLoadedData] = useState<any>({});
   const { isEnabled } = useNotifications();
+
+  // No loading state needed - data comes from server
+  const [loadedData] = useState(initialData);
 
   // Device registration function
   const registerDevice = useCallback(async () => {
@@ -81,9 +80,6 @@ export default function Home() {
   }, []);
 
   const handleLoadingComplete = useCallback((data: any) => {
-    setLoadedData(data);
-    setIsLoading(false);
-    
     // Register device automatically on dashboard access
     registerDevice();
     
@@ -93,24 +89,17 @@ export default function Home() {
     }
   }, [isEnabled, registerDevice]);
 
-  // Early return for loading states - no duplicate API calls
-  if (isLoading) {
-    return (
-      <div data-loading="true">
-        <CoolLoading
-          message="Loading your journey dashboard..."
-          onLoadingComplete={handleLoadingComplete}
-        />
-      </div>
-    );
-  }
+  // Register device on mount
+  useEffect(() => {
+    handleLoadingComplete(loadedData);
+  }, [handleLoadingComplete, loadedData]);
 
   return (
     <GlobalStateProvider>
       <DataProvider initialData={{
-        monthData: loadedData.monthData || [],
-        yearData: loadedData.yearData || [],
-        settings: loadedData.settings
+        monthData: [],
+        yearData: [],
+        settings: undefined
       }}>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-blue-950/30">
           <main className="mx-auto max-w-6xl px-2 sm:px-4 py-2 sm:py-4 md:py-6">
@@ -205,7 +194,7 @@ export default function Home() {
                   </div>
 
                   {/* Daily Check-in */}
-                  <DailyCheckIn preloadedData={loadedData} />
+                  <DailyCheckIn preloadedData={{}} />
 
                   {/* Current Month Calendar */}
                   <div className="space-y-4">

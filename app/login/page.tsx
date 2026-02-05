@@ -316,9 +316,9 @@ function LoginForm() {
           router.push("/dashboard");
         }
       } else {
-        console.log('Login failed, response data:', data); // Debug log
+
         if (data.deviceLimitReached) {
-          console.log('Device limit reached, showing modal with devices:', data.activeDevices); // Debug log
+
           // Show device selection modal instead of just error
           setDeviceSelectionData({
             email,

@@ -804,7 +804,7 @@ export default function TimerPage() {
           setTasks(data.tasks || []);
           setPomodoroCount(data.pomodoroCount || 0);
           setCompletedSessions(data.completedSessions || 0);
-          console.log('Timer data loaded from database successfully');
+
         } else {
           console.error('Failed to load timer data from database');
           // Only fallback to localStorage if database fails
@@ -816,7 +816,7 @@ export default function TimerPage() {
             setTasks(data.tasks || []);
             setPomodoroCount(data.pomodoroCount || 0);
             setCompletedSessions(data.completedSessions || 0);
-            console.log('Timer data loaded from localStorage fallback');
+
           }
         }
       } catch (error) {
@@ -830,7 +830,7 @@ export default function TimerPage() {
           setTasks(data.tasks || []);
           setPomodoroCount(data.pomodoroCount || 0);
           setCompletedSessions(data.completedSessions || 0);
-          console.log('Timer data loaded from localStorage after error');
+
         }
       }
     };
@@ -1076,7 +1076,7 @@ export default function TimerPage() {
       setSettingsChanged(false);
       setOriginalSettings(null);
       setIsNewUser(false);
-      console.log('Timer settings saved to database successfully');
+
     } catch (error) {
       console.error("Error saving timer settings to database:", error);
       alert('Failed to save settings. Please try again.');
@@ -1130,7 +1130,7 @@ export default function TimerPage() {
         throw new Error('Failed to save to database');
       }
       
-      console.log('Timer data saved to database successfully');
+
     } catch (error) {
       console.error("Error saving timer data to database:", error);
       // Only use localStorage as emergency backup
@@ -1331,7 +1331,7 @@ export default function TimerPage() {
           throw new Error('Failed to save to database');
         }
         
-        console.log('Task added and saved to database successfully');
+
       } catch (error) {
         console.error("Error adding task to database:", error);
         // Revert the change if database save fails
@@ -1371,7 +1371,7 @@ export default function TimerPage() {
         throw new Error('Failed to save to database');
       }
       
-      console.log('Task deleted and saved to database successfully');
+
     } catch (error) {
       console.error("Error deleting task from database:", error);
       // Revert the change if database save fails

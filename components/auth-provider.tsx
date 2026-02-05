@@ -10,7 +10,7 @@ function SessionManagerWrapper({ children }: { children: React.ReactNode }) {
   
   useEffect(() => {
     // Request interceptor is a simple component, no initialization needed
-    console.log('Auth provider initialized');
+
     
     return () => {
       // Cleanup on unmount

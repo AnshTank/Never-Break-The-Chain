@@ -3,9 +3,7 @@
 import { useState } from "react"
 import type { DayEntry } from "@/lib/types"
 import DayEditModal from "./day-edit-modal"
-import { useDailyProgress, useUserSettings } from "@/hooks/use-data"
-import { useGlobalDailyProgress, useGlobalState } from "@/lib/global-state"
-import { mnzdEvents } from "@/lib/mnzd-events"
+import { useUserSettings } from "@/hooks/use-data"
 
 interface DayCellProps {
   day: number
@@ -17,35 +15,15 @@ interface DayCellProps {
 
 export default function DayCell({ day, date, entry, isToday, onEntryChange }: DayCellProps) {
   const [showModal, setShowModal] = useState(false)
-  const [localEntry, setLocalEntry] = useState<DayEntry | undefined>(entry)
-  const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-  const { updateProgress } = useDailyProgress(dateStr)
-  const { settings } = useUserSettings()
-  const { getTodayProgress, updateProgressForDate, updateTodayProgressImmediate } = useGlobalDailyProgress()
-  const globalState = useGlobalState()
-
-  // Use global state data for today, local state for other days, fallback to prop data
-  const actualEntry = isToday ? getTodayProgress() : (localEntry || entry)
+  const { settings, loading: settingsLoading } = useUserSettings()
   
-  // Debug logging for December 30th and 31st
-  if (dateStr === '2024-12-30' || dateStr === '2024-12-31') {
-    // console.log(`Debug ${dateStr}:`, {
-    //   dateStr,
-    //   isToday,
-    //   propEntry: entry,
-    //   todayProgress: getTodayProgress(),
-    //   actualEntry,
-    //   hasActualEntry: !!actualEntry,
-    //   hasTasks: !!actualEntry?.tasks,
-    //   tasksLength: actualEntry?.tasks?.length || 0,
-    //   completedTasks: actualEntry?.tasks?.filter(task => {
-    //     const config = settings?.mnzdConfigs.find(c => c.id === task.id)
-    //     const minRequired = config?.minMinutes || 0
-    //     return task.minutes >= minRequired
-    //   }).length || 0
-    // })
+  // Show skeleton if settings are still loading
+  if (settingsLoading) {
+    return (
+      <div className="relative w-full h-12 sm:h-16 rounded-lg bg-gray-200 dark:bg-gray-700 animate-pulse" />
+    )
   }
-
+  
   const handleClick = () => {
     if (!isFuture) {
       setShowModal(true)
@@ -54,8 +32,8 @@ export default function DayCell({ day, date, entry, isToday, onEntryChange }: Da
 
   // Calculate completion based on minutes vs minimum requirements
   let completedCount = 0
-  if (actualEntry?.tasks && settings?.mnzdConfigs) {
-    completedCount = actualEntry.tasks.filter((task: any) => {
+  if (entry?.tasks && settings?.mnzdConfigs) {
+    completedCount = entry.tasks.filter((task: any) => {
       const config = settings.mnzdConfigs.find(c => c.id === task.id)
       const minRequired = config?.minMinutes || 0
       return task.minutes >= minRequired
@@ -63,7 +41,7 @@ export default function DayCell({ day, date, entry, isToday, onEntryChange }: Da
   }
   
   const allCompleted = completedCount === 4
-  const hours = actualEntry?.totalHours || 0
+  const hours = entry?.totalHours || 0
 
   // Check if date is in the future
   const today = new Date()
@@ -75,7 +53,7 @@ export default function DayCell({ day, date, entry, isToday, onEntryChange }: Da
     if (isToday) return "bg-gradient-to-br from-blue-200 to-blue-300 border-2 border-blue-400"
     
     // For past days only, use 5-color system based on task completion
-    if (!actualEntry) return "bg-gradient-to-br from-red-100 to-red-200 border border-red-300" // 0 tasks - red
+    if (!entry) return "bg-gradient-to-br from-red-100 to-red-200 border border-red-300" // 0 tasks - red
     
     if (completedCount === 0) return "bg-gradient-to-br from-red-100 to-red-200 border border-red-300" // 0 tasks - red
     if (completedCount === 1) return "bg-gradient-to-br from-orange-100 to-orange-200 border border-orange-300" // 1 task - orange
@@ -87,55 +65,8 @@ export default function DayCell({ day, date, entry, isToday, onEntryChange }: Da
   }
 
   const handleSave = async (newEntry: DayEntry) => {
-    try {
-      // Update local state immediately for UI responsiveness
-      if (!isToday) {
-        setLocalEntry(newEntry)
-      }
-      
-      if (isToday) {
-        // Update UI immediately for today
-        updateTodayProgressImmediate(newEntry)
-        
-        // Try server update in background (silently)
-        updateProgressForDate(dateStr, newEntry).catch(() => {/* Server update failed, but UI already updated */})
-      } else {
-        // For other days, update local cache immediately
-        const today = new Date()
-        const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
-        const trackedDays = JSON.parse(localStorage.getItem('trackedDays') || '{}')
-        
-        if (!trackedDays[currentMonth]) {
-          trackedDays[currentMonth] = []
-        }
-        if (!trackedDays[currentMonth].includes(dateStr)) {
-          trackedDays[currentMonth].push(dateStr)
-          localStorage.setItem('trackedDays', JSON.stringify(trackedDays))
-        }
-        
-        // Update local cache
-        const progressCache = JSON.parse(localStorage.getItem('progressCache') || '{}')
-        progressCache[dateStr] = newEntry
-        localStorage.setItem('progressCache', JSON.stringify(progressCache))
-        
-        // Try server update in background
-        updateProgress(newEntry).catch(() => {/* Server update failed, but UI already updated */})
-      }
-      
-      setShowModal(false)
-      onEntryChange(date, newEntry)
-      
-      // Refresh analytics and calendar
-      window.dispatchEvent(new CustomEvent('progressUpdated', { detail: { date: dateStr } }))
-      mnzdEvents.emitProgressUpdate(dateStr, newEntry)
-      
-      // Force analytics refresh
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('analyticsRefresh'))
-      }, 100)
-    } catch (error) {
-      // console.error('Error saving entry:', error)
-    }
+    onEntryChange(date, newEntry)
+    setShowModal(false)
   }
 
   return (
@@ -147,7 +78,7 @@ export default function DayCell({ day, date, entry, isToday, onEntryChange }: Da
           ${getHourColor()}
           p-1 sm:p-2 flex flex-col items-center justify-center
         `}
-        title={isFuture ? "Future dates cannot be edited" : actualEntry ? `${completedCount}/4 tasks, ${hours.toFixed(1)}h` : "Click to add entry"}
+        title={isFuture ? "Future dates cannot be edited" : entry ? `${completedCount}/4 tasks, ${hours.toFixed(1)}h` : "Click to add entry"}
       >
         <div className={`text-xs sm:text-sm font-bold ${isFuture ? "text-gray-400" : isToday ? "text-blue-900" : "text-gray-900"}`}>{day}</div>
         {!isFuture && <div className={`text-xs font-semibold ${isToday ? "text-blue-800" : "text-gray-700"}`}>{completedCount}/4</div>}
@@ -165,7 +96,7 @@ export default function DayCell({ day, date, entry, isToday, onEntryChange }: Da
         onClose={() => setShowModal(false)}
         onSave={handleSave}
         date={date}
-        initialEntry={actualEntry}
+        initialEntry={entry}
       />
     </>
   )
