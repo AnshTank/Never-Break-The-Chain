@@ -787,11 +787,11 @@ export class EnhancedNotificationScheduler {
         
         // Get today's progress
         const today = new Date().toISOString().split('T')[0];
-        const todayProgress = progressData.find(p => p.date === today);
-        const completedToday = todayProgress ? todayProgress.tasks.filter(t => t.completed || t.minutes > 0).length : 0;
+        const todayProgress = progressData.find((p: any) => p.date === today);
+        const completedToday = todayProgress ? todayProgress.tasks.filter((t: any) => t.completed || t.minutes > 0).length : 0;
         console.log(`🔍 DEBUG: User ${user.email} today (${today}) - Completed: ${completedToday}/${mnzdConfigs.length}`);
         if (todayProgress) {
-          console.log(`🔍 DEBUG: Today's tasks:`, todayProgress.tasks.map(t => ({ id: t.id, completed: t.completed, minutes: t.minutes })));
+          console.log(`🔍 DEBUG: Today's tasks:`, todayProgress.tasks.map((t: any) => ({ id: t.id, completed: t.completed, minutes: t.minutes })));
         }
         
         // Calculate weekly completion rate
@@ -832,9 +832,7 @@ export class EnhancedNotificationScheduler {
           },
           habitStats: habitStats,
           // Add MNZD config for AI personalization
-          mnzdConfigs: mnzdConfigs,
-          // FIX: Use corrected activity data
-          actualDaysSinceActivity: actualDaysSinceActivity
+          mnzdConfigs: mnzdConfigs
         };
 
         userProgressList.push(userProgress);
@@ -862,10 +860,6 @@ export class EnhancedNotificationScheduler {
     const hour = useUtc ? now.getUTCHours() : now.getHours();
     const dayOfWeek = useUtc ? now.getUTCDay() : now.getDay();
     const daysSinceLastActivity = Math.floor((now.getTime() - user.lastActivity.getTime()) / (1000 * 60 * 60 * 24));
-
-    const includeMorning = ctx.window === 'morning' || ctx.window === 'all' || (ctx.window === 'auto' && hour >= 7 && hour <= 9);
-    const includeEvening = ctx.window === 'evening' || ctx.window === 'all' || (ctx.window === 'auto' && hour >= 20 && hour <= 22);
-    const includeWeekly = ctx.window === 'weekly' || ctx.window === 'all' || (ctx.window === 'auto' && dayOfWeek === 1 && hour >= 9 && hour <= 11);
 
     const includeMorning = ctx.window === 'morning' || ctx.window === 'all' || (ctx.window === 'auto' && hour >= 7 && hour <= 9);
     const includeEvening = ctx.window === 'evening' || ctx.window === 'all' || (ctx.window === 'auto' && hour >= 20 && hour <= 22);
@@ -1380,7 +1374,7 @@ export class EnhancedNotificationScheduler {
     
     for (const dayData of sortedData) {
       // Check if all MNZD tasks were completed (at least some minutes)
-      const completedTasks = dayData.tasks?.filter(t => (t.minutes > 0 || t.completed)) || [];
+      const completedTasks = dayData.tasks?.filter((t: any) => (t.minutes > 0 || t.completed)) || [];
       if (completedTasks.length >= dayData.tasks?.length * 0.75) { // 75% completion threshold
         streak++;
       } else {
@@ -1399,7 +1393,7 @@ export class EnhancedNotificationScheduler {
     const sortedData = progressData.sort((a, b) => a.date.localeCompare(b.date));
     
     for (const dayData of sortedData) {
-      const completedTasks = dayData.tasks?.filter(t => (t.minutes > 0 || t.completed)) || [];
+      const completedTasks = dayData.tasks?.filter((t: any) => (t.minutes > 0 || t.completed)) || [];
       if (completedTasks.length >= dayData.tasks?.length * 0.75) {
         currentStreak++;
         longestStreak = Math.max(longestStreak, currentStreak);
@@ -1422,8 +1416,8 @@ export class EnhancedNotificationScheduler {
     
     console.log(`📊 DEBUG: Weekly calculation - Week starts: ${weekStartStr}, Today: ${today.toISOString().split('T')[0]}`);
     
-    const weekData = progressData.filter(p => p.date >= weekStartStr);
-    console.log(`📊 DEBUG: Week progress data:`, weekData.map(d => ({ date: d.date, completed: d.tasks?.filter(t => t.completed || t.minutes > 0).length })));
+    const weekData = progressData.filter((p: any) => p.date >= weekStartStr);
+    console.log(`📊 DEBUG: Week progress data:`, weekData.map((d: any) => ({ date: d.date, completed: d.tasks?.filter((t: any) => t.completed || t.minutes > 0).length })));
     
     if (!weekData.length) {
       console.log(`📊 DEBUG: No week data found`);
@@ -1432,7 +1426,7 @@ export class EnhancedNotificationScheduler {
     
     const totalPossible = weekData.length * totalHabits;
     const totalCompleted = weekData.reduce((sum, day) => {
-      const completed = day.tasks?.filter(t => t.minutes > 0 || t.completed).length || 0;
+      const completed = day.tasks?.filter((t: any) => t.minutes > 0 || t.completed).length || 0;
       return sum + completed;
     }, 0);
     
@@ -1447,12 +1441,12 @@ export class EnhancedNotificationScheduler {
     monthAgo.setDate(monthAgo.getDate() - 30);
     const monthAgoStr = monthAgo.toISOString().split('T')[0];
     
-    const monthData = progressData.filter(p => p.date >= monthAgoStr);
+    const monthData = progressData.filter((p: any) => p.date >= monthAgoStr);
     if (!monthData.length) return 0;
     
     const totalPossible = monthData.length * totalHabits;
     const totalCompleted = monthData.reduce((sum, day) => {
-      return sum + (day.tasks?.filter(t => t.minutes > 0 || t.completed).length || 0);
+      return sum + (day.tasks?.filter((t: any) => t.minutes > 0 || t.completed).length || 0);
     }, 0);
     
     return totalPossible > 0 ? totalCompleted / totalPossible : 0;
@@ -1471,7 +1465,7 @@ export class EnhancedNotificationScheduler {
     monthAgo.setDate(monthAgo.getDate() - 30);
     const monthAgoStr = monthAgo.toISOString().split('T')[0];
     
-    const monthData = progressData.filter(p => p.date >= monthAgoStr);
+    const monthData = progressData.filter((p: any) => p.date >= monthAgoStr);
     
     monthData.forEach(day => {
       day.tasks?.forEach((task: any) => {
