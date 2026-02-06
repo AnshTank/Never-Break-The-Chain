@@ -18,10 +18,12 @@ function getAuthStatus(request: NextRequest, cronSecret: string): { ok: boolean;
   return { ok: false, reason: 'Invalid credentials.' };
 }
 
-function parseWindowParam(raw: string | null): 'auto' | 'morning' | 'evening' | 'weekly' | 'all' {
+function parseWindowParam(raw: string | null): 'auto' | 'morning' | 'midday' | 'evening' | 'weekly' | 'all' {
   switch ((raw || 'auto').toLowerCase()) {
     case 'morning':
       return 'morning';
+    case 'midday':
+      return 'midday';
     case 'evening':
       return 'evening';
     case 'weekly':
@@ -49,9 +51,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-
     const emailTest = await testEmailConnection();
-
     
     if (!emailTest) {
       return NextResponse.json({ 
@@ -60,17 +60,22 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-
     const now = new Date();
     const window = parseWindowParam(request.nextUrl.searchParams.get('window'));
     const dryRun = request.nextUrl.searchParams.get('dryRun') === '1';
-    const results = await EnhancedNotificationScheduler.scheduleNotifications({ now, window, dryRun });
+    const skipRecentCheck = request.nextUrl.searchParams.get('skipRecentCheck') === '1';
+    
+    console.log(`🕐 CRON DEBUG: Time=${now.toISOString()}, UTC Hour=${now.getUTCHours()}, Window=${window}`);
+    
+    const results = await EnhancedNotificationScheduler.scheduleNotifications({ now, window, dryRun, skipRecentCheck });
 
     const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const warnings: string[] = [];
     if (!dryRun && results.sent === 0 && results.failed === 0 && results.skipped === 0) {
       warnings.push('No notifications were sent. This often means the cron ran outside the (morning/evening) time windows or no users are eligible.');
     }
+    
+    console.log(`📊 CRON RESULTS: Sent=${results.sent}, Failed=${results.failed}, Skipped=${results.skipped}, Eligible=${results.eligibleUsers}`);
     
     return NextResponse.json({
       message: 'Dynamic email notification tasks completed successfully',
@@ -131,7 +136,8 @@ export async function GET(request: NextRequest) {
     const now = new Date();
     const window = parseWindowParam(request.nextUrl.searchParams.get('window'));
     const dryRun = request.nextUrl.searchParams.get('dryRun') === '1';
-    const results = await EnhancedNotificationScheduler.scheduleNotifications({ now, window, dryRun });
+    const skipRecentCheck = request.nextUrl.searchParams.get('skipRecentCheck') === '1';
+    const results = await EnhancedNotificationScheduler.scheduleNotifications({ now, window, dryRun, skipRecentCheck });
 
     const serverTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const warnings: string[] = [];

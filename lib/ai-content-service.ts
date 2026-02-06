@@ -341,34 +341,38 @@ export class AIContentService {
     }
   }
 
-  async generateWeeklySummary(context: UserContext, weeklyData: any): Promise<{
+  async generateWeeklySummary(context: any): Promise<{
     subject: string;
+    message: string;
     insights: string[];
     recommendations: string[];
-    nextWeekGoals: string[];
   }> {
+    console.log(`🤖 DEBUG: generateWeeklySummary called with context:`, JSON.stringify(context, null, 2));
+    
     if (!this.isEnabled || !this.provider) {
-      return this.getFallbackWeeklyContent(context, weeklyData);
+      console.log(`🤖 DEBUG: AI disabled for weekly summary, using fallback`);
+      return this.getFallbackWeeklySummaryContent(context);
     }
 
     try {
       const prompt = 'weekly summary';
-      const aiContent = await this.provider.generateContent(prompt, context);
+      console.log(`🤖 DEBUG: Calling AI provider for weekly summary with prompt: ${prompt}`);
+      const aiMessage = await this.provider.generateContent(prompt, context);
+      console.log(`🤖 DEBUG: AI provider returned for weekly summary:`, aiMessage);
       
-      // Parse AI content into structured format
-      const insights = this.extractInsights(aiContent, context);
-      const recommendations = this.extractRecommendations(aiContent, context);
-      const goals = this.extractGoals(aiContent, context);
-      
-      return {
+      const result = {
         subject: `📊 Week ${this.getWeekNumber()} Summary - Your MNZD Journey`,
-        insights,
-        recommendations,
-        nextWeekGoals: goals
+        message: aiMessage,
+        insights: this.extractInsights(aiMessage, context),
+        recommendations: this.extractRecommendations(aiMessage, context)
       };
+      console.log(`🤖 DEBUG: Final weekly summary result:`, result);
+      return result;
     } catch (error) {
-      console.error('AI weekly summary error:', error);
-      return this.getFallbackWeeklyContent(context, weeklyData);
+      console.error('🤖 DEBUG: AI weekly summary error:', error);
+      const fallback = this.getFallbackWeeklySummaryContent(context);
+      console.log(`🤖 DEBUG: Using weekly summary fallback due to error:`, fallback);
+      return fallback;
     }
   }
 
@@ -511,24 +515,21 @@ export class AIContentService {
     };
   }
 
-  private getFallbackWeeklyContent(context: UserContext, weeklyData: any) {
+  private getFallbackWeeklySummaryContent(context: any) {
     return {
       subject: `📊 Week ${this.getWeekNumber()} Summary - Your MNZD Journey`,
+      message: `Great week ${context.name}! You completed ${context.daysCompleted || 0} out of ${context.totalDays || 7} days. Your strongest area is ${context.topHabit} and there's room to grow in ${context.improvementArea}. Keep building that momentum!`,
       insights: [
-        `Current streak: ${context.currentStreak} days`,
-        `Weekly completion: ${Math.round(context.completionRate * 100)}%`,
-        `Strongest habit: ${context.strongestHabit}`,
-        `Growth area: ${context.weakestHabit}`
+        `Completed ${context.daysCompleted || 0} out of ${context.totalDays || 7} days this week`,
+        `Your strongest habit: ${context.topHabit}`,
+        `Growth opportunity: ${context.improvementArea}`,
+        `Current streak: ${context.currentStreak} days`
       ],
       recommendations: [
-        `Focus on improving ${context.weakestHabit} consistency`,
-        'Maintain your strong performance in ' + context.strongestHabit,
-        'Track daily progress for better awareness'
-      ],
-      nextWeekGoals: [
-        `Achieve ${Math.min(Math.round(context.completionRate * 100) + 15, 100)}% completion rate`,
-        `Extend streak to ${context.currentStreak + 7} days`,
-        `Master ${context.weakestHabit} practice`
+        `Focus on improving ${context.improvementArea} consistency`,
+        `Maintain your strong performance in ${context.topHabit}`,
+        'Track daily progress for better awareness',
+        'Celebrate small wins to build momentum'
       ]
     };
   }

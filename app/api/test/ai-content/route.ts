@@ -45,8 +45,12 @@ export async function POST(request: NextRequest) {
         result = await aiContentService.generateComebackMessage(context, 5);
         break;
       case 'weekly':
-        result = await aiContentService.generateWeeklySummary(context, {
-          completionRate: context.completionRate * 100
+        result = await aiContentService.generateWeeklySummary({
+          ...context,
+          daysCompleted: Math.round(context.completionRate * 7),
+          totalDays: 7,
+          topHabit: context.strongestHabit,
+          improvementArea: context.weakestHabit
         });
         break;
       default:
@@ -100,8 +104,12 @@ export async function GET(request: NextRequest) {
         milestoneReached: 21
       }),
       comeback: await aiContentService.generateComebackMessage(testContext, 3),
-      weekly: await aiContentService.generateWeeklySummary(testContext, {
-        completionRate: 85
+      weekly: await aiContentService.generateWeeklySummary({
+        ...testContext,
+        daysCompleted: Math.round(testContext.completionRate * 7),
+        totalDays: 7,
+        topHabit: testContext.strongestHabit,
+        improvementArea: testContext.weakestHabit
       })
     };
 

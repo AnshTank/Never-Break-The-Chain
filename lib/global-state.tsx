@@ -88,6 +88,9 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
   const fetchAnalytics = async (month?: Date) => {
     const monthKey = month ? month.toISOString().split('T')[0].substring(0, 7) : 'current'
     
+    // Skip if already fetching this month
+    if (fetchedRef.current.analytics === monthKey) return
+    
     try {
       setState(prev => ({ ...prev, analyticsLoading: true }))
       fetchedRef.current.analytics = monthKey
@@ -95,7 +98,7 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
       const url = month ? `/api/analytics?month=${month.toISOString()}` : '/api/analytics'
       const response = await fetch(url, {
         method: 'GET',
-        cache: 'no-cache', // Force fresh data
+        cache: 'no-cache',
         headers: {
           'Cache-Control': 'no-cache'
         }
@@ -110,7 +113,6 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
       const data = await response.json()
       setState(prev => ({ ...prev, analytics: data, analyticsLoading: false }))
     } catch (err) {
-      // console.error('Error fetching analytics:', err)
       fetchedRef.current.analytics = null
       setState(prev => ({ ...prev, analyticsLoading: false }))
     }
@@ -177,9 +179,13 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
   }
 
   const refetchAnalytics = useCallback(async (month?: Date) => {
-    // Clear cache and force fresh fetch
-    fetchedRef.current.analytics = null
-    setState(prev => ({ ...prev, analytics: null, analyticsLoading: true }))
+    const monthKey = month ? month.toISOString().split('T')[0].substring(0, 7) : 'current'
+    
+    // Only clear if fetching different month
+    if (fetchedRef.current.analytics !== monthKey) {
+      fetchedRef.current.analytics = null
+    }
+    
     await fetchAnalytics(month)
   }, [])
 

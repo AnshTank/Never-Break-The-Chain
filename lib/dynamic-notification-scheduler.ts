@@ -319,21 +319,23 @@ export class EnhancedNotificationScheduler {
   
   // Main scheduling function called by cron
   static async scheduleNotifications(options?: {
-    window?: 'auto' | 'morning' | 'evening' | 'weekly' | 'all';
+    window?: 'auto' | 'morning' | 'midday' | 'evening' | 'weekly' | 'all';
     now?: Date;
     dryRun?: boolean;
+    skipRecentCheck?: boolean;
   }): Promise<{
     sent: number;
     failed: number;
     types: Record<string, number>;
     skipped: number;
     eligibleUsers: number;
-    window: 'auto' | 'morning' | 'evening' | 'weekly' | 'all';
+    window: 'auto' | 'morning' | 'midday' | 'evening' | 'weekly' | 'all';
     nowIso: string;
   }> {
     const window = options?.window ?? 'auto';
     const now = options?.now ?? new Date();
     const dryRun = options?.dryRun ?? false;
+    const skipRecentCheck = options?.skipRecentCheck ?? false;
 
     const results = {
       sent: 0,
@@ -359,7 +361,7 @@ export class EnhancedNotificationScheduler {
         
         for (const notification of notifications) {
           try {
-            const shouldSkip = await this.wasNotificationSentRecently(db, user.userId, notification.type, now, window);
+            const shouldSkip = skipRecentCheck ? false : await this.wasNotificationSentRecently(db, user.userId, notification.type, now, window);
             if (shouldSkip) {
               console.log(`⏭️ Skipping ${notification.type} for ${user.email} - sent recently`);
               results.skipped++;
@@ -501,8 +503,8 @@ export class EnhancedNotificationScheduler {
     `;
   }
 
-  // Calculate proper weekly stats (Monday to Sunday)
-  private static calculateProperWeeklyStats(user: UserProgress) {
+  // Calculate proper weekly stats (Monday to Sunday) with daily completions
+  private static calculateProperWeeklyStats(user: UserProgress, progressData?: any[]) {
     const today = new Date();
     const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
     const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Days back to last Monday
@@ -519,22 +521,40 @@ export class EnhancedNotificationScheduler {
     
     console.log(`📊 DEBUG: Using custom habit names - Top: ${topHabit}, Improvement: ${improvementArea}`);
     
-    // Calculate actual days completed this week
-    const actualDaysCompleted = Math.round(user.weeklyCompletion * 7);
-    console.log(`📊 DEBUG: Calculated days completed this week: ${actualDaysCompleted}`);
+    // Calculate daily completions for the week
+    const dailyCompletions = [];
+    let totalDaysCompleted = 0;
+    
+    for (let i = 0; i < 7; i++) {
+      const checkDate = new Date(lastMonday.getTime() + i * 24 * 60 * 60 * 1000);
+      const dateStr = checkDate.toISOString().split('T')[0];
+      
+      // Find progress for this specific day
+      const dayProgress = progressData?.find((p: any) => p.date === dateStr);
+      const completedTasks = dayProgress?.tasks?.filter((t: any) => t.completed === true).length || 0;
+      
+      dailyCompletions.push(completedTasks);
+      if (completedTasks >= user.totalHabits * 0.75) { // 75% completion threshold
+        totalDaysCompleted++;
+      }
+    }
+    
+    console.log(`📊 DEBUG: Daily completions for week:`, dailyCompletions);
+    console.log(`📊 DEBUG: Total days completed this week: ${totalDaysCompleted}`);
     
     return {
-      daysCompleted: actualDaysCompleted,
+      daysCompleted: totalDaysCompleted,
       totalDays: 7,
       topHabit,
       improvementArea,
       weekStart: lastMonday.toISOString().split('T')[0],
-      weekEnd: new Date(lastMonday.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      weekEnd: new Date(lastMonday.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      dailyCompletions
     };
   }
 
-  // Generate compact weekly summary HTML
-  private static generateCompactWeeklyHTML(user: UserProgress, weeklyStats: any): string {
+  // Generate AI-powered weekly summary HTML
+  private static generateAIWeeklyHTML(user: UserProgress, weeklyStats: any, aiContent: any): string {
     const completionRate = Math.round((weeklyStats.daysCompleted / weeklyStats.totalDays) * 100);
     
     return `
@@ -572,55 +592,61 @@ export class EnhancedNotificationScheduler {
               </p>
             </div>
             
-            <!-- Week Visualization - FIXED SPACING -->
+            <!-- Week Visualization - PROPER SPACING AND COLORS -->
             <div style="margin: 16px 0;">
               <h3 style="color: #1e293b; margin: 0 0 8px; font-size: 14px; font-weight: 600; text-align: center;">
                 ${weeklyStats.weekStart} to ${weeklyStats.weekEnd}
               </h3>
-              <div style="display: flex; justify-content: space-between; gap: 4px; margin: 8px 0;">
-                ${Array.from({ length: 7 }, (_, i) => `
-                  <div style="flex: 1; height: 24px; border-radius: 4px; background-color: ${i < weeklyStats.daysCompleted ? '#10b981' : '#e5e7eb'}; display: flex; align-items: center; justify-content: center; color: ${i < weeklyStats.daysCompleted ? 'white' : '#6b7280'}; font-size: 11px; font-weight: 600;">
-                    ${i + 1}
-                  </div>
-                `).join('')}
+              <div style="display: flex; justify-content: space-between; gap: 6px; margin: 8px 0; padding: 0 4px;">
+                ${Array.from({ length: 7 }, (_, i) => {
+                  const dayCompletion = weeklyStats.dailyCompletions ? weeklyStats.dailyCompletions[i] || 0 : (i < weeklyStats.daysCompleted ? 4 : 0);
+                  const getColor = (completion: number) => {
+                    if (completion === 0) return '#e5e7eb';
+                    if (completion === 1) return '#86efac';
+                    if (completion === 2) return '#4ade80';
+                    if (completion === 3) return '#22c55e';
+                    return '#16a34a';
+                  };
+                  const getTextColor = (completion: number) => completion === 0 ? '#6b7280' : 'white';
+                  return `
+                    <div style="flex: 1; height: 28px; border-radius: 6px; background-color: ${getColor(dayCompletion)}; display: flex; align-items: center; justify-content: center; color: ${getTextColor(dayCompletion)}; font-size: 12px; font-weight: 600; margin: 0 1px;">
+                      ${i + 1}
+                    </div>
+                  `;
+                }).join('')}
               </div>
             </div>
             
-            <!-- Insights with Custom MNZD Names -->
+            <!-- AI-Generated Weekly Message -->
+            <div style="background: #f0f9ff; border-left: 3px solid #0ea5e9; border-radius: 6px; padding: 12px; margin: 12px 0;">
+              <p style="color: #0369a1; margin: 0; font-size: 14px; line-height: 1.4;">
+                ${aiContent.message || `Great week ${user.name}! You completed ${weeklyStats.daysCompleted} out of ${weeklyStats.totalDays} days. Keep building momentum!`}
+              </p>
+            </div>
+            
+            <!-- AI Insights -->
             <div style="margin: 16px 0;">
               <h3 style="color: #1e293b; margin: 0 0 8px; font-size: 14px; font-weight: 600; text-align: center;">
                 📈 Weekly Insights
               </h3>
               <div style="display: grid; grid-template-columns: 1fr; gap: 8px;">
-                <div style="background: #f0fdf4; border: 1px solid #10b981; border-radius: 6px; padding: 12px;">
-                  <h4 style="color: #065f46; margin: 0 0 4px; font-size: 13px; font-weight: 600;">
-                    🏆 Top Performing Habit
-                  </h4>
-                  <p style="color: #047857; margin: 0; font-size: 12px;">
-                    ${weeklyStats.topHabit} - Keep up the excellent work!
-                  </p>
-                </div>
-                <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 12px;">
-                  <h4 style="color: #92400e; margin: 0 0 4px; font-size: 13px; font-weight: 600;">
-                    🎯 Growth Opportunity
-                  </h4>
-                  <p style="color: #a16207; margin: 0; font-size: 12px;">
-                    ${weeklyStats.improvementArea} - Small improvements here will make a big difference!
-                  </p>
-                </div>
+                ${(aiContent.insights || [`Your strongest area: ${weeklyStats.topHabit}`, `Growth opportunity: ${weeklyStats.improvementArea}`]).map((insight: string, index: number) => `
+                  <div style="background: ${index % 2 === 0 ? '#f0fdf4' : '#fef3c7'}; border: 1px solid ${index % 2 === 0 ? '#10b981' : '#f59e0b'}; border-radius: 6px; padding: 12px;">
+                    <p style="color: ${index % 2 === 0 ? '#047857' : '#a16207'}; margin: 0; font-size: 12px;">
+                      ${insight}
+                    </p>
+                  </div>
+                `).join('')}
               </div>
             </div>
             
-            <!-- Next Week Goals -->
+            <!-- AI Next Week Goals -->
             <div style="background: #f3e8ff; border: 1px solid #8b5cf6; border-radius: 8px; padding: 12px; margin: 12px 0;">
               <h3 style="color: #6b21a8; margin: 0 0 8px; font-size: 14px; font-weight: 600; text-align: center;">
                 🎯 Next Week's Focus
               </h3>
               <ul style="color: #7c3aed; margin: 0; padding-left: 16px; font-size: 12px; line-height: 1.6;">
-                <li>Aim for ${Math.min(completionRate + 15, 100)}% completion rate</li>
-                <li>Focus extra attention on ${weeklyStats.improvementArea}</li>
-                <li>Maintain momentum in ${weeklyStats.topHabit}</li>
-                <li>Add one small improvement to your routine</li>
+                ${(aiContent.recommendations || [`Aim for ${Math.min(completionRate + 15, 100)}% completion rate`, `Focus on ${weeklyStats.improvementArea}`, `Maintain momentum in ${weeklyStats.topHabit}`]).map((rec: string) => `<li>${rec}</li>`).join('')}
               </ul>
             </div>
             
@@ -791,7 +817,7 @@ export class EnhancedNotificationScheduler {
         // Get today's progress
         const today = new Date().toISOString().split('T')[0];
         const todayProgress = progressData.find((p: any) => p.date === today);
-        const completedToday = todayProgress ? todayProgress.tasks.filter((t: any) => t.completed || t.minutes > 0).length : 0;
+        const completedToday = todayProgress ? todayProgress.tasks.filter((t: any) => t.completed === true).length : 0;
         console.log(`🔍 DEBUG: User ${user.email} today (${today}) - Completed: ${completedToday}/${mnzdConfigs.length}`);
         if (todayProgress) {
           console.log(`🔍 DEBUG: Today's tasks:`, todayProgress.tasks.map((t: any) => ({ id: t.id, completed: t.completed, minutes: t.minutes })));
@@ -851,7 +877,7 @@ export class EnhancedNotificationScheduler {
   // Determine which notifications to send to a user
   private static async determineNotificationsForUser(
     user: UserProgress,
-    ctx: { now: Date; window: 'auto' | 'morning' | 'evening' | 'weekly' | 'all' }
+    ctx: { now: Date; window: 'auto' | 'morning' | 'midday' | 'evening' | 'weekly' | 'all' }
   ): Promise<Array<{
     type: NotificationType;
     priority: number;
@@ -866,7 +892,7 @@ export class EnhancedNotificationScheduler {
 
     // FIXED: Force notifications when specific window is requested
     const includeMorning = ctx.window === 'morning' || ctx.window === 'all' || (ctx.window === 'auto' && hour >= 1 && hour <= 2);
-    const includeMidday = ctx.window === 'all' || (ctx.window === 'auto' && hour >= 6 && hour <= 7);
+    const includeMidday = ctx.window === 'midday' || ctx.window === 'all' || (ctx.window === 'auto' && hour >= 6 && hour <= 7);
     const includeEvening = ctx.window === 'evening' || ctx.window === 'all' || (ctx.window === 'auto' && hour >= 12 && hour <= 13);
     const includeWeekly = ctx.window === 'weekly' || ctx.window === 'all' || (ctx.window === 'auto' && dayOfWeek === 0 && hour >= 3 && hour <= 4);
     
@@ -949,7 +975,7 @@ export class EnhancedNotificationScheduler {
       (type === NotificationType.WEEKLY_SUMMARY ? 6 * 24 :
        type === NotificationType.MILESTONE_CELEBRATION ? 12 :
        type === NotificationType.COMEBACK_ENCOURAGEMENT ? 8 :
-       6) : // Shorter lookback for forced windows
+       6) : // Production: 6h for daily, 6d for weekly
       (type === NotificationType.WEEKLY_SUMMARY ? 7 * 24 :
        type === NotificationType.MILESTONE_CELEBRATION ? 36 :
        type === NotificationType.COMEBACK_ENCOURAGEMENT ? 24 :
@@ -1058,12 +1084,43 @@ export class EnhancedNotificationScheduler {
         );
 
       case NotificationType.WEEKLY_SUMMARY:
-        const weeklyStats = this.calculateProperWeeklyStats(user);
+        // Get user's progress data for accurate weekly stats
+        const { db } = await connectToDatabase();
+        const progressData = await db.collection('dailyProgress')
+          .find({ userId: user.userId })
+          .sort({ date: -1 })
+          .limit(30)
+          .toArray();
+        
+        const weeklyStats = this.calculateProperWeeklyStats(user, progressData);
         console.log(`📊 DEBUG: Weekly stats for ${user.email}:`, weeklyStats);
+        
+        // Generate AI-powered weekly summary
+        const weeklyContext = {
+          name: user.name,
+          currentStreak: user.currentStreak,
+          longestStreak: user.longestStreak,
+          weeklyCompletion: user.weeklyCompletion,
+          topHabit: weeklyStats.topHabit,
+          improvementArea: weeklyStats.improvementArea,
+          daysCompleted: weeklyStats.daysCompleted,
+          totalDays: weeklyStats.totalDays,
+          dailyCompletions: weeklyStats.dailyCompletions,
+          mnzdHabits: Object.entries(user.habitStats).map(([id, stats]) => ({
+            id,
+            name: stats.name,
+            completed: stats.completed,
+            total: stats.total,
+            rate: stats.total > 0 ? stats.completed / stats.total : 0
+          }))
+        };
+        
+        const weeklyContent = await aiContentService.generateWeeklySummary(weeklyContext);
+        
         return await sendEmail({
           to: user.email,
-          subject: `📊 Weekly Summary - ${user.name}`,
-          html: this.generateCompactWeeklyHTML(user, weeklyStats)
+          subject: weeklyContent.subject || `📊 Weekly Summary - ${user.name}`,
+          html: this.generateAIWeeklyHTML(user, weeklyStats, weeklyContent)
         });
 
       case NotificationType.COMEBACK_ENCOURAGEMENT:
@@ -1390,8 +1447,8 @@ export class EnhancedNotificationScheduler {
     const sortedData = progressData.sort((a, b) => b.date.localeCompare(a.date));
     
     for (const dayData of sortedData) {
-      // Check if all MNZD tasks were completed (at least some minutes)
-      const completedTasks = dayData.tasks?.filter((t: any) => (t.minutes > 0 || t.completed)) || [];
+      // Check if all MNZD tasks were completed
+      const completedTasks = dayData.tasks?.filter((t: any) => t.completed === true) || [];
       if (completedTasks.length >= dayData.tasks?.length * 0.75) { // 75% completion threshold
         streak++;
       } else {
@@ -1410,7 +1467,7 @@ export class EnhancedNotificationScheduler {
     const sortedData = progressData.sort((a, b) => a.date.localeCompare(b.date));
     
     for (const dayData of sortedData) {
-      const completedTasks = dayData.tasks?.filter((t: any) => (t.minutes > 0 || t.completed)) || [];
+      const completedTasks = dayData.tasks?.filter((t: any) => t.completed === true) || [];
       if (completedTasks.length >= dayData.tasks?.length * 0.75) {
         currentStreak++;
         longestStreak = Math.max(longestStreak, currentStreak);
@@ -1434,7 +1491,7 @@ export class EnhancedNotificationScheduler {
     console.log(`📊 DEBUG: Weekly calculation - Week starts: ${weekStartStr}, Today: ${today.toISOString().split('T')[0]}`);
     
     const weekData = progressData.filter((p: any) => p.date >= weekStartStr);
-    console.log(`📊 DEBUG: Week progress data:`, weekData.map((d: any) => ({ date: d.date, completed: d.tasks?.filter((t: any) => t.completed || t.minutes > 0).length })));
+    console.log(`📊 DEBUG: Week progress data:`, weekData.map((d: any) => ({ date: d.date, completed: d.tasks?.filter((t: any) => t.completed === true).length })));
     
     if (!weekData.length) {
       console.log(`📊 DEBUG: No week data found`);
@@ -1443,7 +1500,7 @@ export class EnhancedNotificationScheduler {
     
     const totalPossible = weekData.length * totalHabits;
     const totalCompleted = weekData.reduce((sum, day) => {
-      const completed = day.tasks?.filter((t: any) => t.minutes > 0 || t.completed).length || 0;
+      const completed = day.tasks?.filter((t: any) => t.completed === true).length || 0;
       return sum + completed;
     }, 0);
     
@@ -1463,7 +1520,7 @@ export class EnhancedNotificationScheduler {
     
     const totalPossible = monthData.length * totalHabits;
     const totalCompleted = monthData.reduce((sum, day) => {
-      return sum + (day.tasks?.filter((t: any) => t.minutes > 0 || t.completed).length || 0);
+      return sum + (day.tasks?.filter((t: any) => t.completed === true).length || 0);
     }, 0);
     
     return totalPossible > 0 ? totalCompleted / totalPossible : 0;
@@ -1488,7 +1545,7 @@ export class EnhancedNotificationScheduler {
       day.tasks?.forEach((task: any) => {
         if (stats[task.id]) {
           stats[task.id].total += 1;
-          if (task.minutes > 0 || task.completed) {
+          if (task.completed === true) {
             stats[task.id].completed += 1;
           }
         }

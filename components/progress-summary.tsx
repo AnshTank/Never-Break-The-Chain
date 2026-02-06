@@ -42,14 +42,11 @@ export default function ProgressSummary({ currentMonth }: ProgressSummaryProps) 
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false
-      // Force initial fetch on mount
-      if (currentMonth) {
-        refetch(currentMonth)
-      }
-      return
+      return // Don't fetch on initial mount, global state handles it
     }
     
     if (monthKey && monthKey !== lastMonthRef.current) {
+      console.log('Month changed from', lastMonthRef.current, 'to', monthKey)
       lastMonthRef.current = monthKey
       if (currentMonth) {
         refetch(currentMonth)
