@@ -355,10 +355,13 @@ export class EnhancedNotificationScheduler {
       for (const user of users) {
         const notifications = await this.determineNotificationsForUser(user, { now, window });
         
+        console.log(`📧 User ${user.email}: ${notifications.length} notifications to send - ${notifications.map(n => n.type).join(', ')}`);
+        
         for (const notification of notifications) {
           try {
             const shouldSkip = await this.wasNotificationSentRecently(db, user.userId, notification.type, now, window);
             if (shouldSkip) {
+              console.log(`⏭️ Skipping ${notification.type} for ${user.email} - sent recently`);
               results.skipped++;
               continue;
             }
