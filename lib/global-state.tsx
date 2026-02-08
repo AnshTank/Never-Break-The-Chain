@@ -86,13 +86,15 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
   }
 
   const fetchAnalytics = async (month?: Date) => {
-    const monthKey = month ? month.toISOString().split('T')[0].substring(0, 7) : 'current'
+    // Use UTC to avoid timezone issues
+    const monthKey = month ? `${month.getUTCFullYear()}-${String(month.getUTCMonth() + 1).padStart(2, '0')}` : 'current'
     
     try {
       setState(prev => ({ ...prev, analyticsLoading: true }))
       fetchedRef.current.analytics = monthKey
       
-      const url = month ? `/api/analytics?month=${month.toISOString()}` : '/api/analytics'
+      // Send YYYY-MM-DD format using UTC to prevent timezone shifts
+      const url = month ? `/api/analytics?month=${month.getUTCFullYear()}-${String(month.getUTCMonth() + 1).padStart(2, '0')}-01` : '/api/analytics'
       const response = await fetch(url, {
         method: 'GET',
         cache: 'no-store',
@@ -178,7 +180,8 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
   }
 
   const refetchAnalytics = useCallback(async (month?: Date) => {
-    const monthKey = month ? month.toISOString().split('T')[0].substring(0, 7) : 'current'
+    // Use UTC to avoid timezone issues
+    const monthKey = month ? `${month.getUTCFullYear()}-${String(month.getUTCMonth() + 1).padStart(2, '0')}` : 'current'
     
     // ALWAYS clear the cache to force fresh fetch
     fetchedRef.current.analytics = null

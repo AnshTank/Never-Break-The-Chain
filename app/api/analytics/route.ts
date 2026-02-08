@@ -6,6 +6,35 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic' // Disable all caching
 export const revalidate = 0 // Never cache
 
+// Sanitize and validate month parameter
+function validateMonthParam(monthParam: string | null): Date | null {
+  if (!monthParam) return null
+  
+  // Only allow YYYY-MM-DD format
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+  if (!dateRegex.test(monthParam)) {
+    console.warn('Invalid month format:', monthParam)
+    return null
+  }
+  
+  const date = new Date(monthParam)
+  if (isNaN(date.getTime())) {
+    console.warn('Invalid date:', monthParam)
+    return null
+  }
+  
+  // Prevent future dates beyond reasonable range
+  const maxDate = new Date()
+  maxDate.setFullYear(maxDate.getFullYear() + 1)
+  
+  if (date > maxDate) {
+    console.warn('Date too far in future:', monthParam)
+    return null
+  }
+  
+  return date
+}
+
 export async function GET(request: NextRequest) {
   try {
     const user = getUserFromRequest(request)
@@ -17,30 +46,34 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const monthParam = searchParams.get('month')
 
+    // Validate and sanitize month parameter
+    const validatedDate = validateMonthParam(monthParam)
+    
     // Get user settings for minimum requirements
     const userSettings = await DatabaseService.getUserSettings(user.userId)
     const mnzdConfigs = userSettings?.mnzdConfigs || []
 
     // Get specific month's data
     let targetDate: Date
-    if (monthParam) {
-      targetDate = new Date(monthParam)
+    if (validatedDate) {
+      targetDate = validatedDate
+      console.log(`📊 Analytics API: monthParam received: ${monthParam}`);
+      console.log(`📊 Analytics API: targetDate parsed: ${targetDate.toISOString()}`);
     } else {
       targetDate = new Date()
     }
     
-    const year = targetDate.getFullYear()
-    const month = targetDate.getMonth() + 1
+    const year = targetDate.getUTCFullYear()
+    const month = targetDate.getUTCMonth() + 1
     const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01`
-    const lastDay = new Date(year, month, 0).getDate()
+    const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate()
     const endOfMonth = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
     
     console.log(`📊 Analytics API: Fetching for month ${startOfMonth} to ${endOfMonth}`);
     
     // Get data for streak calculation (last 365 days + current month)
-    const oneYearAgo = new Date(targetDate)
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
-    const startDate = `${oneYearAgo.getFullYear()}-${String(oneYearAgo.getMonth() + 1).padStart(2, '0')}-01`
+    const oneYearAgo = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth() - 12, 1))
+    const startDate = `${oneYearAgo.getUTCFullYear()}-${String(oneYearAgo.getUTCMonth() + 1).padStart(2, '0')}-01`
     
     const allData = await DatabaseService.getProgressRange(
       user.userId, 

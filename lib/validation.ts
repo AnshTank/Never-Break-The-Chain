@@ -50,17 +50,46 @@ export const resetPasswordSchema = z.object({
 
 // Contact form schema
 export const contactSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters').max(50, 'Name too long'),
+  name: z.string().min(2, 'Name must be at least 2 characters').max(50, 'Name too long').transform(sanitizeString),
   email: emailSchema,
-  subject: z.string().min(5, 'Subject must be at least 5 characters').max(100, 'Subject too long'),
-  message: z.string().min(10, 'Message must be at least 10 characters').max(1000, 'Message too long'),
+  subject: z.string().min(5, 'Subject must be at least 5 characters').max(100, 'Subject too long').transform(sanitizeString),
+  message: z.string().min(10, 'Message must be at least 10 characters').max(1000, 'Message too long').transform(sanitizeString),
 });
 
 // MNZD Configuration schemas
+// Sanitize string to prevent XSS
+function sanitizeString(str: string): string {
+  if (typeof str !== 'string') return str
+  // Remove any HTML tags and script content
+  return str
+    .replace(/<script[^>]*>.*?<\/script>/gi, '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+\s*=/gi, '')
+    .trim()
+    .slice(0, 1000) // Limit length
+}
+
+// Sanitize object recursively
+function sanitizeObject(obj: any): any {
+  if (typeof obj === 'string') return sanitizeString(obj)
+  if (typeof obj !== 'object' || obj === null) return obj
+  
+  if (Array.isArray(obj)) {
+    return obj.map(item => sanitizeObject(item))
+  }
+  
+  const sanitized: any = {}
+  for (const [key, value] of Object.entries(obj)) {
+    sanitized[key] = sanitizeObject(value)
+  }
+  return sanitized
+}
+
 export const mnzdConfigSchema = z.object({
-  id: z.string().min(1, 'ID is required'),
-  name: z.string().min(1, 'Name is required').max(50, 'Name too long'),
-  description: z.string().min(1, 'Description is required').max(200, 'Description too long'),
+  id: z.string().min(1, 'ID is required').transform(sanitizeString),
+  name: z.string().min(1, 'Name is required').max(50, 'Name too long').transform(sanitizeString),
+  description: z.string().min(1, 'Description is required').max(200, 'Description too long').transform(sanitizeString),
   minMinutes: z.number().int().min(5, 'Minimum 5 minutes').max(480, 'Maximum 8 hours'),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format')
 });
@@ -87,7 +116,7 @@ export const progressUpdateSchema = z.object({
   updates: z.object({
     tasks: z.array(taskProgressSchema).optional(),
     totalHours: z.number().min(0).max(24).optional()
-  })
+  }).transform(sanitizeObject) // Sanitize updates
 });
 
 export const progressQuerySchema = z.object({

@@ -46,7 +46,6 @@ export default function ProgressSummary({ currentMonth }: ProgressSummaryProps) 
     }
     
     if (monthKey && monthKey !== lastMonthRef.current) {
-      console.log('Month changed from', lastMonthRef.current, 'to', monthKey, '- fetching new data')
       lastMonthRef.current = monthKey
       if (currentMonth) {
         // Force refetch with the new month

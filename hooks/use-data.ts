@@ -26,24 +26,19 @@ export function useDailyProgress(date: string) {
     try {
       setLoading(true)
       fetchedRef.current = date
-      console.log('Fetching progress for date:', date)
       const response = await fetch(`/api/progress?date=${date}`)
-      console.log('API response status:', response.status, 'for date:', date)
       if (!response.ok) {
-        console.log('API response not ok for date:', date)
         if (isMountedRef.current) {
           setProgress(null)
         }
         return
       }
       const data = await response.json()
-      console.log('API response data for date:', date, data)
       if (isMountedRef.current) {
         cacheRef.current[date] = data
         setProgress(data)
       }
     } catch (err) {
-      // console.error('Error fetching progress:', err)
       if (isMountedRef.current) {
         fetchedRef.current = null
         setProgress(null)
