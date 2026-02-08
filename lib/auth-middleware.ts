@@ -55,7 +55,7 @@ export async function validateUserExists(userId: string): Promise<AuthorizationR
     const users = db.collection('users');
     
     const user = await users.findOne(
-      { _id: new ObjectId(userId) },
+      { email: userId },
       { projection: { email: 1, isActive: 1 } }
     );
     
@@ -105,7 +105,7 @@ export async function validateResourceOwnership(
     const { db } = await connectToDatabase();
     const coll = db.collection(collection);
     
-    let query: any = { userId: new ObjectId(userId) };
+    let query: any = { userId: userId };
     
     // Add resource ID if provided
     if (resourceId) {

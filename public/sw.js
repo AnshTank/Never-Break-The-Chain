@@ -1,4 +1,76 @@
-// Enhanced Service Worker for Advanced Push Notifications
+// Enhanced Service Worker for Advanced Push Notifications and PWA Caching
+const CACHE_NAME = 'never-break-chain-v1';
+const urlsToCache = [
+  '/',
+  '/dashboard',
+  '/manifest.json',
+  '/favicon.svg',
+  '/apple-touch-icon.png'
+];
+
+// Enhanced install event with caching
+self.addEventListener('install', function(event) {
+  console.log('Service Worker installing...');
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('Opened cache');
+        return cache.addAll(urlsToCache);
+      })
+      .then(() => self.skipWaiting())
+  );
+});
+
+// Enhanced activate event with cache cleanup
+self.addEventListener('activate', function(event) {
+  console.log('Service Worker activating...');
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    }).then(() => clients.claim())
+  );
+});
+
+// Fetch event with cache-first strategy for static assets
+self.addEventListener('fetch', function(event) {
+  // Skip caching for API calls
+  if (event.request.url.includes('/api/')) {
+    return;
+  }
+  
+  event.respondWith(
+    caches.match(event.request)
+      .then((response) => {
+        // Cache hit - return response
+        if (response) {
+          return response;
+        }
+        // Clone the request
+        const fetchRequest = event.request.clone();
+        return fetch(fetchRequest).then((response) => {
+          // Check if valid response
+          if (!response || response.status !== 200 || response.type !== 'basic') {
+            return response;
+          }
+          // Clone the response
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME)
+            .then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          return response;
+        });
+      })
+  );
+});
+
 self.addEventListener('push', function(event) {
   console.log('Push notification received:', event);
   
@@ -159,19 +231,33 @@ self.addEventListener('notificationclose', function(event) {
   }
 });
 
-// Enhanced install event
+// Enhanced install event with caching
 self.addEventListener('install', function(event) {
   console.log('Service Worker installing...');
-  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('Opened cache');
+        return cache.addAll(urlsToCache);
+      })
+      .then(() => self.skipWaiting())
+  );
 });
 
-// Enhanced activate event
+// Enhanced activate event with cache cleanup
 self.addEventListener('activate', function(event) {
   console.log('Service Worker activating...');
   event.waitUntil(
-    clients.claim().then(() => {
-      console.log('Service Worker activated and claimed clients');
-    })
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    }).then(() => clients.claim())
   );
 });
 

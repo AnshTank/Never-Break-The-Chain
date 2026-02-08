@@ -24,7 +24,6 @@ export class DeviceSessionManager {
     forceRegister = false
   ): Promise<{ success: boolean; requiresSelection?: boolean; existingDevices?: any[] }> {
     const { db } = await connectToDatabase();
-    const userObjectId = new ObjectId(userId);
     const now = new Date();
     
     // Calculate expiry
@@ -34,7 +33,7 @@ export class DeviceSessionManager {
 
     // Check if exact device already exists by deviceId
     const existingDevice = await db.collection('devices').findOne({
-      userId: userObjectId,
+      userId: userId,
       deviceId: deviceInfo.deviceId,
       isActive: true
     });
@@ -60,7 +59,7 @@ export class DeviceSessionManager {
 
     // Check for similar device (same browser+OS combo) to prevent duplicates
     const similarDevice = await db.collection('devices').findOne({
-      userId: userObjectId,
+      userId: userId,
       browser: deviceInfo.browser,
       os: deviceInfo.os,
       deviceName: deviceInfo.deviceName,
@@ -85,7 +84,7 @@ export class DeviceSessionManager {
 
     // Register new device
     await db.collection('devices').insertOne({
-      userId: userObjectId,
+      userId: userId,
       ...deviceInfo,
       lastActive: now,
       expiresAt,
@@ -98,10 +97,9 @@ export class DeviceSessionManager {
 
   static async removeDevice(userId: string, deviceId: string): Promise<void> {
     const { db } = await connectToDatabase();
-    const userObjectId = new ObjectId(userId);
 
     await db.collection('devices').deleteOne({
-      userId: userObjectId,
+      userId: userId,
       deviceId
     });
 
@@ -113,12 +111,11 @@ export class DeviceSessionManager {
 
   static async getActiveDevices(userId: string): Promise<DeviceInfo[]> {
     const { db } = await connectToDatabase();
-    const userObjectId = new ObjectId(userId);
     const now = new Date();
 
     const devices = await db.collection('devices')
       .find({ 
-        userId: userObjectId, 
+        userId: userId, 
         isActive: true, 
         expiresAt: { $gt: now } 
       })
@@ -139,10 +136,9 @@ export class DeviceSessionManager {
 
   static async updateDeviceActivity(userId: string, deviceId: string): Promise<void> {
     const { db } = await connectToDatabase();
-    const userObjectId = new ObjectId(userId);
 
     await db.collection('devices').updateOne(
-      { userId: userObjectId, deviceId },
+      { userId: userId, deviceId },
       { $set: { lastActive: new Date() } }
     );
   }

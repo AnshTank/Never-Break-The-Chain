@@ -135,15 +135,8 @@ export function DataProvider({
   };
 
   const refreshData = () => {
-    try {
-      const cachedData = localStorage.getItem("progressCache");
-      if (cachedData) {
-        const cache = JSON.parse(cachedData);
-        setCurrentMonthData({ ...cache });
-        setYearData({ ...cache });
-        setUpdateTimestamp(Date.now());
-      }
-    } catch {}
+    setIsRefreshing(true);
+    fetchAllData(true);
   };
 
   useEffect(() => {

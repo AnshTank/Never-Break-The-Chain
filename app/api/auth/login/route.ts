@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
     
     // Generate secure JWT tokens with Remember Me consideration
     const { accessToken, refreshToken, accessTokenMaxAge, refreshTokenMaxAge } = generateTokens({
-      userId: user._id.toString(),
+      userId: user.email,
       email: user.email
     }, rememberMe)
 

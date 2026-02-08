@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     
     // Update user with MNZD configurations - only for the authenticated user
     const updateResult = await users.updateOne(
-      { _id: new ObjectId(userId) },
+      { email: userId },
       { 
         $set: { 
           mnzdConfigs,

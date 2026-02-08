@@ -69,7 +69,7 @@ export default function MonthlyCalendar({ month }: MonthlyCalendarProps) {
     };
   }, [handleProgressUpdate]);
 
-  if (loading || Object.keys(progressMap).length === 0) {
+  if (loading) {
     return (
       <div className="bg-card rounded-lg border border-border p-3 sm:p-6">
         <div className="grid grid-cols-7 gap-1 mb-2">

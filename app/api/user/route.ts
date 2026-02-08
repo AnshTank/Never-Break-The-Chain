@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
     const { db } = await connectToDatabase()
     const users = db.collection('users')
-    const userData = await users.findOne({ _id: new ObjectId(user.userId) })
+    const userData = await users.findOne({ email: user.userId })
     
     // If user doesn't exist (deleted account), return 401
     if (!userData) {
@@ -46,7 +46,7 @@ export async function PUT(request: NextRequest) {
     const users = db.collection('users')
     
     await users.updateOne(
-      { _id: new ObjectId(user.userId) },
+      { email: user.userId },
       { $set: { isNewUser: isNewUser } }
     )
     

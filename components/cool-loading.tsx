@@ -388,17 +388,15 @@ export default function CoolLoading({
         const month = today.getMonth() + 1;
         const todayStr = `${year}-${String(month).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
-        // Fetch today's progress and full calendar data in parallel
-        const [progressResponse, monthResponse, yearResponse] = await Promise.all([
+        // Fetch today's progress and current month data only (not full year)
+        const [progressResponse, monthResponse] = await Promise.all([
           fetch(`/api/progress?date=${todayStr}`),
-          fetch(`/api/progress-range?startDate=${year}-${String(month).padStart(2, '0')}-01&endDate=${year}-${String(month).padStart(2, '0')}-31`),
-          fetch(`/api/progress-range?startDate=${year}-01-01&endDate=${year}-12-31`)
+          fetch(`/api/progress-range?startDate=${year}-${String(month).padStart(2, '0')}-01&endDate=${year}-${String(month).padStart(2, '0')}-31`)
         ]);
         updateStep(3, 80);
 
         let progressData = null;
         let monthData = [];
-        let yearData = [];
         
         if (progressResponse.ok) {
           progressData = await progressResponse.json();
@@ -406,23 +404,20 @@ export default function CoolLoading({
         if (monthResponse.ok) {
           monthData = await monthResponse.json();
         }
-        if (yearResponse.ok) {
-          yearData = await yearResponse.json();
-        }
         updateStep(3, 100, true);
 
         setProgress(100);
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         if (mounted && onLoadingComplete) {
-          // Get the final accumulated data
+          // Get the final accumulated data (year data will be loaded on-demand)
           const finalData = {
             user: userData,
             settings: settingsData,
             analytics: analyticsData,
             todayProgress: progressData,
             monthData: monthData,
-            yearData: yearData,
+            yearData: monthData, // Use month data initially, full year loads on-demand
           };
           
           // Store data in localStorage for immediate access

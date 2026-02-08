@@ -14,12 +14,12 @@ export async function GET(request: NextRequest) {
     
     // Get user's email notification setting
     const user = await db.collection('users').findOne(
-      { _id: new ObjectId(userId) },
+      { email: userId },
       { projection: { emailNotifications: 1 } }
     );
     
     const devices = await db.collection('devices')
-      .find({ userId: new ObjectId(userId), isActive: true })
+      .find({ userId: userId, isActive: true })
       .sort({ lastActive: -1 })
       .toArray();
 

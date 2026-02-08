@@ -13,7 +13,7 @@ export async function PUT(request: NextRequest) {
     const { db } = await connectToDatabase();
 
     await db.collection('users').updateOne(
-      { _id: new ObjectId(userId) },
+      { email: userId },
       { $set: { emailNotifications: emailNotifications !== false } }
     );
 
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     const { db } = await connectToDatabase();
     const user = await db.collection('users').findOne(
-      { _id: new ObjectId(userId) },
+      { email: userId },
       { projection: { emailNotifications: 1 } }
     );
 

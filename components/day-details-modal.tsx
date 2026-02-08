@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import type { DayEntry } from "@/lib/types"
 import {
   Dialog,
@@ -8,48 +8,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { useUserSettings, useDailyProgress } from "@/hooks/use-data"
 
 interface DayDetailsModalProps {
   isOpen: boolean
   onClose: () => void
   date: Date
-  entry?: DayEntry | undefined // Make optional since we'll fetch fresh data
+  entry?: DayEntry
 }
 
-export default function DayDetailsModal({ isOpen, onClose, date }: DayDetailsModalProps) {
-  const { settings } = useUserSettings()
-  const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-  const { progress: entry, loading, refetch } = useDailyProgress(dateStr)
+export default function DayDetailsModal({ isOpen, onClose, date, entry }: DayDetailsModalProps) {
   const [isNotesExpanded, setIsNotesExpanded] = useState(false)
-
-  // Force refetch when modal opens to ensure fresh data
-  useEffect(() => {
-    if (isOpen) {
-      refetch()
-    }
-  }, [isOpen, refetch])
 
   const completedTasks = entry?.tasks?.filter((t: any) => t.completed).length || 0
   const totalTasks = entry?.tasks?.length || 4
-
-  if (loading) {
-    return (
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="scrollbar-hide">
-          <DialogHeader>
-            <DialogTitle>Loading...</DialogTitle>
-          </DialogHeader>
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-sm text-muted-foreground">Loading day data...</p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    )
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -97,12 +68,11 @@ export default function DayDetailsModal({ isOpen, onClose, date }: DayDetailsMod
               {/* MNZD Tasks Status */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {settings?.mnzdConfigs?.[0]?.name ? 'Custom' : 'MNZD'} Tasks
+                  MNZD Tasks
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {entry.tasks?.map((task: any, index: number) => {
-                    const config = settings?.mnzdConfigs?.find(c => c.id === task.id)
-                    const taskName = config?.name || task.name || `Task ${index + 1}`
+                    const taskName = task.name || `Task ${index + 1}`
                     
                     return (
                       <div key={task.id || index} className={`p-4 rounded-lg border-2 transition-all ${

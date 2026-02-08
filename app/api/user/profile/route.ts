@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const { db } = await connectToDatabase()
     const users = db.collection('users')
     const userData = await users.findOne(
-      { _id: new ObjectId(userId) },
+      { email: userId },
       { projection: { email: 1, name: 1, isNewUser: 1, needsPasswordSetup: 1 } }
     )
     
@@ -56,7 +56,7 @@ export async function PUT(request: NextRequest) {
     const users = db.collection('users')
     
     const result = await users.updateOne(
-      { _id: new ObjectId(userId) },
+      { email: userId },
       { 
         $set: { 
           name: name.trim(),

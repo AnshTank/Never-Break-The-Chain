@@ -90,7 +90,7 @@ export async function middleware(request: NextRequest) {
             const { db } = await connectToDatabase();
             const users = db.collection("users");
             user = await users.findOne(
-              { _id: new ObjectId(payload.userId) },
+              { email: payload.userId },
               {
                 projection: { isNewUser: 1, needsPasswordSetup: 1, password: 1 },
               },
@@ -134,7 +134,7 @@ export async function middleware(request: NextRequest) {
             const { db } = await connectToDatabase();
             const users = db.collection("users");
             user = await users.findOne(
-              { _id: new ObjectId(payload.userId) },
+              { email: payload.userId },
               {
                 projection: { isNewUser: 1, needsPasswordSetup: 1, password: 1 },
               },
@@ -246,7 +246,7 @@ export async function middleware(request: NextRequest) {
         const { db } = await connectToDatabase();
         const users = db.collection("users");
         user = await users.findOne(
-          { _id: new ObjectId(payload.userId) },
+          { email: payload.userId },
           { projection: { isNewUser: 1, needsPasswordSetup: 1, password: 1 } }
         );
         
@@ -294,7 +294,7 @@ export async function middleware(request: NextRequest) {
     try {
       const { db } = await connectToDatabase();
       const device = await db.collection('devices').findOne({
-        userId: new ObjectId(payload.userId),
+        userId: payload.userId,
         deviceId: deviceId,
         isActive: true
       });
@@ -319,7 +319,7 @@ export async function middleware(request: NextRequest) {
       
       // Update device last active time
       await db.collection('devices').updateOne(
-        { userId: new ObjectId(payload.userId), deviceId: deviceId },
+        { userId: payload.userId, deviceId: deviceId },
         { $set: { lastActive: new Date() } }
       );
       
