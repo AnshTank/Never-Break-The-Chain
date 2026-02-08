@@ -85,7 +85,7 @@ export function DataProvider({
   const [yearData, setYearData] = useState<JourneyData>(initial.yearData);
   const [loading, setLoading] = useState(!dataToUse);
   const [isRefreshing, setIsRefreshing] = useState(false);
-""  const [updateTimestamp, setUpdateTimestamp] = useState(Date.now());
+  const [updateTimestamp, setUpdateTimestamp] = useState(Date.now());
 
   const fetchAllData = async (silent = false) => {
     try {
