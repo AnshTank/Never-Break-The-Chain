@@ -28,7 +28,7 @@ Never Break The Chain is a full-stack habit tracking application built with mode
 │  • Rate Limiting Middleware                                      │
 │  • JWT Authentication Middleware                                 │
 │  • Request Validation (Zod schemas)                              │
-│  • CORS & Security Headers                                       │
+│  • Security Headers                                              │
 │  • Error Handling & Logging                                      │
 └─────────────────────────────────────────────────────────────────┘
                               ↕
@@ -96,7 +96,6 @@ Never Break The Chain is a full-stack habit tracking application built with mode
   - Authentication and authorization
   - Rate limiting and DDoS protection
   - Input validation and sanitization
-  - CORS policy enforcement
   - Security headers injection
   - Error handling and logging
 
@@ -195,7 +194,6 @@ User → Dashboard → API (/api/analytics?month=2025-01)
 │  Layer 2: Application Security                               │
 │  • JWT authentication with rotation                          │
 │  • Rate limiting (progressive blocking)                      │
-│  • CORS policy enforcement                                   │
 │  • Security headers (CSP, X-Frame-Options)                   │
 └─────────────────────────────────────────────────────────────┘
                          ↓

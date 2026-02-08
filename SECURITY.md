@@ -137,15 +137,6 @@ Never Break The Chain implements enterprise-grade security measures to protect u
 3. **Email Timing**: Corrected notification scheduling
 4. **Data Format**: Improved data validation
 
-## 📊 Supported Versions
-
-| Version | Supported | Security Updates | End of Life |
-|---------|-----------|------------------|-------------|
-| 2.0.x   | ✅ Yes    | Active          | TBD         |
-| 1.3.x   | ✅ Yes    | Security Only   | 2026-06-01  |
-| 1.2.x   | ⚠️ Limited| Critical Only   | 2026-03-01  |
-| < 1.2   | ❌ No     | None            | 2026-01-15  |
-
 ## 🚨 Vulnerability Reporting
 
 We take security vulnerabilities seriously and appreciate responsible disclosure from the security community.
@@ -425,7 +416,6 @@ This security policy is subject to change without notice. Users, developers, and
 - Do not disrupt service availability
 
 **Last Updated**: January 2026  
-**Version**: 2.2.0  
 **Next Review**: April 2026
 
 **Recent Changes**:

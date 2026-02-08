@@ -396,7 +396,7 @@ Limits by Endpoint:
 - /api/auth/signup: 3 requests/hour
 - /api/progress: 60 requests/min
 - /api/analytics: 30 requests/min
-- /api/cron/*: Requires CRON_SECRET header
+- Scheduled endpoints: Require secure authentication
 ```
 
 #### 5.3 CSRF Protection
