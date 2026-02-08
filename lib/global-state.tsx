@@ -86,15 +86,15 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
   }
 
   const fetchAnalytics = async (month?: Date) => {
-    // Use UTC to avoid timezone issues
-    const monthKey = month ? `${month.getUTCFullYear()}-${String(month.getUTCMonth() + 1).padStart(2, '0')}` : 'current'
+    // Use local date to match calendar selection
+    const monthKey = month ? `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}` : 'current'
     
     try {
       setState(prev => ({ ...prev, analyticsLoading: true }))
       fetchedRef.current.analytics = monthKey
       
-      // Send YYYY-MM-DD format using UTC to prevent timezone shifts
-      const url = month ? `/api/analytics?month=${month.getUTCFullYear()}-${String(month.getUTCMonth() + 1).padStart(2, '0')}-01` : '/api/analytics'
+      // Send YYYY-MM-DD format using local date (not UTC)
+      const url = month ? `/api/analytics?month=${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}-01` : '/api/analytics'
       const response = await fetch(url, {
         method: 'GET',
         cache: 'no-store',
@@ -180,10 +180,10 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
   }
 
   const refetchAnalytics = useCallback(async (month?: Date) => {
-    // Use UTC to avoid timezone issues
-    const monthKey = month ? `${month.getUTCFullYear()}-${String(month.getUTCMonth() + 1).padStart(2, '0')}` : 'current'
+    // Use local date to match calendar selection
+    const monthKey = month ? `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}` : 'current'
     
-    // ALWAYS clear the cache to force fresh fetch
+    // ALWAYS clear cache on manual refetch
     fetchedRef.current.analytics = null
     
     await fetchAnalytics(month)

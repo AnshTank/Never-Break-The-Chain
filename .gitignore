@@ -127,6 +127,12 @@ temp/
 *.md
 !README.md
 !LICENSE.md
+!SECURITY.md
+!SYSTEM_DESIGN_HLD.md
+!SYSTEM_DESIGN_LLD.md
+
+# Extra documentation files
+/extra/
 
 # Duplicate directories
 /Welcome and Home Page/
@@ -134,21 +140,6 @@ temp/
 # Build and cache directories
 .swc/
 .turbo/
-
-# Security and deployment files
-SECURITY.md
-DEPLOYMENT.md
-GITHUB-SECURITY.md
-PROJECT_DOCUMENTATION.md
-*.security.md
-*.deployment.md
-
-# Analysis and report files
-*-report.md
-*-summary.md
-*-verification.md
-*-optimizations.md
-*-compliance-report.md
 
 # Middleware security
 middleware-security.ts

@@ -18,40 +18,54 @@ Never Break The Chain implements enterprise-grade security measures to protect u
 - **🔑 JWT Token Security**: 
   - Secure token generation with 256-bit secrets
   - Automatic token rotation every 24 hours
-  - Refresh token mechanism with secure storage
+  - Dual expiration modes: 1 hour (normal), 180 days (remember me)
   - Token blacklisting for immediate revocation
+  - HttpOnly cookies with SameSite=Strict
 
 - **🔐 Password Security**: 
   - bcrypt hashing with 12 rounds (industry standard)
   - Password strength requirements (8+ chars, mixed case, numbers, symbols)
   - Protection against rainbow table attacks
   - Secure password reset with time-limited tokens
+  - No plaintext password storage
 
 - **📧 OTP Verification**: 
   - 6-digit time-based one-time passwords
   - 5-minute expiration window
   - Rate limiting (max 3 attempts per 15 minutes)
   - Secure email delivery with HTML templates
+  - In-memory storage with automatic cleanup
 
 - **📱 Device Management**: 
   - Multi-device authentication tracking
   - Session fingerprinting and validation
   - Automatic logout on suspicious activity
   - Device registration with unique identifiers
+  - Trusted device management
 
 ### Data Protection & Privacy
 
-- **🔒 Input Validation**: 
+- **✅ Input Validation & Sanitization**: 
   - Comprehensive Zod schema validation
-  - SQL injection prevention (NoSQL injection for MongoDB)
-  - XSS protection with content sanitization
+  - **XSS Protection** (Added Jan 2025):
+    - HTML tag removal: `/<[^>]*>/g`
+    - Script content stripping: `/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi`
+    - JavaScript protocol blocking: `/javascript:/gi`
+    - Event handler removal: `/on\w+\s*=/gi`
+  - SQL/NoSQL injection prevention
   - CSRF protection with SameSite cookies
+  - Applied to: user names, MNZD configs, contact forms, feedback
 
 - **🛡️ Rate Limiting**: 
   - Progressive blocking system (1-5-15 minute escalation)
-  - IP-based tracking with Redis caching
-  - API endpoint specific limits
+  - IP-based tracking with in-memory caching
+  - API endpoint specific limits:
+    - `/api/auth/login`: 5 requests/15 min
+    - `/api/auth/signup`: 3 requests/hour
+    - `/api/progress`: 60 requests/min
+    - `/api/analytics`: 30 requests/min
   - DDoS protection with exponential backoff
+  - Cron endpoint protection with secret token
 
 - **🌐 Security Headers**: 
   - Content Security Policy (CSP)
@@ -59,12 +73,14 @@ Never Break The Chain implements enterprise-grade security measures to protect u
   - X-Content-Type-Options: nosniff
   - Referrer-Policy: strict-origin-when-cross-origin
   - Permissions-Policy for feature control
+  - Strict-Transport-Security (HSTS)
 
 - **📝 Audit Logging**: 
   - Comprehensive security event tracking
   - Failed login attempt monitoring
   - Suspicious activity detection
   - Real-time alerting for critical events
+  - Device registration logging
 
 ### Infrastructure Security
 
@@ -86,14 +102,50 @@ Never Break The Chain implements enterprise-grade security measures to protect u
   - Production/development environment isolation
   - Secure deployment pipelines
 
+## 🚨 Recent Security Updates (January 2025)
+
+### XSS Protection Enhancement
+**Status**: ✅ Implemented and Deployed
+
+**Changes**:
+1. **Input Sanitization** (`lib/validation.ts`):
+   - Added `sanitizeString()` function
+   - Removes HTML tags, script content, javascript: protocols
+   - Strips event handlers (onclick, onerror, etc.)
+   - Applied to all user-facing inputs
+
+2. **Date Parameter Validation** (`app/api/analytics/route.ts`):
+   - Regex validation for YYYY-MM-DD format
+   - Date range validation (prevents future dates beyond 1 year)
+   - Protection against injection attacks
+
+3. **Affected Endpoints**:
+   - `/api/auth/signup` - Name sanitization
+   - `/api/settings` - MNZD config sanitization
+   - `/api/contact` - Message sanitization
+   - `/api/feedback` - Feedback sanitization
+   - `/api/progress` - Progress updates sanitization
+   - `/api/analytics` - Month parameter validation
+
+**Impact**: Prevents script injection, XSS attacks, and malicious HTML execution
+
+### Timezone & Caching Fixes
+**Status**: ✅ Resolved
+
+**Issues Fixed**:
+1. **UTC/IST Timezone Conversion**: Fixed month offset bug in analytics
+2. **Vercel Caching**: Added `force-dynamic` and cache-control headers
+3. **Weekly Email Timing**: Corrected from Sunday to Monday
+4. **Task Completion Format**: Changed from days to tasks (x/28)
+
 ## 📊 Supported Versions
 
 | Version | Supported | Security Updates | End of Life |
 |---------|-----------|------------------|-------------|
-| 1.2.x   | ✅ Yes    | Active          | TBD         |
-| 1.1.x   | ✅ Yes    | Security Only   | 2025-06-01  |
-| 1.0.x   | ⚠️ Limited| Critical Only   | 2025-03-01  |
-| < 1.0   | ❌ No     | None            | 2024-12-31  |
+| 1.3.x   | ✅ Yes    | Active          | TBD         |
+| 1.2.x   | ✅ Yes    | Security Only   | 2025-06-01  |
+| 1.1.x   | ⚠️ Limited| Critical Only   | 2025-03-01  |
+| < 1.1   | ❌ No     | None            | 2025-01-15  |
 
 ## 🚨 Vulnerability Reporting
 
@@ -376,8 +428,14 @@ This security policy is subject to change without notice. Users, developers, and
 - Do not disrupt service availability
 
 **Last Updated**: January 2025  
-**Version**: 2.0.0  
+**Version**: 2.1.0  
 **Next Review**: April 2025
+
+**Recent Changes**:
+- Added XSS protection with input sanitization
+- Enhanced date parameter validation
+- Updated security version table
+- Documented timezone and caching fixes
 
 ---
 

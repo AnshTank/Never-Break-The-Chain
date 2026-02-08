@@ -21,24 +21,32 @@ A production-ready habit tracking application built with Next.js 15, TypeScript,
 - **Interactive calendar** with real-time progress tracking
 - **Advanced charts** with streak analysis and trend insights
 - **Performance metrics** to track your growth
+- **UTC timezone handling** for accurate cross-region data
 
 ### 🔔 **Intelligent Notifications**
-- **Morning motivation** emails to start your day right
-- **Evening check-ins** to reflect on your progress
-- **Milestone celebrations** for streak achievements
-- **Smart reminders** based on your behavior patterns
+- **AI-powered content** using Google Gemini for personalized messages
+- **Morning motivation** emails (7 AM IST) to start your day right
+- **Evening check-ins** (6 PM IST) to reflect on your progress
+- **Weekly summaries** (Monday 9 AM IST) with task completion (x/28 format)
+- **Milestone celebrations** for 7, 30, 100+ day streaks
+- **Dynamic content generation** with context-aware AI prompts
 
 ### 🔐 **Enterprise-Grade Security**
 - **JWT authentication** with secure token rotation
+- **XSS protection** with comprehensive input sanitization
 - **OTP verification** for account security
 - **Multi-device management** with session tracking
-- **Rate limiting** and CSRF protection
+- **Rate limiting** with progressive blocking (1-5-15 min)
+- **CSRF protection** with SameSite cookies
+- **Input validation** using Zod schemas with HTML/script stripping
 
 ### ⚡ **Performance Optimized**
 - **Instant loading** with skeleton states
 - **Real-time updates** without page refreshes
+- **Force-dynamic caching** for accurate analytics
 - **Mobile-first design** that works everywhere
 - **PWA support** for app-like experience
+- **Optimized queries** with MongoDB indexing
 
 ## 🧘 The MNZD Methodology
 
@@ -56,22 +64,30 @@ Our scientifically-backed approach focuses on four core pillars:
 **Frontend**:
 - Next.js 15 with App Router
 - TypeScript for type safety
-- Tailwind CSS for styling
+- Tailwind CSS + shadcn/ui for styling
 - Framer Motion for animations
-- React Hook Form for forms
+- React Hook Form + Zod for forms
+- Recharts for analytics visualization
 
 **Backend**:
 - Node.js with serverless functions
 - MongoDB Atlas for data storage
 - JWT for authentication
 - Nodemailer for email notifications
-- Zod for validation
+- Google Gemini AI for content generation
+- Zod for validation & sanitization
 
 **Infrastructure**:
-- Vercel for deployment
-- GitHub Actions for CI/CD
-- Web Push API for notifications
-- External cron jobs for reliability
+- Vercel for deployment & edge network
+- GitHub for version control
+- Cron-job.org for scheduled notifications
+- Web Push API for browser notifications
+
+**Security**:
+- bcrypt (12 rounds) for password hashing
+- XSS protection with HTML sanitization
+- Rate limiting with progressive blocking
+- CSRF protection with secure cookies
 
 ## 🚀 Quick Start
 
@@ -115,13 +131,20 @@ EMAIL_USER="your-email@gmail.com"
 EMAIL_PASSWORD="your-app-password"
 EMAIL_FROM="Your App <your-email@gmail.com>"
 
+# AI Service
+GEMINI_API_KEY="your-gemini-api-key"
+
 # Push Notifications
 VAPID_PUBLIC_KEY="your-vapid-public-key"
+NEXT_PUBLIC_VAPID_PUBLIC_KEY="your-vapid-public-key"
 VAPID_PRIVATE_KEY="your-vapid-private-key"
 VAPID_EMAIL="your-email@gmail.com"
 
 # Cron Security
 CRON_SECRET="your-secure-cron-secret"
+
+# Environment
+NODE_ENV="production"
 ```
 
 ## 📁 Project Architecture
@@ -153,27 +176,34 @@ lib/
 
 ## 🔔 Advanced Notification System
 
-### Email Notifications
-- **Morning Motivation** (7 AM): Personalized daily inspiration
-- **Evening Check-in** (8 PM): Progress reflection and planning
-- **Milestone Alerts**: Celebrate 7, 30, 100+ day streaks
-- **Recovery Support**: Gentle nudges after missed days
-- **Weekly Summaries**: Comprehensive progress reports
+### AI-Powered Email Notifications
+- **Morning Motivation** (7 AM IST): AI-generated personalized inspiration based on your streak and progress
+- **Evening Check-in** (6 PM IST): Contextual reflection with task completion reminders
+- **Weekly Summaries** (Monday 9 AM IST): Comprehensive 7-day report showing x/28 tasks completed
+- **Milestone Alerts**: Celebrate 7, 30, 100+ day streaks with unique AI content
+- **Dynamic Content**: Google Gemini AI generates unique messages daily using:
+  - Current streak status (broken/maintaining/new record)
+  - Recent progress data (last 7 days)
+  - Day of week and time context
+  - Random seed for variation (prevents repetition)
+  - User-specific achievements
 
 ### Setup External Cron Jobs
 
 For reliable notifications, configure external cron jobs at [cron-job.org](https://cron-job.org):
 
 ```bash
-# Morning notifications (7 AM daily)
-0 7 * * * curl -X POST "https://your-domain.vercel.app/api/cron/notifications?window=morning" -H "Authorization: Bearer your-cron-secret"
+# Morning notifications (7 AM IST = 1-2 AM UTC)
+0 1-2 * * * curl -X POST "https://your-domain.vercel.app/api/cron/notifications?window=morning" -H "Authorization: Bearer your-cron-secret"
 
-# Evening notifications (8 PM daily)
-0 20 * * * curl -X POST "https://your-domain.vercel.app/api/cron/notifications?window=evening" -H "Authorization: Bearer your-cron-secret"
+# Evening notifications (6 PM IST = 12-1 PM UTC)
+0 12-13 * * * curl -X POST "https://your-domain.vercel.app/api/cron/notifications?window=evening" -H "Authorization: Bearer your-cron-secret"
 
-# Weekly summaries (Sunday 9 AM)
-0 9 * * 0 curl -X POST "https://your-domain.vercel.app/api/cron/notifications?window=weekly" -H "Authorization: Bearer your-cron-secret"
+# Weekly summaries (Monday 9 AM IST = Monday 3:30 AM UTC)
+30 3 * * 1 curl -X POST "https://your-domain.vercel.app/api/cron/notifications?window=weekly" -H "Authorization: Bearer your-cron-secret"
 ```
+
+**Note**: Adjust UTC times based on your timezone. IST = UTC+5:30
 
 ## 🚀 Deployment Guide
 
@@ -232,19 +262,28 @@ npm run lint
 ## 🔒 Security & Privacy
 
 ### Security Features
-- **🔐 JWT Authentication**: Secure token-based auth with rotation
-- **🛡️ Rate Limiting**: Progressive blocking system
-- **✅ Input Validation**: Comprehensive Zod schemas
+- **🔐 JWT Authentication**: Secure token-based auth with rotation (1 hour / 180 days with remember me)
+- **🛡️ Rate Limiting**: Progressive blocking system (1-5-15 minute escalation)
+- **✅ Input Validation**: Comprehensive Zod schemas with sanitization
+- **🚫 XSS Protection**: HTML tag stripping, script removal, javascript: protocol blocking
 - **🔒 Password Security**: bcrypt hashing with 12 rounds
-- **🌐 CSRF Protection**: SameSite cookie attributes
+- **🌐 CSRF Protection**: SameSite=Strict cookie attributes
 - **📝 Audit Logging**: Security event tracking
-- **🚫 XSS Protection**: Content Security Policy headers
+- **🔑 OTP Verification**: 6-digit codes with 5-minute expiry
+- **📱 Device Management**: Multi-device session tracking
+
+### Recent Security Enhancements (Jan 2025)
+- ✅ XSS protection with comprehensive input sanitization
+- ✅ Date parameter validation to prevent injection
+- ✅ HTML/script tag removal from all user inputs
+- ✅ Event handler stripping (onclick, onerror, etc.)
+- ✅ JavaScript protocol blocking in URLs
 
 ### Privacy Compliance
 - **GDPR Compliant**: Data minimization and user rights
-- **Data Encryption**: End-to-end encryption for sensitive data
+- **Data Encryption**: Secure password hashing and token management
 - **Secure Storage**: MongoDB Atlas with network isolation
-- **Regular Audits**: Automated security scanning
+- **No Data Selling**: Your data is never shared or sold
 
 See [SECURITY.md](SECURITY.md) for detailed security information.
 
@@ -253,8 +292,12 @@ See [SECURITY.md](SECURITY.md) for detailed security information.
 - **Lighthouse Score**: 95+ across all metrics
 - **First Contentful Paint**: < 1.5s
 - **Time to Interactive**: < 3s
+- **Largest Contentful Paint**: < 2.5s
+- **Cumulative Layout Shift**: < 0.1
 - **Core Web Vitals**: All green
-- **Bundle Size**: Optimized with tree shaking
+- **API Response Time**: < 300ms average
+- **Database Queries**: < 100ms with optimized indexes
+- **Bundle Size**: Optimized with tree shaking and code splitting
 
 ## 🤝 Contributing
 
@@ -288,19 +331,37 @@ We welcome contributions! Please follow these steps:
 - **User Experience**: Session recordings and heatmaps
 - **API Performance**: Response time monitoring
 
+## 📚 Documentation
+
+### System Design
+- **[High-Level Design (HLD)](SYSTEM_DESIGN_HLD.md)**: Architecture overview, data flow, scalability
+- **[Low-Level Design (LLD)](SYSTEM_DESIGN_LLD.md)**: Detailed component design, algorithms, implementation
+- **[Security Policy](SECURITY.md)**: Comprehensive security practices and vulnerability reporting
+
+### Recent Updates (January 2025)
+- ✅ **AI-Powered Notifications**: Integrated Google Gemini for dynamic email content
+- ✅ **XSS Protection**: Comprehensive input sanitization across all APIs
+- ✅ **Timezone Fix**: Resolved UTC/IST conversion issues in analytics
+- ✅ **Weekly Email Fix**: Corrected timing (Monday) and format (x/28 tasks)
+- ✅ **Cache Optimization**: Force-dynamic for real-time analytics data
+- ✅ **Security Hardening**: Date validation, HTML stripping, script removal
+
 ## 🌍 Roadmap
 
 ### Q1 2025
+- [x] AI-powered email notifications
+- [x] XSS protection and input sanitization
+- [x] Timezone handling improvements
 - [ ] Mobile app (React Native)
 - [ ] Social features and challenges
-- [ ] Advanced analytics dashboard
 - [ ] Integration with fitness trackers
 
 ### Q2 2025
 - [ ] Team and family accounts
 - [ ] Custom habit categories
-- [ ] AI-powered insights
+- [ ] Advanced AI insights and predictions
 - [ ] Offline mode support
+- [ ] Redis caching layer
 
 ## 📄 License
 
