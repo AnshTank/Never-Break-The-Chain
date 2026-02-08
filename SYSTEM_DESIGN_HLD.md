@@ -69,8 +69,8 @@ Never Break The Chain is a full-stack habit tracking application built with mode
 │                    EXTERNAL SERVICES LAYER                       │
 ├─────────────────────────────────────────────────────────────────┤
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │   Gmail      │  │  Gemini AI   │  │  Cron-job    │          │
-│  │   SMTP       │  │   (Google)   │  │   .org       │          │
+│  │ Email Service│  │  AI Service  │  │   Task       │          │
+│  │              │  │              │  │  Scheduler   │          │
 │  └──────────────┘  └──────────────┘  └──────────────┘          │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -107,7 +107,7 @@ Never Break The Chain is a full-stack habit tracking application built with mode
   - **Analytics Service**: Data aggregation, trend analysis, insights generation
   - **Notification Service**: Email scheduling, push notifications, AI content generation
   - **Device Manager**: Multi-device session management, device registration
-  - **AI Service**: Dynamic content generation using Gemini AI
+  - **AI Service**: Dynamic content generation using AI
 
 ### 4. **Data Access Layer**
 - **Technology**: MongoDB Node.js Driver
@@ -123,9 +123,9 @@ Never Break The Chain is a full-stack habit tracking application built with mode
 - **Vercel Edge Network**: Static asset delivery, CDN caching
 
 ### 6. **External Services**
-- **Gmail SMTP**: Email delivery for notifications
-- **Gemini AI**: Dynamic content generation for personalized emails
-- **Cron-job.org**: Scheduled task execution for notifications
+- **Email Service**: Email delivery for notifications
+- **AI Service**: Dynamic content generation for personalized emails
+- **Task Scheduler**: Automated task execution for notifications
 
 ---
 
@@ -156,12 +156,12 @@ User → Daily Check-in → API (/api/progress)
 
 ### Notification Flow
 ```
-Cron Job → API (/api/cron/notifications)
-  → Authenticate Request (CRON_SECRET)
+Scheduled Task → Notification Service
+  → Authenticate Request
   → Fetch Users (Time Window)
   → Load User Data (Progress, Streaks)
-  → Generate AI Content (Gemini)
-  → Send Emails (Nodemailer)
+  → Generate AI Content
+  → Send Emails
   → Log Results
   → Return Status
 ```
@@ -398,17 +398,17 @@ Production (https://never-break-the-chain.vercel.app)
 
 ## 🔮 Future Architecture Enhancements
 
-### Phase 1 (Q1 2025)
+### Phase 1 (Q1 2026)
 - **Redis Cache**: Implement distributed caching layer
 - **WebSocket**: Real-time notifications and updates
-- **CDN**: Optimize image delivery with Cloudinary/Imgix
+- **CDN**: Optimize image delivery
 
-### Phase 2 (Q2 2025)
+### Phase 2 (Q2 2026)
 - **Microservices**: Split into independent services
-- **Message Queue**: RabbitMQ/SQS for async processing
+- **Message Queue**: Async processing
 - **GraphQL**: Implement GraphQL API layer
 
-### Phase 3 (Q3 2025)
+### Phase 3 (Q3 2026)
 - **Mobile Apps**: React Native with shared backend
 - **Analytics Pipeline**: Dedicated analytics infrastructure
 - **AI/ML**: Advanced insights and predictions
@@ -424,8 +424,8 @@ Production (https://never-break-the-chain.vercel.app)
 | **Backend** | Next.js API Routes, Node.js | Serverless functions |
 | **Database** | MongoDB Atlas | Data persistence |
 | **Authentication** | JWT, bcrypt | Secure auth |
-| **Email** | Nodemailer, Gmail SMTP | Notifications |
-| **AI** | Google Gemini | Content generation |
+| **Email** | Email Service | Notifications |
+| **AI** | AI Service | Content generation |
 | **Deployment** | Vercel | Hosting, CI/CD |
 | **Monitoring** | Vercel Analytics | Performance tracking |
 
@@ -434,9 +434,8 @@ Production (https://never-break-the-chain.vercel.app)
 ## 📞 Architecture Review & Feedback
 
 For architecture discussions, improvements, or questions:
-- **Email**: anshtank9@gmail.com
 - **GitHub**: [github.com/AnshTank](https://github.com/AnshTank)
-- **LinkedIn**: [linkedin.com/in/anshtank9](https://linkedin.com/in/anshtank9)
+- **Discussions**: GitHub Discussions
 
 ---
 
@@ -444,6 +443,6 @@ For architecture discussions, improvements, or questions:
 
 **🏗️ Built with Modern Architecture Principles**
 
-*Designed by [Ansh Tank](https://anshtank.me) | © 2025 Never Break The Chain*
+*Designed by [Ansh Tank](https://anshtank.me) | © 2026 Never Break The Chain*
 
 </div>

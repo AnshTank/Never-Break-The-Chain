@@ -33,84 +33,120 @@ interface Progress {
 export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
   const [showMNZDModal, setShowMNZDModal] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
-  const [localProgress, setLocalProgress] = useState<Progress | null>(preloadedData?.todayProgress || null);
-  const [settings, setSettings] = useState<any>(preloadedData?.settings || null);
+  const [localProgress, setLocalProgress] = useState<Progress | null>(
+    preloadedData?.todayProgress || null,
+  );
+  const [settings, setSettings] = useState<any>(
+    preloadedData?.settings || null,
+  );
   const [loading, setLoading] = useState(!preloadedData?.settings);
-  
+
   const todayStr = (() => {
     const today = new Date();
-    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   })();
-  
+
   const handleCustomizeComplete = useCallback(() => {
     setShowMNZDModal(false);
     setIsCustomizing(false);
   }, []);
-  
+
   const handleCustomizeStart = useCallback(() => {
     setIsCustomizing(true);
   }, []);
 
   const currentProgress = localProgress || preloadedData?.todayProgress;
-  
+
   const getTaskData = () => {
     if (!settings?.mnzdConfigs) {
-      return { taskConfigs: [], completedTasks: [], todayCompleted: 0, todayAllCompleted: false };
+      return {
+        taskConfigs: [],
+        completedTasks: [],
+        todayCompleted: 0,
+        todayAllCompleted: false,
+      };
     }
-    
+
     const taskConfigs: Config[] = settings.mnzdConfigs;
-    const completedTasks = currentProgress?.tasks?.filter((task: Task) => {
-      const config = taskConfigs.find((c: Config) => c.id === task.id);
-      const taskMinutes = task?.minutes || 0;
-      return taskMinutes >= (config?.minMinutes || 0);
-    }) || [];
-    
+    const completedTasks =
+      currentProgress?.tasks?.filter((task: Task) => {
+        const config = taskConfigs.find((c: Config) => c.id === task.id);
+        const taskMinutes = task?.minutes || 0;
+        return taskMinutes >= (config?.minMinutes || 0);
+      }) || [];
+
     const todayCompleted = completedTasks.length;
     const todayAllCompleted = todayCompleted === taskConfigs.length;
-    
+
     return { taskConfigs, completedTasks, todayCompleted, todayAllCompleted };
   };
-  
-  const { taskConfigs, completedTasks, todayCompleted, todayAllCompleted } = getTaskData();
-  
+
+  const { taskConfigs, completedTasks, todayCompleted, todayAllCompleted } =
+    getTaskData();
+
   const handleProgressUpdate = useCallback(() => {
     setLocalProgress(null);
   }, []);
-  
-  const handleMNZDProgressUpdate = useCallback(({ date, progress: updatedProgress }: { date: string; progress: Progress }) => {
-    if (date === todayStr) {
-      setLocalProgress(updatedProgress);
-    }
-  }, [todayStr]);
-  
-  const handleTaskComplete = useCallback(({ date, taskId, completed }: { date: string; taskId: string; completed: boolean }) => {
-    if (date === todayStr && currentProgress) {
-      const updatedTasks = currentProgress.tasks?.map((task: Task) => 
-        task.id === taskId ? { ...task, completed } : task
-      ) || [];
-      
-      setLocalProgress({
-        ...currentProgress,
-        tasks: updatedTasks
-      });
-    }
-  }, [todayStr, currentProgress]);
-  
-  useEffect(() => {
-    const unsubscribeSettings = mnzdEvents.onSettingsUpdate((newSettings: any) => {
-      setSettings(newSettings);
-    });
 
-    const unsubscribeProgress = mnzdEvents.onProgressUpdate(handleMNZDProgressUpdate);
+  const handleMNZDProgressUpdate = useCallback(
+    ({
+      date,
+      progress: updatedProgress,
+    }: {
+      date: string;
+      progress: Progress;
+    }) => {
+      if (date === todayStr) {
+        setLocalProgress(updatedProgress);
+      }
+    },
+    [todayStr],
+  );
+
+  const handleTaskComplete = useCallback(
+    ({
+      date,
+      taskId,
+      completed,
+    }: {
+      date: string;
+      taskId: string;
+      completed: boolean;
+    }) => {
+      if (date === todayStr && currentProgress) {
+        const updatedTasks =
+          currentProgress.tasks?.map((task: Task) =>
+            task.id === taskId ? { ...task, completed } : task,
+          ) || [];
+
+        setLocalProgress({
+          ...currentProgress,
+          tasks: updatedTasks,
+        });
+      }
+    },
+    [todayStr, currentProgress],
+  );
+
+  useEffect(() => {
+    const unsubscribeSettings = mnzdEvents.onSettingsUpdate(
+      (newSettings: any) => {
+        setSettings(newSettings);
+      },
+    );
+
+    const unsubscribeProgress = mnzdEvents.onProgressUpdate(
+      handleMNZDProgressUpdate,
+    );
     const unsubscribeTask = mnzdEvents.onTaskComplete(handleTaskComplete);
-    
-    window.addEventListener('progressUpdated', handleProgressUpdate);
+
+    window.addEventListener("progressUpdated", handleProgressUpdate);
 
     return () => {
       unsubscribeSettings();
       unsubscribeProgress();
       unsubscribeTask();
-      window.removeEventListener('progressUpdated', handleProgressUpdate);
+      window.removeEventListener("progressUpdated", handleProgressUpdate);
     };
   }, [handleMNZDProgressUpdate, handleTaskComplete, handleProgressUpdate]);
 
@@ -123,7 +159,7 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
       setLocalProgress(preloadedData.todayProgress);
     }
   }, [preloadedData]);
-  
+
   if (loading || !settings?.mnzdConfigs) {
     return (
       <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6 relative overflow-hidden">
@@ -152,8 +188,12 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
         </div>
         <style jsx>{`
           @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
+            0% {
+              transform: translateX(-100%);
+            }
+            100% {
+              transform: translateX(100%);
+            }
           }
           .animate-shimmer {
             animation: shimmer 2s infinite;
@@ -165,7 +205,7 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
 
   return (
     <>
-      <div data-tour="daily-checkin" className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -212,75 +252,77 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-          {taskConfigs.map((config: Config) => {
-            const task = currentProgress?.tasks?.find((t: Task) => t.id === config.id);
-            const taskMinutes = task?.minutes || 0;
-            const isCompleted = taskMinutes >= config.minMinutes;
-            
-            return (
-              <div
-                key={config.id}
-                className={`relative overflow-hidden rounded-xl border-2 transition-all duration-200 ${
-                  isCompleted
-                    ? "bg-gradient-to-br from-green-50 to-green-100 border-green-300"
-                    : "bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border-gray-200 dark:border-gray-600"
-                }`}
-              >
-                <div className="p-4 sm:p-5">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-1">
-                      <div 
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                        style={{ backgroundColor: config.color || '#3b82f6' }}
-                      >
-                        {config.name.charAt(0).toUpperCase()}
-                      </div>
-                    </div>
+            {taskConfigs.map((config: Config) => {
+              const task = currentProgress?.tasks?.find(
+                (t: Task) => t.id === config.id,
+              );
+              const taskMinutes = task?.minutes || 0;
+              const isCompleted = taskMinutes >= config.minMinutes;
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3
-                          className={`font-semibold text-sm sm:text-base ${
-                            isCompleted
-                              ? "text-green-800"
-                              : "text-gray-900 dark:text-gray-100"
-                          }`}
+              return (
+                <div
+                  key={config.id}
+                  className={`relative overflow-hidden rounded-xl border-2 transition-all duration-200 ${
+                    isCompleted
+                      ? "bg-gradient-to-br from-green-50 to-green-100 border-green-300"
+                      : "bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border-gray-200 dark:border-gray-600"
+                  }`}
+                >
+                  <div className="p-4 sm:p-5">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 mt-1">
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                          style={{ backgroundColor: config.color || "#3b82f6" }}
                         >
-                          {config.name}
-                        </h3>
-                        <div className="flex items-center gap-2">
-                          {isCompleted && taskMinutes > 0 && (
-                            <span className="text-xs px-2 py-1 rounded-full bg-green-200 text-green-700">
-                              {taskMinutes}min
-                            </span>
-                          )}
-                          <span
-                            className={`text-xs px-2 py-1 rounded-full ${
-                              isCompleted
-                                ? "bg-green-200 text-green-700"
-                                : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                            }`}
-                          >
-                            min {config.minMinutes}
-                          </span>
+                          {config.name.charAt(0).toUpperCase()}
                         </div>
                       </div>
 
-                      <p
-                        className={`text-xs sm:text-sm leading-relaxed ${
-                          isCompleted
-                            ? "text-green-700"
-                            : "text-gray-600 dark:text-gray-400"
-                        }`}
-                      >
-                        {config.description}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3
+                            className={`font-semibold text-sm sm:text-base ${
+                              isCompleted
+                                ? "text-green-800"
+                                : "text-gray-900 dark:text-gray-100"
+                            }`}
+                          >
+                            {config.name}
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            {isCompleted && taskMinutes > 0 && (
+                              <span className="text-xs px-2 py-1 rounded-full bg-green-200 text-green-700">
+                                {taskMinutes}min
+                              </span>
+                            )}
+                            <span
+                              className={`text-xs px-2 py-1 rounded-full ${
+                                isCompleted
+                                  ? "bg-green-200 text-green-700"
+                                  : "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                              }`}
+                            >
+                              min {config.minMinutes}
+                            </span>
+                          </div>
+                        </div>
+
+                        <p
+                          className={`text-xs sm:text-sm leading-relaxed ${
+                            isCompleted
+                              ? "text-green-700"
+                              : "text-gray-600 dark:text-gray-400"
+                          }`}
+                        >
+                          {config.description}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
           </div>
 
           {todayAllCompleted && (
@@ -292,9 +334,9 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
           )}
         </div>
       </div>
-      
-      <MNZDCustomizeModal 
-        isOpen={showMNZDModal} 
+
+      <MNZDCustomizeModal
+        isOpen={showMNZDModal}
         onClose={handleCustomizeComplete}
         onSaveStart={handleCustomizeStart}
       />

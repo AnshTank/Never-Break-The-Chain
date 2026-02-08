@@ -102,60 +102,59 @@ Never Break The Chain implements enterprise-grade security measures to protect u
   - Production/development environment isolation
   - Secure deployment pipelines
 
-## 🚨 Recent Security Updates (January 2025)
+## 🚨 Recent Security Updates (January 2026)
 
 ### XSS Protection Enhancement
 **Status**: ✅ Implemented and Deployed
 
 **Changes**:
-1. **Input Sanitization** (`lib/validation.ts`):
-   - Added `sanitizeString()` function
+1. **Input Sanitization**:
+   - Added comprehensive sanitization functions
    - Removes HTML tags, script content, javascript: protocols
    - Strips event handlers (onclick, onerror, etc.)
    - Applied to all user-facing inputs
 
-2. **Date Parameter Validation** (`app/api/analytics/route.ts`):
-   - Regex validation for YYYY-MM-DD format
-   - Date range validation (prevents future dates beyond 1 year)
+2. **Date Parameter Validation**:
+   - Regex validation for date formats
+   - Date range validation
    - Protection against injection attacks
 
 3. **Affected Endpoints**:
-   - `/api/auth/signup` - Name sanitization
-   - `/api/settings` - MNZD config sanitization
-   - `/api/contact` - Message sanitization
-   - `/api/feedback` - Feedback sanitization
-   - `/api/progress` - Progress updates sanitization
-   - `/api/analytics` - Month parameter validation
+   - Authentication endpoints
+   - Settings and configuration
+   - User-generated content
+   - Progress tracking
+   - Analytics
 
 **Impact**: Prevents script injection, XSS attacks, and malicious HTML execution
 
-### Timezone & Caching Fixes
+### Additional Security Improvements
 **Status**: ✅ Resolved
 
 **Issues Fixed**:
-1. **UTC/IST Timezone Conversion**: Fixed month offset bug in analytics
-2. **Vercel Caching**: Added `force-dynamic` and cache-control headers
-3. **Weekly Email Timing**: Corrected from Sunday to Monday
-4. **Task Completion Format**: Changed from days to tasks (x/28)
+1. **Timezone Handling**: Fixed conversion issues in analytics
+2. **Caching**: Added proper cache-control headers
+3. **Email Timing**: Corrected notification scheduling
+4. **Data Format**: Improved data validation
 
 ## 📊 Supported Versions
 
 | Version | Supported | Security Updates | End of Life |
 |---------|-----------|------------------|-------------|
-| 1.3.x   | ✅ Yes    | Active          | TBD         |
-| 1.2.x   | ✅ Yes    | Security Only   | 2025-06-01  |
-| 1.1.x   | ⚠️ Limited| Critical Only   | 2025-03-01  |
-| < 1.1   | ❌ No     | None            | 2025-01-15  |
+| 2.0.x   | ✅ Yes    | Active          | TBD         |
+| 1.3.x   | ✅ Yes    | Security Only   | 2026-06-01  |
+| 1.2.x   | ⚠️ Limited| Critical Only   | 2026-03-01  |
+| < 1.2   | ❌ No     | None            | 2026-01-15  |
 
 ## 🚨 Vulnerability Reporting
 
 We take security vulnerabilities seriously and appreciate responsible disclosure from the security community.
 
 ### 📧 Contact Information
-- **Primary Contact**: [anshtank9@gmail.com](mailto:anshtank9@gmail.com)
-- **Subject Line**: `[SECURITY] Never Break The Chain - Vulnerability Report`
-- **PGP Key**: Available on request for sensitive reports
-- **Response SLA**: Within 24 hours (business days)
+- **Primary Contact**: Security team via GitHub Issues
+- **Subject Line**: `[SECURITY] Vulnerability Report`
+- **Response SLA**: Within 24-48 hours (business days)
+- **Responsible Disclosure**: Please allow reasonable time for fixes before public disclosure
 
 ### 📋 Report Requirements
 
@@ -341,10 +340,10 @@ Please include the following information in your report:
 ## 🚨 Incident Response Plan
 
 ### Response Team
-- **🎯 Security Lead**: Ansh Tank (anshtank9@gmail.com)
-- **💻 Technical Lead**: Development team
-- **📞 Communications**: Customer support team
-- **⚖️ Legal/Compliance**: External counsel (as needed)
+- **🎯 Security Lead**: Development team
+- **💻 Technical Team**: Core contributors
+- **📞 Communications**: Community support
+- **⚖️ Legal/Compliance**: As needed
 
 ### Response Phases
 1. **🔍 Detection & Analysis**:
@@ -402,16 +401,14 @@ Please include the following information in your report:
 ## 📞 Emergency Contacts
 
 ### Critical Security Issues
-- **📧 Primary**: [anshtank9@gmail.com](mailto:anshtank9@gmail.com)
-- **📱 Emergency**: Available on request for verified researchers
-- **⏰ Response Time**: 24/7 monitoring for critical issues
-- **🌍 Timezone**: UTC+5:30 (IST) - India Standard Time
+- **📧 Primary**: GitHub Security Advisories
+- **⏰ Response Time**: 24-48 hours for critical issues
+- **💬 Community**: GitHub Discussions for general questions
 
 ### Business Hours Support
-- **🕘 Hours**: Monday-Friday, 9 AM - 6 PM IST
-- **📞 Response**: Within 4 hours during business hours
-- **📧 Non-Critical**: Standard email support
-- **💬 Community**: GitHub Discussions for general questions
+- **📞 Response**: Within 24-48 hours
+- **📧 Non-Critical**: GitHub Issues
+- **💬 Community**: GitHub Discussions
 
 ---
 
@@ -427,15 +424,15 @@ This security policy is subject to change without notice. Users, developers, and
 - Do not access/modify user data
 - Do not disrupt service availability
 
-**Last Updated**: January 2025  
-**Version**: 2.1.0  
-**Next Review**: April 2025
+**Last Updated**: January 2026  
+**Version**: 2.2.0  
+**Next Review**: April 2026
 
 **Recent Changes**:
-- Added XSS protection with input sanitization
-- Enhanced date parameter validation
+- Enhanced XSS protection with input sanitization
+- Improved date parameter validation
 - Updated security version table
-- Documented timezone and caching fixes
+- Documented security improvements
 
 ---
 
@@ -445,6 +442,6 @@ This security policy is subject to change without notice. Users, developers, and
 
 *Built with security-first principles by [Ansh Tank](https://anshtank.me)*
 
-**Report Security Issues**: [anshtank9@gmail.com](mailto:anshtank9@gmail.com)
+**Report Security Issues**: GitHub Security Advisories
 
 </div>

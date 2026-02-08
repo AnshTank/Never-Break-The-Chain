@@ -18,16 +18,16 @@ import type { JourneyData } from "@/lib/types";
 
 interface HomeProps {
   initialData: {
-    currentMonthData: JourneyData
-    yearData: JourneyData
-  }
+    currentMonthData: JourneyData;
+    yearData: JourneyData;
+  };
 }
 
 export default function Home() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"calendar" | "progress">(
-    "calendar"
+    "calendar",
   );
   const [loadedData, setLoadedData] = useState<any>({});
   const { isEnabled } = useNotifications();
@@ -36,18 +36,18 @@ export default function Home() {
   const registerDevice = useCallback(async () => {
     try {
       // Ensure device ID is set before registration
-      const { getDeviceId } = await import('@/lib/device-id');
+      const { getDeviceId } = await import("@/lib/device-id");
       const deviceId = getDeviceId();
-      
-      await fetch('/api/devices/register-dashboard', {
-        method: 'POST',
+
+      await fetch("/api/devices/register-dashboard", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'x-device-id': deviceId,
+          "Content-Type": "application/json",
+          "x-device-id": deviceId,
         },
       });
     } catch (error) {
-      console.error('Device registration failed:', error);
+      console.error("Device registration failed:", error);
     }
   }, []);
 
@@ -59,19 +59,19 @@ export default function Home() {
   // Memoize current month to prevent unnecessary re-renders
   const today = useMemo(() => new Date(), []);
   const [currentMonth, setCurrentMonth] = useState(
-    () => new Date(today.getFullYear(), today.getMonth(), 1)
+    () => new Date(today.getFullYear(), today.getMonth(), 1),
   );
 
   // Memoized navigation handlers
   const handlePreviousMonth = useCallback(() => {
     setCurrentMonth(
-      (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
+      (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1),
     );
   }, []);
 
   const handleNextMonth = useCallback(() => {
     setCurrentMonth(
-      (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
+      (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1),
     );
   }, []);
 
@@ -80,18 +80,21 @@ export default function Home() {
     setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
   }, []);
 
-  const handleLoadingComplete = useCallback((data: any) => {
-    setLoadedData(data);
-    setIsLoading(false);
-    
-    // Register device automatically on dashboard access
-    registerDevice();
-    
-    // Initialize smart notifications with user progress
-    if (isEnabled && data) {
-      // Email notifications are handled by server-side cron jobs
-    }
-  }, [isEnabled, registerDevice]);
+  const handleLoadingComplete = useCallback(
+    (data: any) => {
+      setLoadedData(data);
+      setIsLoading(false);
+
+      // Register device automatically on dashboard access
+      registerDevice();
+
+      // Initialize smart notifications with user progress
+      if (isEnabled && data) {
+        // Email notifications are handled by server-side cron jobs
+      }
+    },
+    [isEnabled, registerDevice],
+  );
 
   // Early return for loading states - no duplicate API calls
   if (isLoading) {
@@ -107,11 +110,13 @@ export default function Home() {
 
   return (
     <GlobalStateProvider>
-      <DataProvider initialData={{
-        monthData: loadedData.monthData || [],
-        yearData: loadedData.yearData || [],
-        settings: loadedData.settings
-      }}>
+      <DataProvider
+        initialData={{
+          monthData: loadedData.monthData || [],
+          yearData: loadedData.yearData || [],
+          settings: loadedData.settings,
+        }}
+      >
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-blue-950/30">
           <main className="mx-auto max-w-6xl px-2 sm:px-4 py-2 sm:py-4 md:py-6">
             <Header />
@@ -137,7 +142,6 @@ export default function Home() {
                     )}
                   </button>
                   <button
-                    data-tour="progress-tab"
                     onClick={() => setActiveTab("progress")}
                     className={`relative pb-4 px-1 text-sm font-medium transition-all duration-300 whitespace-nowrap hidden sm:block group ${
                       activeTab === "progress"
@@ -151,7 +155,6 @@ export default function Home() {
                     )}
                   </button>
                   <Link
-                    data-tour="timer-link"
                     href="/timer"
                     className="relative pb-4 px-1 text-sm font-medium transition-all duration-300 whitespace-nowrap text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 group flex items-center gap-1"
                   >
@@ -207,7 +210,7 @@ export default function Home() {
                   </div>
 
                   {/* Daily Check-in */}
-                  <div data-tour="daily-checkin">
+                  <div>
                     <DailyCheckIn preloadedData={loadedData} />
                   </div>
 
@@ -248,7 +251,7 @@ export default function Home() {
                   </div>
 
                   {/* Progress Summary */}
-                  <div data-tour="progress-summary">
+                  <div>
                     <ProgressSummary currentMonth={currentMonth} />
                   </div>
                 </div>

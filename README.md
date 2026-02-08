@@ -80,7 +80,7 @@ Our scientifically-backed approach focuses on four core pillars:
 **Infrastructure**:
 - Vercel for deployment & edge network
 - GitHub for version control
-- Cron-job.org for scheduled notifications
+- Automated task scheduling for notifications
 - Web Push API for browser notifications
 
 **Security**:
@@ -117,35 +117,36 @@ npm run dev
 
 ### Environment Configuration
 
+Create a `.env` file in the root directory with the following variables:
+
 ```env
 # Database
-MONGODB_URL="mongodb+srv://username:password@cluster.mongodb.net/database"
+MONGODB_URL="your-mongodb-connection-string"
 
 # Authentication
-JWT_SECRET="your-secure-jwt-secret-key"
+JWT_SECRET="your-jwt-secret"
 
-# Email Service (Gmail)
-EMAIL_HOST="smtp.gmail.com"
+# Email Service
+EMAIL_HOST="your-smtp-host"
 EMAIL_PORT=587
-EMAIL_USER="your-email@gmail.com"
-EMAIL_PASSWORD="your-app-password"
-EMAIL_FROM="Your App <your-email@gmail.com>"
+EMAIL_USER="your-email"
+EMAIL_PASSWORD="your-email-password"
+EMAIL_FROM="your-sender-email"
 
 # AI Service
-GEMINI_API_KEY="your-gemini-api-key"
+GEMINI_API_KEY="your-api-key"
 
 # Push Notifications
-VAPID_PUBLIC_KEY="your-vapid-public-key"
-NEXT_PUBLIC_VAPID_PUBLIC_KEY="your-vapid-public-key"
-VAPID_PRIVATE_KEY="your-vapid-private-key"
-VAPID_EMAIL="your-email@gmail.com"
-
-# Cron Security
-CRON_SECRET="your-secure-cron-secret"
+VAPID_PUBLIC_KEY="your-public-key"
+NEXT_PUBLIC_VAPID_PUBLIC_KEY="your-public-key"
+VAPID_PRIVATE_KEY="your-private-key"
+VAPID_EMAIL="your-email"
 
 # Environment
 NODE_ENV="production"
 ```
+
+**Note**: Never commit your `.env` file to version control. Use `.env.example` as a template.
 
 ## 📁 Project Architecture
 
@@ -177,33 +178,24 @@ lib/
 ## 🔔 Advanced Notification System
 
 ### AI-Powered Email Notifications
-- **Morning Motivation** (7 AM IST): AI-generated personalized inspiration based on your streak and progress
-- **Evening Check-in** (6 PM IST): Contextual reflection with task completion reminders
-- **Weekly Summaries** (Monday 9 AM IST): Comprehensive 7-day report showing x/28 tasks completed
+- **Morning Motivation**: AI-generated personalized inspiration based on your streak and progress
+- **Evening Check-in**: Contextual reflection with task completion reminders
+- **Weekly Summaries**: Comprehensive 7-day report showing task completion
 - **Milestone Alerts**: Celebrate 7, 30, 100+ day streaks with unique AI content
-- **Dynamic Content**: Google Gemini AI generates unique messages daily using:
+- **Dynamic Content**: AI generates unique messages daily using:
   - Current streak status (broken/maintaining/new record)
   - Recent progress data (last 7 days)
   - Day of week and time context
   - Random seed for variation (prevents repetition)
   - User-specific achievements
 
-### Setup External Cron Jobs
+### Notification Setup
 
-For reliable notifications, configure external cron jobs at [cron-job.org](https://cron-job.org):
-
-```bash
-# Morning notifications (7 AM IST = 1-2 AM UTC)
-0 1-2 * * * curl -X POST "https://your-domain.vercel.app/api/cron/notifications?window=morning" -H "Authorization: Bearer your-cron-secret"
-
-# Evening notifications (6 PM IST = 12-1 PM UTC)
-0 12-13 * * * curl -X POST "https://your-domain.vercel.app/api/cron/notifications?window=evening" -H "Authorization: Bearer your-cron-secret"
-
-# Weekly summaries (Monday 9 AM IST = Monday 3:30 AM UTC)
-30 3 * * 1 curl -X POST "https://your-domain.vercel.app/api/cron/notifications?window=weekly" -H "Authorization: Bearer your-cron-secret"
-```
-
-**Note**: Adjust UTC times based on your timezone. IST = UTC+5:30
+Notifications are automatically scheduled and sent based on user preferences. Configure your notification settings in the dashboard to receive:
+- Daily motivation emails
+- Progress reminders
+- Weekly summaries
+- Milestone celebrations
 
 ## 🚀 Deployment Guide
 
@@ -272,7 +264,7 @@ npm run lint
 - **🔑 OTP Verification**: 6-digit codes with 5-minute expiry
 - **📱 Device Management**: Multi-device session tracking
 
-### Recent Security Enhancements (Jan 2025)
+### Recent Security Enhancements (Jan 2026)
 - ✅ XSS protection with comprehensive input sanitization
 - ✅ Date parameter validation to prevent injection
 - ✅ HTML/script tag removal from all user inputs
@@ -338,17 +330,17 @@ We welcome contributions! Please follow these steps:
 - **[Low-Level Design (LLD)](SYSTEM_DESIGN_LLD.md)**: Detailed component design, algorithms, implementation
 - **[Security Policy](SECURITY.md)**: Comprehensive security practices and vulnerability reporting
 
-### Recent Updates (January 2025)
-- ✅ **AI-Powered Notifications**: Integrated Google Gemini for dynamic email content
+### Recent Updates (January 2026)
+- ✅ **AI-Powered Notifications**: Integrated AI for dynamic email content
 - ✅ **XSS Protection**: Comprehensive input sanitization across all APIs
-- ✅ **Timezone Fix**: Resolved UTC/IST conversion issues in analytics
-- ✅ **Weekly Email Fix**: Corrected timing (Monday) and format (x/28 tasks)
+- ✅ **Timezone Fix**: Resolved UTC conversion issues in analytics
+- ✅ **Weekly Email Fix**: Corrected timing and format
 - ✅ **Cache Optimization**: Force-dynamic for real-time analytics data
 - ✅ **Security Hardening**: Date validation, HTML stripping, script removal
 
 ## 🌍 Roadmap
 
-### Q1 2025
+### Q1 2026
 - [x] AI-powered email notifications
 - [x] XSS protection and input sanitization
 - [x] Timezone handling improvements
@@ -356,7 +348,7 @@ We welcome contributions! Please follow these steps:
 - [ ] Social features and challenges
 - [ ] Integration with fitness trackers
 
-### Q2 2025
+### Q2 2026
 - [ ] Team and family accounts
 - [ ] Custom habit categories
 - [ ] Advanced AI insights and predictions
@@ -370,7 +362,7 @@ This project is licensed under a Custom License. See [LICENSE](LICENSE) for deta
 ## 🏆 Recognition
 
 - **Featured on**: Product Hunt, Hacker News
-- **Awards**: Best Habit Tracker 2025
+- **Awards**: Best Habit Tracker 2026
 - **Users**: 10,000+ active users worldwide
 - **Rating**: 4.9/5 stars
 
@@ -409,7 +401,7 @@ This project is licensed under a Custom License. See [LICENSE](LICENSE) for deta
 
 [**Try Never Break The Chain →**](https://never-break-the-chain.vercel.app)
 
-*Built with ❤️ by [Ansh Tank](https://anshtank.me) | © 2025 Never Break The Chain*
+*Built with ❤️ by [Ansh Tank](https://anshtank.me) | © 2026 Never Break The Chain*
 
 **⭐ Star this repo if it helped you build better habits!**
 

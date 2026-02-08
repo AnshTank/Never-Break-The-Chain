@@ -286,7 +286,7 @@ Weekly (Monday 9 AM IST):
 
 #### 4.2 AI Content Generation
 ```typescript
-// File: lib/ai-content-service.ts
+// AI Content Service
 
 Class: AIContentService
 
@@ -304,15 +304,16 @@ Context: {
 
 Prompt Engineering:
 - Include date/day context for relevance
-- Add random seed for variation (0-1000)
+- Add random seed for variation
 - Specify streak status (broken/maintaining/new record)
 - Request different tone based on performance
 - Limit length (150-200 words)
 - Avoid repetitive phrases
 
-Temperature: 0.9 (high creativity)
-Max Tokens: 300
-Model: gemini-1.5-flash
+Configuration:
+- Temperature: 0.9 (high creativity)
+- Max Tokens: 300
+- Model: AI service provider
 ```
 
 #### 4.3 Email Template System
@@ -423,7 +424,7 @@ Attributes:
 
 #### 6.1 Connection Management
 ```typescript
-// File: lib/mongodb.ts
+// Database Connection
 
 Singleton Pattern:
 - Single connection instance per serverless function
@@ -431,12 +432,11 @@ Singleton Pattern:
 - Automatic reconnection on failure
 - Graceful shutdown handling
 
-Connection String:
-mongodb+srv://<user>:<pass>@<cluster>.mongodb.net/<db>?
-  retryWrites=true&
-  w=majority&
-  maxPoolSize=10&
-  minPoolSize=2
+Connection Configuration:
+- Retry writes enabled
+- Write concern: majority
+- Max pool size: 10
+- Min pool size: 2
 ```
 
 #### 6.2 Query Optimization
@@ -551,19 +551,19 @@ Implementation:
 
 ### 8. Cron Job Module
 
-#### 8.1 Cron Endpoint Security
+#### 8.1 Scheduled Task Security
 ```typescript
-// File: app/api/cron/notifications/route.ts
+// Notification Scheduler
 
-POST /api/cron/notifications?window=morning
-Headers: { Authorization: "Bearer <CRON_SECRET>" }
+POST /api/notifications/schedule?window=morning
+Headers: { Authorization: "Bearer <SECRET>" }
 
 Security Checks:
 1. Verify Authorization header
-2. Compare with CRON_SECRET env variable
+2. Compare with environment secret
 3. Validate window parameter
-4. Check request origin (optional)
-5. Rate limit by IP (1 request/minute)
+4. Check request origin
+5. Rate limit by IP
 
 Response:
 {
@@ -575,24 +575,24 @@ Response:
 }
 ```
 
-#### 8.2 Cron Schedule Configuration
+#### 8.2 Task Schedule Configuration
 ```bash
-# External Cron Service: cron-job.org
+# Automated Task Scheduling
 
 Morning Notifications:
-Schedule: 0 1-2 * * *  # 1-2 AM UTC = 6:30-7:30 AM IST
-URL: POST https://never-break-the-chain.vercel.app/api/cron/notifications?window=morning
-Header: Authorization: Bearer nbtc-secure-2025
+Schedule: Configurable based on user timezone
+Endpoint: Internal notification service
+Authentication: Secure token-based
 
 Evening Notifications:
-Schedule: 0 12-13 * * *  # 12-1 PM UTC = 5:30-6:30 PM IST
-URL: POST https://never-break-the-chain.vercel.app/api/cron/notifications?window=evening
-Header: Authorization: Bearer nbtc-secure-2025
+Schedule: Configurable based on user timezone
+Endpoint: Internal notification service
+Authentication: Secure token-based
 
 Weekly Summary:
-Schedule: 0 3 * * 1  # Monday 3 AM UTC = Monday 8:30 AM IST
-URL: POST https://never-break-the-chain.vercel.app/api/cron/notifications?window=weekly
-Header: Authorization: Bearer nbtc-secure-2025
+Schedule: Configurable (typically Monday mornings)
+Endpoint: Internal notification service
+Authentication: Secure token-based
 ```
 
 ---
@@ -684,6 +684,6 @@ describe("Progress API", () => {
 
 **🔧 Detailed Technical Implementation**
 
-*Engineered by [Ansh Tank](https://anshtank.me) | © 2025 Never Break The Chain*
+*Engineered by [Ansh Tank](https://anshtank.me) | © 2026 Never Break The Chain*
 
 </div>
