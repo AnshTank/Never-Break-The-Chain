@@ -79,7 +79,7 @@ export default function DayCell({
   };
 
   const handleSave = async (newEntry: DayEntry) => {
-    onEntryChange(date, newEntry);
+    // Update will come from progressUpdated event - just close modal
     setShowModal(false);
   };
 

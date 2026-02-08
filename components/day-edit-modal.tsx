@@ -226,7 +226,6 @@ export default function DayEditModal({
     setIsSaving(true);
     
     try {
-      // Calculate completion based on minutes vs minimum requirements
       const updatedTasks = entry.tasks.map(task => {
         const config = settings.mnzdConfigs.find(c => c.id === task.id) || { minMinutes: 10 };
         return {
@@ -241,31 +240,29 @@ export default function DayEditModal({
       
       const finalEntry = {
         ...entry,
+        date: dateStr,
         tasks: updatedTasks,
         completed: allCompleted,
         totalHours: Math.round(finalTotalHours * 10) / 10,
       };
       
-      // console.log('Day edit modal save debug:', {
-      //   modalDate: date,
-      //   dateStr: dateStr,
-      //   finalEntry: finalEntry,
-      //   isToday: dateStr === new Date().toISOString().split('T')[0]
-      // });
+      // Update cache immediately
+      try {
+        const cache = JSON.parse(localStorage.getItem('progressCache') || '{}');
+        cache[dateStr] = finalEntry;
+        localStorage.setItem('progressCache', JSON.stringify(cache));
+      } catch {}
       
-      // Save to database
-      await updateProgress(finalEntry);
-      
-      // Trigger parent refresh with optimistic update
+      // Trigger UI updates
       onSave(finalEntry);
-      
-      // Force calendar refresh
       window.dispatchEvent(new CustomEvent('progressUpdated'));
       
       // Close modal
       onClose();
+      
+      // Save to database in background
+      updateProgress(finalEntry).catch(() => {});
     } catch (error) {
-      // console.error('Error saving progress:', error);
     } finally {
       setIsSaving(false);
     }

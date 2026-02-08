@@ -93,36 +93,36 @@ export default function DevicesPage() {
           
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {typeDevices.map((device) => (
-              <Card key={device.deviceId} className={device.isCurrentDevice ? "border-blue-500 bg-blue-50" : ""}>
+              <Card key={device.deviceId} className={device.isCurrentDevice ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20" : ""}>
                 <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      {getDeviceIcon(device.deviceType)}
-                      {device.deviceName}
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle className="text-lg flex items-center gap-2 min-w-0 flex-1">
+                      <span className="flex-shrink-0">{getDeviceIcon(device.deviceType)}</span>
+                      <span className="truncate" title={device.deviceName}>{device.deviceName}</span>
                     </CardTitle>
                     {device.isCurrentDevice && (
-                      <Badge variant="default" className="bg-blue-500">Current</Badge>
+                      <Badge variant="default" className="bg-blue-500 flex-shrink-0">Current</Badge>
                     )}
                   </div>
                 </CardHeader>
                 
                 <CardContent>
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div>Browser: {device.browser}</div>
-                    <div>OS: {device.os}</div>
-                    <div>Last active: {new Date(device.lastActive).toLocaleDateString()}</div>
+                  <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                    <div className="truncate" title={device.browser}><span className="font-medium">Browser:</span> {device.browser}</div>
+                    <div className="truncate" title={device.os}><span className="font-medium">OS:</span> {device.os}</div>
+                    <div><span className="font-medium">Last active:</span> {new Date(device.lastActive).toLocaleDateString()}</div>
                     
-                    <div className="flex items-center gap-2 mt-3">
+                    <div className="flex items-center gap-2 mt-3 pt-2 border-t dark:border-gray-700">
                       {device.hasNotifications ? (
-                        <Badge variant="secondary" className="text-green-600">
-                          <Bell className="w-3 h-3 mr-1" />
-                          Notifications On
-                        </Badge>
+                        <div className="flex items-center gap-1.5 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/30 px-2.5 py-1 rounded-md">
+                          <Bell className="w-3.5 h-3.5" />
+                          <span className="text-xs font-medium">Enabled</span>
+                        </div>
                       ) : (
-                        <Badge variant="outline">
-                          <BellOff className="w-3 h-3 mr-1" />
-                          No Notifications
-                        </Badge>
+                        <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-md">
+                          <BellOff className="w-3.5 h-3.5" />
+                          <span className="text-xs font-medium">Disabled</span>
+                        </div>
                       )}
                     </div>
                     

@@ -40,6 +40,7 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
     preloadedData?.settings || null,
   );
   const [loading, setLoading] = useState(!preloadedData?.settings);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const todayStr = (() => {
     const today = new Date();
@@ -85,8 +86,18 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
     getTaskData();
 
   const handleProgressUpdate = useCallback(() => {
-    setLocalProgress(null);
-  }, []);
+    try {
+      const cachedData = localStorage.getItem('progressCache');
+      if (cachedData) {
+        const cache = JSON.parse(cachedData);
+        const todayData = cache[todayStr];
+        if (todayData) {
+          setLocalProgress({...todayData});
+          setRefreshKey(prev => prev + 1);
+        }
+      }
+    } catch {}
+  }, [todayStr]);
 
   const handleMNZDProgressUpdate = useCallback(
     ({

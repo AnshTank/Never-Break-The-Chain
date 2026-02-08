@@ -52,9 +52,9 @@ export default function MonthlyCalendar({ month }: MonthlyCalendarProps) {
   }, [refreshData]);
   
   const handleEntryChange = useCallback(async (date: Date, newEntry: DayEntry) => {
-    // Refresh shared data after entry change
-    setTimeout(() => refreshData(), 100)
-  }, [refreshData]);
+    // Do nothing - the progressUpdated event will handle the refresh
+    // This prevents flicker from unnecessary API calls
+  }, []);
   
   // Listen for progress updates with optimized dependencies
   useEffect(() => {
