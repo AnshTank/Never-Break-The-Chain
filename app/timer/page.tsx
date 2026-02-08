@@ -1652,6 +1652,7 @@ export default function TimerPage() {
             </svg>
           </button>
           <button
+            data-tour="mode-switch"
             onClick={() => switchMode(mode === "focus" ? "break" : "focus")}
             disabled={isTransitioning}
             className={`px-3 py-2 md:px-8 md:py-3 rounded-full ${
@@ -1742,6 +1743,7 @@ export default function TimerPage() {
 
           {/* Timer Circle */}
           <button
+            data-tour="timer-display"
             onClick={() => {
               if (timeLeft === 0) {
                 reset();
@@ -1917,6 +1919,7 @@ export default function TimerPage() {
 
           {/* Duration Selector */}
           <div
+            data-tour="duration-selector"
             className={`inline-flex ${
               theme.panel
             } backdrop-blur-xl rounded-full ${
@@ -3352,6 +3355,7 @@ export default function TimerPage() {
 
       {/* Panel Toggle Button */}
       <button
+        data-tour="panel-toggle"
         onClick={() => setShowPanel(!showPanel)}
         className={`fixed ${
           isMobile
@@ -3389,9 +3393,6 @@ export default function TimerPage() {
           onInitializeSettings={initializeTimerSettings}
         />
       )}
-
-      {/* New User Info Modal */}
-      {/* Removed - info available via i button */}
 
       {/* Hidden audio elements */}
       <audio ref={bgAudioRef} />

@@ -20,6 +20,14 @@ export default function ProgressView({
   );
   const [today, setToday] = useState(new Date());
 
+  // Expose setViewMode for tour
+  useEffect(() => {
+    (window as any).setProgressViewMode = setViewMode;
+    return () => {
+      delete (window as any).setProgressViewMode;
+    };
+  }, []);
+
   // Use shared data instead of individual fetching
   const { currentMonthData, yearData, loading, refreshData } = useSharedData();
   
@@ -211,7 +219,7 @@ export default function ProgressView({
 
       <div className="transition-all duration-500 ease-in-out">
         <div className={`${viewMode === "calendar" ? "block" : "hidden"}`}>
-          <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
+          <div data-tour="progress-calendar-content" className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                 Monthly Progress
@@ -357,7 +365,7 @@ export default function ProgressView({
         </div>
 
         <div className={`${viewMode === "year" ? "block" : "hidden"}`}>
-          <div className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
+          <div data-tour="progress-heatmap-content" className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
             <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-6">
               Year at a Glance
             </h2>
@@ -366,7 +374,7 @@ export default function ProgressView({
         </div>
 
         <div className={`${viewMode === "journey" ? "block" : "hidden"}`}>
-          <div className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
+          <div data-tour="progress-analytics-content" className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-4 duration-500">
             <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-6">
               Your Journey
             </h2>

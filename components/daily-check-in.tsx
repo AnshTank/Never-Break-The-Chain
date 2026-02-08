@@ -165,7 +165,7 @@ export default function DailyCheckIn({ preloadedData }: DailyCheckInProps) {
 
   return (
     <>
-      <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+      <div data-tour="daily-checkin" className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>

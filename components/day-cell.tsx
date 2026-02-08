@@ -72,6 +72,7 @@ export default function DayCell({ day, date, entry, isToday, onEntryChange }: Da
   return (
     <>
       <div
+        data-tour="calendar-cell"
         onClick={handleClick}
         className={`
           relative w-full h-12 sm:h-16 rounded-lg transition-all shadow-sm ${isFuture ? 'cursor-not-allowed' : 'cursor-pointer hover:shadow-lg hover:scale-105'}

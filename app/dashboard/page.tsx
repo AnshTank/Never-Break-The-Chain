@@ -137,6 +137,7 @@ export default function Home() {
                     )}
                   </button>
                   <button
+                    data-tour="progress-tab"
                     onClick={() => setActiveTab("progress")}
                     className={`relative pb-4 px-1 text-sm font-medium transition-all duration-300 whitespace-nowrap hidden sm:block group ${
                       activeTab === "progress"
@@ -150,6 +151,7 @@ export default function Home() {
                     )}
                   </button>
                   <Link
+                    data-tour="timer-link"
                     href="/timer"
                     className="relative pb-4 px-1 text-sm font-medium transition-all duration-300 whitespace-nowrap text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 group flex items-center gap-1"
                   >
@@ -205,7 +207,9 @@ export default function Home() {
                   </div>
 
                   {/* Daily Check-in */}
-                  <DailyCheckIn preloadedData={loadedData} />
+                  <div data-tour="daily-checkin">
+                    <DailyCheckIn preloadedData={loadedData} />
+                  </div>
 
                   {/* Current Month Calendar */}
                   <div className="space-y-4">
@@ -244,7 +248,9 @@ export default function Home() {
                   </div>
 
                   {/* Progress Summary */}
-                  <ProgressSummary currentMonth={currentMonth} />
+                  <div data-tour="progress-summary">
+                    <ProgressSummary currentMonth={currentMonth} />
+                  </div>
                 </div>
               )}
 
