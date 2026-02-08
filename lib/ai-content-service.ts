@@ -63,8 +63,8 @@ class GeminiAIProvider implements AIProvider {
             }]
           }],
           generationConfig: {
-            temperature: 0.7,
-            topK: 40,
+            temperature: 0.9, // Increased for more variation
+            topK: 50,
             topP: 0.95,
             maxOutputTokens: 200,
           }
@@ -120,31 +120,58 @@ class GeminiAIProvider implements AIProvider {
     const mnzdDetails = context.mnzdHabits?.map(habit => 
       `${habit.name}: ${Math.round(habit.rate * 100)}% completion (${habit.completed}/${habit.total} days)`
     ).join(', ') || 'No habit data available';
+    
+    // Add date-based context for variation
+    const today = new Date();
+    const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'long' });
+    const dateStr = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const randomSeed = Math.floor(Math.random() * 1000); // Add randomness
+    
+    // Detect streak status
+    let streakStatus = 'maintaining';
+    if (context.currentStreak === 0 && context.longestStreak > 0) {
+      streakStatus = 'broken - needs encouragement';
+    } else if (context.currentStreak > context.longestStreak) {
+      streakStatus = 'new record - celebrate!';
+    } else if (context.currentStreak === context.longestStreak) {
+      streakStatus = 'matching best - push harder!';
+    }
 
     return `${basePrompt}
 
-User Context:
+Today's Context:
+- Date: ${dateStr}
+- Day: ${dayOfWeek}
+- Time: ${context.timeOfDay}
+- Random Seed: ${randomSeed} (use this to vary your response style)
+
+User Profile:
 - Name: ${context.name}
-- Current Streak: ${context.currentStreak} days
+- Current Streak: ${context.currentStreak} days (Status: ${streakStatus})
 - Longest Streak: ${context.longestStreak} days
 - Overall Completion Rate: ${Math.round(context.completionRate * 100)}%
 - Strongest Habit: ${context.strongestHabit}
 - Weakest Habit: ${context.weakestHabit}
 - Days Since Join: ${context.daysSinceJoin}
-- Time of Day: ${context.timeOfDay}
 - Last Activity: ${context.lastActivity.toDateString()}
 - Today's Progress: ${context.todayCompleted || 0}/${context.totalHabits || 4} habits completed
 - MNZD Habit Details: ${mnzdDetails}
 ${context.milestoneReached ? `- Milestone Reached: ${context.milestoneReached} days` : ''}
 
-Requirements:
+IMPORTANT Instructions:
+- Generate UNIQUE content every time - never repeat the same message
+- Use the random seed and date to vary your writing style
+- If streak is broken, be empathetic but motivating
+- If it's a new record, be extra celebratory
+- Reference the specific day of week naturally (e.g., "Happy Monday!")
 - Keep response under 150 words
 - Be encouraging and personal
 - Reference specific user data and habit names
 - Use the user's actual MNZD habit names (not generic ones)
 - Include relevant emojis
 - End with a call to action
-- Make it feel personal and motivating`;
+- Make it feel personal and motivating
+- VARY your tone: sometimes energetic, sometimes calm, sometimes inspiring`;
   }
 
   private getFallbackContent(prompt: string, context: UserContext): string {

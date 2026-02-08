@@ -3,6 +3,8 @@ import { getUserFromRequest } from '@/lib/jwt'
 import { DatabaseService } from '@/lib/database'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic' // Disable all caching
+export const revalidate = 0 // Never cache
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,13 +21,6 @@ export async function GET(request: NextRequest) {
     const userSettings = await DatabaseService.getUserSettings(user.userId)
     const mnzdConfigs = userSettings?.mnzdConfigs || []
 
-    // Get all data for streak calculation
-    const allData = await DatabaseService.getProgressRange(
-      user.userId, 
-      '2020-01-01', 
-      '2030-12-31'
-    )
-
     // Get specific month's data
     let targetDate: Date
     if (monthParam) {
@@ -40,15 +35,29 @@ export async function GET(request: NextRequest) {
     const lastDay = new Date(year, month, 0).getDate()
     const endOfMonth = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
     
-    const monthlyData = await DatabaseService.getProgressRange(
+    console.log(`📊 Analytics API: Fetching for month ${startOfMonth} to ${endOfMonth}`);
+    
+    // Get data for streak calculation (last 365 days + current month)
+    const oneYearAgo = new Date(targetDate)
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+    const startDate = `${oneYearAgo.getFullYear()}-${String(oneYearAgo.getMonth() + 1).padStart(2, '0')}-01`
+    
+    const allData = await DatabaseService.getProgressRange(
       user.userId, 
-      startOfMonth, 
+      startDate, 
       endOfMonth
     )
+    
+    console.log(`📊 Analytics API: Retrieved ${allData.length} days of data`);
+    
+    const monthlyData = allData.filter(day => day.date >= startOfMonth && day.date <= endOfMonth)
+    console.log(`📊 Analytics API: Filtered to ${monthlyData.length} days for target month`);
 
     // Calculate metrics from database data
     const totalHours = monthlyData.reduce((sum, day) => sum + (day.totalHours || 0), 0)
     const totalDays = monthlyData.filter(day => (day.totalHours || 0) > 0).length
+    
+    console.log(`📊 Analytics API: Total hours: ${totalHours}, Total days: ${totalDays}`);
     
     // Calculate MNZD streaks - only count days where ALL 4 tasks are completed
     const completedDays = allData.filter(day => {
@@ -57,6 +66,8 @@ export async function GET(request: NextRequest) {
       // Check if all 4 MNZD tasks are marked as completed
       return day.tasks.every(task => task.completed === true)
     }).sort((a, b) => a.date.localeCompare(b.date))
+    
+    console.log(`📊 Analytics API: ${completedDays.length} fully completed days found`);
     
     let currentStreak = 0
     let longestStreak = 0
@@ -131,15 +142,24 @@ export async function GET(request: NextRequest) {
       prevDateObj = currentDateObj
     }
     
-    return NextResponse.json({
+    console.log(`📊 Analytics API: Current streak: ${currentStreak}, Longest streak: ${longestStreak}`);
+    
+    const response = NextResponse.json({
       currentStreak: currentStreak || 0,
       longestStreak: longestStreak || 0,
       totalDays: totalDays || 0,
       totalHours: totalHours ? Math.round(totalHours * 10) / 10 : 0
     })
     
+    // Add cache-control headers to prevent Vercel caching
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+    
+    return response
+    
   } catch (error) {
-    console.error('Error fetching analytics:', error)
+    console.error('❌ Error fetching analytics:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
