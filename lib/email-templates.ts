@@ -88,7 +88,7 @@ export const getMorningMotivationTemplate = (data: EmailTemplateData): string =>
           Days Tracked 📅
         </p>
         <p style="color: #a16207; margin: 8px 0 0; font-size: 14px;">
-          Progress: ${data.completedToday || 0}/${data.totalHabits || 4} tasks
+          ${data.completedToday || 0}/${data.totalHabits || 4} tasks today | ${Math.round((data.completedToday || 0) * 30)}/${(data.totalHabits || 4) * 30} this month
         </p>
       </div>
       
@@ -164,10 +164,10 @@ export const getEveningCheckinTemplate = (data: EmailTemplateData): string => {
           Today's Completion Rate
         </p>
         <p style="color: #0284c7; margin: 8px 0 0; font-size: 14px;">
-          ${data.completedToday || 0}/${data.totalHabits || 4} tasks completed
+          ${data.completedToday || 0}/${data.totalHabits || 4} tasks today
         </p>
         <p style="color: #0284c7; margin: 4px 0 0; font-size: 12px;">
-          Day ${data.streakCount || 1} tracked
+          ${Math.round((data.completedToday || 0) * 30)}/${(data.totalHabits || 4) * 30} tasks this month | Day ${data.streakCount || 1} tracked
         </p>
       </div>
       
@@ -244,7 +244,7 @@ export const getMilestoneTemplate = (data: EmailTemplateData): string => {
           </div>
         </div>
         <h3 style="color: #ffffff; margin: 0 0 8px; font-size: 24px; font-weight: 700;">
-          ${data.streakCount} Day Streak!
+          ${data.streakCount} Days Tracked!
         </h3>
         <p style="color: rgba(255, 255, 255, 0.9); margin: 0; font-size: 16px;">
           You've officially built a life-changing habit! 🚀

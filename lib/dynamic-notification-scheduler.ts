@@ -461,7 +461,10 @@ export class EnhancedNotificationScheduler {
                 Today's Progress
               </p>
               <p style="color: #6366f1; margin: 4px 0 0; font-size: 11px;">
-                ${user.completedToday} of ${user.totalHabits} habits completed
+                ${user.completedToday}/${user.totalHabits} habits today
+              </p>
+              <p style="color: #6366f1; margin: 4px 0 0; font-size: 10px;">
+                ${Math.round((user.monthlyCompletion || 0) * user.totalHabits * 30)}/${user.totalHabits * 30} tasks this month
               </p>
             </div>
             
@@ -709,7 +712,7 @@ export class EnhancedNotificationScheduler {
                 ${streakDays}
               </div>
               <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 14px; font-weight: 600;">
-                Day Streak!
+                Days Tracked!
               </p>
               <p style="color: rgba(255,255,255,0.8); margin: 4px 0 0; font-size: 12px;">
                 You've built a life-changing habit!
@@ -1193,13 +1196,16 @@ export class EnhancedNotificationScheduler {
           <div style="padding: 16px;">
             <h2 style="color: #1e293b; margin: 0 0 12px; font-size: 16px;">Hi ${user.name}!</h2>
             
-            <!-- Streak Display -->
+            <!-- Days Tracked Display -->
             <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px; margin: 12px 0; text-align: center;">
               <div style="font-size: 24px; font-weight: 800; color: #d97706; margin-bottom: 2px;">
                 ${user.currentStreak}
               </div>
               <p style="color: #92400e; margin: 0; font-size: 12px; font-weight: 600;">
-                Day Streak
+                Days Tracked
+              </p>
+              <p style="color: #92400e; margin: 4px 0 0; font-size: 10px;">
+                ${Math.round((user.monthlyCompletion || 0) * user.totalHabits * 30)}/${user.totalHabits * 30} tasks this month
               </p>
             </div>
             

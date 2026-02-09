@@ -1,12 +1,5 @@
 import nodemailer from "nodemailer";
-import { 
-  getMorningMotivationTemplate, 
-  getEveningCheckinTemplate, 
-  getMilestoneTemplate, 
-  getStreakRecoveryTemplate,
-  getWeeklySummaryTemplate,
-  EmailTemplateData 
-} from './email-templates';
+import { aiContentService } from './ai-content-service';
 
 // Email transporter configuration
 const transporter = nodemailer.createTransport({
@@ -650,27 +643,63 @@ export async function testEmailConnection(): Promise<boolean> {
   }
 }
 
-// Enhanced notification email functions for cron-job.org integration
+// Enhanced notification email functions with AI-generated content
 export async function sendMorningMotivationEmail(
   userName: string,
   userEmail: string,
   streakCount: number = 0,
-  motivationalMessage?: string
+  userData?: any
 ): Promise<boolean> {
   try {
-    const templateData: EmailTemplateData = {
-      userName,
-      userEmail,
-      streakCount,
-      motivationalMessage,
-      actionUrl: 'https://never-break-the-chain.vercel.app/dashboard'
-    };
+    const aiContent = await aiContentService.generateMorningMotivation({
+      name: userName,
+      currentStreak: streakCount,
+      longestStreak: userData?.longestStreak || streakCount,
+      completionRate: userData?.completionRate || 0.75,
+      weakestHabit: userData?.weakestHabit || 'Meditation',
+      strongestHabit: userData?.strongestHabit || 'Discipline',
+      daysSinceJoin: userData?.daysSinceJoin || 1,
+      timeOfDay: 'morning',
+      lastActivity: new Date(),
+      mnzdHabits: userData?.mnzdHabits || [],
+      todayCompleted: userData?.todayCompleted || 0,
+      totalHabits: userData?.totalHabits || 4
+    });
 
-    const htmlContent = getMorningMotivationTemplate(templateData);
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="UTF-8"><title>Morning Motivation</title></head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; margin: 0; padding: 12px;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 16px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 18px; font-weight: 700;">Good Morning!</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 4px 0 0; font-size: 12px;">Never Break The Chain</p>
+          </div>
+          <div style="padding: 16px;">
+            <h2 style="color: #1e293b; margin: 0 0 12px; font-size: 16px;">Hi ${userName}!</h2>
+            <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px; margin: 12px 0; text-align: center;">
+              <div style="font-size: 24px; font-weight: 800; color: #d97706; margin-bottom: 2px;">${streakCount}</div>
+              <p style="color: #92400e; margin: 0; font-size: 12px; font-weight: 600;">Days Tracked</p>
+            </div>
+            <div style="background: #f0f9ff; border-left: 3px solid #0ea5e9; border-radius: 6px; padding: 12px; margin: 12px 0;">
+              <p style="color: #0369a1; margin: 0; font-size: 14px; line-height: 1.4;">${aiContent.message}</p>
+            </div>
+            <div style="text-align: center; margin: 16px 0;">
+              <a href="https://never-break-the-chain.vercel.app/dashboard" style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 13px;">Start Today's Habits</a>
+            </div>
+          </div>
+          <div style="background: #f8fafc; padding: 12px; text-align: center; border-top: 1px solid #e2e8f0;">
+            <p style="color: #94a3b8; margin: 0; font-size: 10px;">© 2026 Never Break The Chain by Ansh Tank</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
     
     return await sendEmail({
       to: userEmail,
-      subject: `🌅 Good Morning ${userName} - Never Break The Chain`,
+      subject: aiContent.subject,
       html: htmlContent
     });
   } catch (error) {
@@ -683,22 +712,61 @@ export async function sendEveningCheckinEmail(
   userName: string,
   userEmail: string,
   completedToday: number = 0,
-  totalHabits: number = 4
+  totalHabits: number = 4,
+  userData?: any
 ): Promise<boolean> {
   try {
-    const templateData: EmailTemplateData = {
-      userName,
-      userEmail,
-      completedToday,
-      totalHabits,
-      actionUrl: 'https://never-break-the-chain.vercel.app/dashboard'
-    };
+    const aiContent = await aiContentService.generateEveningReflection({
+      name: userName,
+      currentStreak: userData?.currentStreak || 0,
+      longestStreak: userData?.longestStreak || 0,
+      completionRate: completedToday / totalHabits,
+      weakestHabit: userData?.weakestHabit || 'Meditation',
+      strongestHabit: userData?.strongestHabit || 'Discipline',
+      daysSinceJoin: userData?.daysSinceJoin || 1,
+      timeOfDay: 'evening',
+      lastActivity: new Date(),
+      mnzdHabits: userData?.mnzdHabits || [],
+      todayCompleted: completedToday,
+      totalHabits
+    });
 
-    const htmlContent = getEveningCheckinTemplate(templateData);
+    const completionRate = Math.round((completedToday / totalHabits) * 100);
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="UTF-8"><title>Evening Check-in</title></head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; margin: 0; padding: 12px;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <div style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); padding: 16px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 18px; font-weight: 700;">Evening Check-in</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 4px 0 0; font-size: 12px;">Never Break The Chain</p>
+          </div>
+          <div style="padding: 16px;">
+            <h2 style="color: #1e293b; margin: 0 0 12px; font-size: 16px;">Hi ${userName}!</h2>
+            <div style="background: #f0f9ff; border: 1px solid #6366f1; border-radius: 8px; padding: 12px; margin: 12px 0; text-align: center;">
+              <div style="font-size: 24px; font-weight: 800; color: #4f46e5; margin-bottom: 2px;">${completionRate}%</div>
+              <p style="color: #4338ca; margin: 0; font-size: 12px; font-weight: 600;">Today's Progress</p>
+              <p style="color: #6366f1; margin: 4px 0 0; font-size: 11px;">${completedToday}/${totalHabits} habits completed</p>
+            </div>
+            <div style="background: ${completionRate >= 80 ? '#f0fdf4' : completionRate >= 50 ? '#fef3c7' : '#fef2f2'}; border-left: 3px solid ${completionRate >= 80 ? '#10b981' : completionRate >= 50 ? '#f59e0b' : '#ef4444'}; border-radius: 6px; padding: 12px; margin: 12px 0;">
+              <p style="color: ${completionRate >= 80 ? '#065f46' : completionRate >= 50 ? '#92400e' : '#991b1b'}; margin: 0; font-size: 14px; line-height: 1.4;">${aiContent.message}</p>
+            </div>
+            <div style="text-align: center; margin: 16px 0;">
+              <a href="https://never-break-the-chain.vercel.app/dashboard" style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 13px;">View Progress</a>
+            </div>
+          </div>
+          <div style="background: #f8fafc; padding: 12px; text-align: center; border-top: 1px solid #e2e8f0;">
+            <p style="color: #94a3b8; margin: 0; font-size: 10px;">© 2026 Never Break The Chain by Ansh Tank</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
     
     return await sendEmail({
       to: userEmail,
-      subject: `🌙 Evening Check-in ${userName} - Never Break The Chain`,
+      subject: aiContent.subject,
       html: htmlContent
     });
   } catch (error) {
@@ -710,21 +778,58 @@ export async function sendEveningCheckinEmail(
 export async function sendMilestoneEmail(
   userName: string,
   userEmail: string,
-  streakCount: number
+  streakCount: number,
+  userData?: any
 ): Promise<boolean> {
   try {
-    const templateData: EmailTemplateData = {
-      userName,
-      userEmail,
-      streakCount,
-      actionUrl: 'https://never-break-the-chain.vercel.app/dashboard'
-    };
+    const aiContent = await aiContentService.generateMilestoneMessage({
+      name: userName,
+      currentStreak: streakCount,
+      longestStreak: userData?.longestStreak || streakCount,
+      completionRate: userData?.completionRate || 0.75,
+      weakestHabit: userData?.weakestHabit || 'Meditation',
+      strongestHabit: userData?.strongestHabit || 'Discipline',
+      daysSinceJoin: userData?.daysSinceJoin || streakCount,
+      timeOfDay: 'morning',
+      lastActivity: new Date(),
+      milestoneReached: streakCount
+    });
 
-    const htmlContent = getMilestoneTemplate(templateData);
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="UTF-8"><title>Milestone Achieved</title></head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; margin: 0; padding: 12px;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <div style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); padding: 16px; text-align: center;">
+            <div style="font-size: 32px; margin-bottom: 8px;">🎉</div>
+            <h1 style="color: white; margin: 0; font-size: 18px; font-weight: 700;">MILESTONE ACHIEVED!</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 4px 0 0; font-size: 12px;">Never Break The Chain</p>
+          </div>
+          <div style="padding: 16px;">
+            <h2 style="color: #1e293b; margin: 0 0 12px; font-size: 16px; text-align: center;">Congratulations ${userName}!</h2>
+            <div style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); border-radius: 12px; padding: 20px; margin: 12px 0; text-align: center;">
+              <div style="font-size: 36px; font-weight: 800; color: white; margin-bottom: 4px;">${streakCount}</div>
+              <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 14px; font-weight: 600;">Days Tracked!</p>
+            </div>
+            <div style="background: #f0f9ff; border-left: 3px solid #0ea5e9; border-radius: 6px; padding: 12px; margin: 12px 0;">
+              <p style="color: #0369a1; margin: 0; font-size: 14px; line-height: 1.4;">${aiContent.message}</p>
+            </div>
+            <div style="text-align: center; margin: 16px 0;">
+              <a href="https://never-break-the-chain.vercel.app/dashboard" style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 13px;">🎉 Continue Journey</a>
+            </div>
+          </div>
+          <div style="background: #f8fafc; padding: 12px; text-align: center; border-top: 1px solid #e2e8f0;">
+            <p style="color: #94a3b8; margin: 0; font-size: 10px;">© 2026 Never Break The Chain by Ansh Tank</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
     
     return await sendEmail({
       to: userEmail,
-      subject: `🎉 ${streakCount} Day Milestone Achieved! - Never Break The Chain`,
+      subject: aiContent.subject,
       html: htmlContent
     });
   } catch (error) {
@@ -738,13 +843,33 @@ export async function sendStreakRecoveryEmail(
   userEmail: string
 ): Promise<boolean> {
   try {
-    const templateData: EmailTemplateData = {
-      userName,
-      userEmail,
-      actionUrl: 'https://never-break-the-chain.vercel.app/dashboard'
-    };
-
-    const htmlContent = getStreakRecoveryTemplate(templateData);
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="UTF-8"><title>Fresh Start</title></head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; margin: 0; padding: 12px;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 16px; text-align: center;">
+            <div style="font-size: 32px; margin-bottom: 8px;">🌱</div>
+            <h1 style="color: white; margin: 0; font-size: 18px; font-weight: 700;">Fresh Start!</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 4px 0 0; font-size: 12px;">Never Break The Chain</p>
+          </div>
+          <div style="padding: 16px;">
+            <h2 style="color: #1e293b; margin: 0 0 12px; font-size: 16px; text-align: center;">Hi ${userName}!</h2>
+            <div style="background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 6px; padding: 12px; margin: 12px 0;">
+              <p style="color: #065f46; margin: 0; font-size: 14px; line-height: 1.4;">Every master was once a beginner. Your comeback starts now! 💪</p>
+            </div>
+            <div style="text-align: center; margin: 16px 0;">
+              <a href="https://never-break-the-chain.vercel.app/dashboard" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 13px;">🚀 Restart Journey</a>
+            </div>
+          </div>
+          <div style="background: #f8fafc; padding: 12px; text-align: center; border-top: 1px solid #e2e8f0;">
+            <p style="color: #94a3b8; margin: 0; font-size: 10px;">© 2026 Never Break The Chain by Ansh Tank</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
     
     return await sendEmail({
       to: userEmail,
@@ -765,21 +890,63 @@ export async function sendWeeklySummaryEmail(
     totalDays: number;
     topHabit: string;
     improvementArea: string;
-  }
+  },
+  userData?: any
 ): Promise<boolean> {
   try {
-    const templateData = {
-      userName,
-      userEmail,
-      weeklyStats,
-      actionUrl: 'https://never-break-the-chain.vercel.app/dashboard'
-    };
+    const aiContent = await aiContentService.generateWeeklySummary({
+      name: userName,
+      currentStreak: userData?.currentStreak || 0,
+      longestStreak: userData?.longestStreak || 0,
+      completionRate: weeklyStats.daysCompleted / weeklyStats.totalDays,
+      weakestHabit: weeklyStats.improvementArea,
+      strongestHabit: weeklyStats.topHabit,
+      daysSinceJoin: userData?.daysSinceJoin || 1,
+      timeOfDay: 'morning',
+      lastActivity: new Date(),
+      daysCompleted: weeklyStats.daysCompleted,
+      totalDays: weeklyStats.totalDays,
+      topHabit: weeklyStats.topHabit,
+      improvementArea: weeklyStats.improvementArea
+    });
 
-    const htmlContent = getWeeklySummaryTemplate(templateData);
+    const completionRate = Math.round((weeklyStats.daysCompleted / weeklyStats.totalDays) * 100);
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="UTF-8"><title>Weekly Summary</title></head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; margin: 0; padding: 12px;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <div style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); padding: 16px; text-align: center;">
+            <div style="font-size: 32px; margin-bottom: 8px;">📊</div>
+            <h1 style="color: white; margin: 0; font-size: 18px; font-weight: 700;">Weekly Summary</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 4px 0 0; font-size: 12px;">Never Break The Chain</p>
+          </div>
+          <div style="padding: 16px;">
+            <h2 style="color: #1e293b; margin: 0 0 12px; font-size: 16px; text-align: center;">Hi ${userName}! 📈</h2>
+            <div style="background: #f0f9ff; border: 1px solid #6366f1; border-radius: 8px; padding: 16px; margin: 12px 0; text-align: center;">
+              <div style="font-size: 32px; font-weight: 800; color: #4f46e5; margin-bottom: 4px;">${completionRate}%</div>
+              <p style="color: #4338ca; margin: 0; font-size: 12px; font-weight: 600;">Weekly Completion</p>
+              <p style="color: #6366f1; margin: 4px 0 0; font-size: 11px;">${weeklyStats.daysCompleted}/${weeklyStats.totalDays} days completed</p>
+            </div>
+            <div style="background: #f0f9ff; border-left: 3px solid #0ea5e9; border-radius: 6px; padding: 12px; margin: 12px 0;">
+              <p style="color: #0369a1; margin: 0; font-size: 14px; line-height: 1.4;">${aiContent.message}</p>
+            </div>
+            <div style="text-align: center; margin: 16px 0;">
+              <a href="https://never-break-the-chain.vercel.app/dashboard" style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 13px;">📊 View Analytics</a>
+            </div>
+          </div>
+          <div style="background: #f8fafc; padding: 12px; text-align: center; border-top: 1px solid #e2e8f0;">
+            <p style="color: #94a3b8; margin: 0; font-size: 10px;">© 2026 Never Break The Chain by Ansh Tank</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
     
     return await sendEmail({
       to: userEmail,
-      subject: `📊 Weekly Summary ${userName} - Never Break The Chain`,
+      subject: aiContent.subject,
       html: htmlContent
     });
   } catch (error) {
