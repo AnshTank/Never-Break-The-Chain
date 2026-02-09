@@ -85,17 +85,17 @@ export const getMorningMotivationTemplate = (data: EmailTemplateData): string =>
           ${data.streakCount || 0}
         </div>
         <p style="color: #92400e; margin: 0; font-size: 16px; font-weight: 600;">
-          Day Streak 🔥
+          Days Tracked 📅
         </p>
         <p style="color: #a16207; margin: 8px 0 0; font-size: 14px;">
-          ${data.streakCount === 0 ? "Start your journey today!" : "Keep the momentum going!"}
+          Progress: ${data.completedToday || 0}/${data.totalHabits || 4} tasks
         </p>
       </div>
       
       <!-- Motivational Message -->
       <div style="background: #f0f9ff; border-left: 4px solid #0ea5e9; border-radius: 8px; padding: 20px; margin: 24px 0;">
         <p style="color: #0369a1; margin: 0; font-size: 16px; font-style: italic; text-align: center;">
-          "${data.motivationalMessage || 'Today is a new opportunity to build the habits that will transform your life.'}"
+          "${data.motivationalMessage || `Today is day ${data.streakCount || 1} of your journey. Every task completed brings you closer to your goals!`}"
         </p>
       </div>
       
@@ -164,7 +164,10 @@ export const getEveningCheckinTemplate = (data: EmailTemplateData): string => {
           Today's Completion Rate
         </p>
         <p style="color: #0284c7; margin: 8px 0 0; font-size: 14px;">
-          ${data.completedToday || 0} of ${data.totalHabits || 0} habits completed
+          ${data.completedToday || 0}/${data.totalHabits || 4} tasks completed
+        </p>
+        <p style="color: #0284c7; margin: 4px 0 0; font-size: 12px;">
+          Day ${data.streakCount || 1} tracked
         </p>
       </div>
       
@@ -172,10 +175,10 @@ export const getEveningCheckinTemplate = (data: EmailTemplateData): string => {
       <div style="background: ${completionRate >= 80 ? '#f0fdf4' : completionRate >= 50 ? '#fef3c7' : '#fef2f2'}; border-left: 4px solid ${completionRate >= 80 ? '#10b981' : completionRate >= 50 ? '#f59e0b' : '#ef4444'}; border-radius: 8px; padding: 20px; margin: 24px 0;">
         <p style="color: ${completionRate >= 80 ? '#065f46' : completionRate >= 50 ? '#92400e' : '#991b1b'}; margin: 0; font-size: 16px; text-align: center;">
           ${completionRate >= 80 
-            ? "🎉 Outstanding work today! You're building incredible momentum!" 
+            ? `🎉 Outstanding! ${data.completedToday}/${data.totalHabits} tasks done on day ${data.streakCount || 1}. You're building incredible momentum!` 
             : completionRate >= 50 
-            ? "💪 Good progress! Every step counts toward your transformation!" 
-            : "🌱 Tomorrow is a fresh start! Small steps lead to big changes!"}
+            ? `💪 Good progress! ${data.completedToday}/${data.totalHabits} tasks completed. Every step counts on day ${data.streakCount || 1}!` 
+            : `🌱 Day ${data.streakCount || 1}: ${data.completedToday}/${data.totalHabits} tasks done. Tomorrow is a fresh start!`}
         </p>
       </div>
       
