@@ -409,27 +409,32 @@ export class EnhancedNotificationScheduler {
   private static generateAIEveningEmailHTML(user: UserProgress, content?: any): string {
     const completionRate = user.totalHabits > 0 ? Math.round((user.completedToday / user.totalHabits) * 100) : 0;
     
-    const mnzdHabits = user.mnzdConfigs || [
-      { id: 'meditation', name: 'Meditation', color: '#8b5cf6' },
-      { id: 'nutrition', name: 'Nutrition', color: '#06b6d4' },
-      { id: 'zone', name: 'Zone', color: '#f59e0b' },
-      { id: 'discipline', name: 'Discipline', color: '#10b981' }
-    ];
+    // FORCE USE ACTUAL USER MNZD CONFIGS - NEVER USE DEFAULTS
+    const mnzdHabits = user.mnzdConfigs && user.mnzdConfigs.length > 0 ? user.mnzdConfigs : [];
     
-    // Use AI-generated message or fallback
-    const encouragementMessage = content?.message || (
-      completionRate >= 80 
-        ? "Outstanding work today! You're building incredible momentum!" 
-        : completionRate >= 50 
-        ? "Good progress! Every step counts toward your transformation!" 
-        : "Tomorrow is a fresh start! Small steps lead to big changes!"
-    );
+    console.log(`🎨 DEBUG: EVENING EMAIL - Using MNZD habits:`, mnzdHabits.map(h => h.name));
+    
+    // Decode HTML entities from AI content
+    const decodeHtml = (html: string) => {
+      return html
+        .replace(/&#39;/g, "'")
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>');
+    };
+    
+    // CRITICAL: Use AI-generated message - NO FALLBACK unless AI completely fails
+    const encouragementMessage = content?.message ? decodeHtml(content.message) : 
+      `Hi ${user.name}! You completed ${user.completedToday} out of ${user.totalHabits} habits today (${completionRate}%). ${completionRate >= 75 ? 'Great work!' : completionRate >= 50 ? 'Good progress!' : 'Tomorrow is a new day!'}`;
+    
+    console.log(`🎨 DEBUG: Evening AI message:`, encouragementMessage);
 
-    const habitCards = mnzdHabits.map(habit => `
+    const habitCards = mnzdHabits.length > 0 ? mnzdHabits.map(habit => `
       <div style="background: ${habit.color || '#8b5cf6'}15; border: 1px solid ${habit.color || '#8b5cf6'}40; border-radius: 6px; padding: 8px; text-align: center; margin: 2px;">
         <div style="color: ${habit.color || '#8b5cf6'}; font-size: 13px; font-weight: 600;">${habit.name}</div>
       </div>
-    `).join('');
+    `).join('') : '<p style="color: #64748b; font-size: 12px; text-align: center;">No habits configured yet</p>';
 
     return `
       <!DOCTYPE html>
@@ -468,7 +473,7 @@ export class EnhancedNotificationScheduler {
               </p>
             </div>
             
-            <!-- Encouragement -->
+            <!-- AI-Generated Encouragement Message -->
             <div style="background: ${completionRate >= 80 ? '#f0fdf4' : completionRate >= 50 ? '#fef3c7' : '#fef2f2'}; border-left: 3px solid ${completionRate >= 80 ? '#10b981' : completionRate >= 50 ? '#f59e0b' : '#ef4444'}; border-radius: 6px; padding: 12px; margin: 12px 0;">
               <p style="color: ${completionRate >= 80 ? '#065f46' : completionRate >= 50 ? '#92400e' : '#991b1b'}; margin: 0; font-size: 14px; line-height: 1.4;">
                 ${encouragementMessage}
@@ -1046,7 +1051,7 @@ export class EnhancedNotificationScheduler {
           name: user.name,
           currentStreak: user.currentStreak,
           longestStreak: user.longestStreak,
-          completionRate: user.weeklyCompletion,
+          completionRate: user.totalHabits > 0 ? user.completedToday / user.totalHabits : 0,
           weakestHabit: this.getWeakestHabit(user),
           strongestHabit: this.getStrongestHabit(user),
           daysSinceJoin: Math.floor((new Date().getTime() - user.joinDate.getTime()) / (1000 * 60 * 60 * 24)),
@@ -1063,11 +1068,13 @@ export class EnhancedNotificationScheduler {
           todayCompleted: user.completedToday,
           totalHabits: user.totalHabits
         };
+        console.log(`🌙 DEBUG: Evening context:`, JSON.stringify(eveningContext, null, 2));
         const eveningContent = await aiContentService.generateEveningReflection(eveningContext);
+        console.log(`🌙 DEBUG: Evening AI content:`, eveningContent);
         const eveningHtml = this.generateAIEveningEmailHTML(user, eveningContent);
         return await sendEmail({
           to: user.email,
-          subject: `🌙 Evening Check-in ${user.name}`,
+          subject: eveningContent.subject || `🌙 Evening Check-in ${user.name}`,
           html: eveningHtml
         });
 

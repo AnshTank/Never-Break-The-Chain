@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import * as THREE from "three";
 import {
   Play,
@@ -194,6 +194,7 @@ const notificationSounds = [
 ];
 
 export default function TimerPage() {
+  const router = useRouter();
   const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [mode, setMode] = useState<"focus" | "break">("focus");
@@ -957,55 +958,39 @@ export default function TimerPage() {
         if (ref.current) {
           ref.current.pause();
           ref.current.currentTime = 0;
-          ref.current.src = '';
-        }
-      });
-    };
-  }, [backgroundSound]);
-
-  // Comprehensive cleanup on component unmount - this ensures audio stops when leaving the timer route
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      // Stop all audio when page is about to unload
-      [bgAudioRef, bgAudioRef2, audioRef, notificationAudioRef].forEach((ref) => {
-        if (ref.current) {
-          ref.current.pause();
-          ref.current.currentTime = 0;
-          ref.current.src = '';
-        }
-      });
-    };
-
-    // Add event listener for page unload
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      // Remove event listener
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      
-      // Stop all audio when component unmounts (route change)
-      [bgAudioRef, bgAudioRef2, audioRef, notificationAudioRef].forEach((ref) => {
-        if (ref.current) {
-          ref.current.pause();
-          ref.current.currentTime = 0;
-          ref.current.src = '';
-          // Remove all event listeners
           ref.current.removeEventListener('timeupdate', () => {});
           ref.current.removeEventListener('ended', () => {});
         }
       });
+    };
+  }, [backgroundSound, bgSoundVolume]);
+
+  // Comprehensive cleanup on component unmount - this ensures audio stops when leaving the timer route
+  useEffect(() => {
+    const stopAllAudio = () => {
+      [bgAudioRef, bgAudioRef2, audioRef, notificationAudioRef].forEach((ref) => {
+        if (ref.current) {
+          ref.current.pause();
+          ref.current.currentTime = 0;
+          ref.current.src = '';
+          ref.current.load(); // Force reload to clear buffer
+        }
+      });
       
-      // Clear any beep intervals
       if (beepInterval) {
         clearInterval(beepInterval);
       }
       
-      // Clear timer interval
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
     };
-  }, []);
+
+    // Cleanup on unmount
+    return () => {
+      stopAllAudio();
+    };
+  }, [beepInterval]);
 
   // Background sound volume with immediate updates
   useEffect(() => {
@@ -1602,12 +1587,23 @@ export default function TimerPage() {
           isMobile ? "fixed" : "absolute"
         } top-0 left-0 right-0 z-30 flex items-center justify-between p-4 md:p-8`}
       >
-        <Link
-          href="/dashboard"
-          className={`${theme.text} hover:opacity-80 transition-all duration-300 font-medium text-base md:text-lg`}
+        <button
+          onClick={() => {
+            // Stop all audio before navigation
+            [bgAudioRef, bgAudioRef2, audioRef, notificationAudioRef].forEach((ref) => {
+              if (ref.current) {
+                ref.current.pause();
+                ref.current.currentTime = 0;
+                ref.current.src = '';
+                ref.current.load();
+              }
+            });
+            router.push('/dashboard');
+          }}
+          className={`${theme.text} hover:opacity-80 transition-all duration-300 font-medium text-base md:text-lg cursor-pointer`}
         >
           ← Dashboard
-        </Link>
+        </button>
         <div className="flex items-center gap-2 md:gap-4">
           <button
             onClick={() => setShowOnboarding(true)}

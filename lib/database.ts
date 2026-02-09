@@ -27,6 +27,17 @@ export class DatabaseService {
         userId,
         mnzdConfigs: DEFAULT_MNZD_CONFIGS,
         newUser: true,
+        timerSettings: {
+          focusTime: 25,
+          breakTime: 5,
+          dailySessionGoal: 8,
+          autoStart: false,
+          notifications: true,
+          soundVolume: 0.5,
+          backgroundSound: "",
+          notificationSound: "default",
+          bgSoundVolume: 0.5
+        },
         createdAt: new Date(),
         updatedAt: new Date()
       }

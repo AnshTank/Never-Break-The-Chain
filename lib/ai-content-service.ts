@@ -121,57 +121,67 @@ class GeminiAIProvider implements AIProvider {
       `${habit.name}: ${Math.round(habit.rate * 100)}% completion (${habit.completed}/${habit.total} days)`
     ).join(', ') || 'No habit data available';
     
-    // Add date-based context for variation
     const today = new Date();
     const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'long' });
     const dateStr = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    const randomSeed = Math.floor(Math.random() * 1000); // Add randomness
+    const randomSeed = Math.floor(Math.random() * 1000);
     
-    // Detect streak status
-    let streakStatus = 'maintaining';
-    if (context.currentStreak === 0 && context.longestStreak > 0) {
-      streakStatus = 'broken - needs encouragement';
-    } else if (context.currentStreak > context.longestStreak) {
-      streakStatus = 'new record - celebrate!';
-    } else if (context.currentStreak === context.longestStreak) {
-      streakStatus = 'matching best - push harder!';
+    // Calculate total tracked days (not streak)
+    const totalTrackedDays = context.daysSinceJoin;
+    
+    // Determine performance level for evening
+    const todayCompletion = context.todayCompleted || 0;
+    const totalHabits = context.totalHabits || 4;
+    const completionRate = totalHabits > 0 ? Math.round((todayCompletion / totalHabits) * 100) : 0;
+    
+    let performanceLevel = '';
+    if (todayCompletion === 0) {
+      performanceLevel = 'NO tasks completed today - needs encouragement for tomorrow';
+    } else if (todayCompletion === 1) {
+      performanceLevel = '1 task completed - acknowledge effort, encourage more tomorrow';
+    } else if (todayCompletion === 2) {
+      performanceLevel = '2 tasks completed - good progress, motivate to finish stronger';
+    } else if (todayCompletion === 3) {
+      performanceLevel = '3 tasks completed - excellent work, almost perfect';
+    } else if (todayCompletion >= totalHabits) {
+      performanceLevel = 'ALL tasks completed - celebrate this achievement!';
     }
 
-    return `${basePrompt}
+    // Correct greeting based on time
+    const timeGreeting = context.timeOfDay === 'morning' ? 'Good morning' : 
+                        context.timeOfDay === 'afternoon' ? 'Good afternoon' :
+                        context.timeOfDay === 'evening' ? 'Good evening' : 'Hello';
+
+    return `Generate a personalized ${basePrompt} email message.
+
+CRITICAL INSTRUCTIONS:
+- Start with "${timeGreeting}" (NOT any other greeting)
+- For EVENING emails: Focus on TODAY'S completion (${todayCompletion}/${totalHabits} tasks)
+- For EVENING emails: Use "tracked days" NOT "streak" (user has tracked ${totalTrackedDays} days total)
+- Use ONLY the data provided below - DO NOT make up numbers
+- Keep response under 150 words
+- Be encouraging and personal
+- NO HTML entities - use plain text apostrophes and quotes
+- Reference the user's ACTUAL habit names from MNZD Habit Details
+- Vary your message based on performance level
 
 Today's Context:
 - Date: ${dateStr}
 - Day: ${dayOfWeek}
 - Time: ${context.timeOfDay}
-- Random Seed: ${randomSeed} (use this to vary your response style)
+- Random Seed: ${randomSeed}
 
 User Profile:
 - Name: ${context.name}
-- Current Streak: ${context.currentStreak} days (Status: ${streakStatus})
+- Total Tracked Days: ${totalTrackedDays} days
+- Current Streak: ${context.currentStreak} days
 - Longest Streak: ${context.longestStreak} days
-- Overall Completion Rate: ${Math.round(context.completionRate * 100)}%
-- Strongest Habit: ${context.strongestHabit}
-- Weakest Habit: ${context.weakestHabit}
-- Days Since Join: ${context.daysSinceJoin}
-- Last Activity: ${context.lastActivity.toDateString()}
-- Today's Progress: ${context.todayCompleted || 0}/${context.totalHabits || 4} habits completed
+- TODAY'S Progress: ${todayCompletion}/${totalHabits} habits completed (${completionRate}%)
+- Performance Level: ${performanceLevel}
 - MNZD Habit Details: ${mnzdDetails}
-${context.milestoneReached ? `- Milestone Reached: ${context.milestoneReached} days` : ''}
 
-IMPORTANT Instructions:
-- Generate UNIQUE content every time - never repeat the same message
-- Use the random seed and date to vary your writing style
-- If streak is broken, be empathetic but motivating
-- If it's a new record, be extra celebratory
-- Reference the specific day of week naturally (e.g., "Happy Monday!")
-- Keep response under 150 words
-- Be encouraging and personal
-- Reference specific user data and habit names
-- Use the user's actual MNZD habit names (not generic ones)
-- Include relevant emojis
-- End with a call to action
-- Make it feel personal and motivating
-- VARY your tone: sometimes energetic, sometimes calm, sometimes inspiring`;
+Generate ONLY the message body (no subject, no HTML, plain text with proper apostrophes).
+Vary your tone and content based on the performance level above.`;
   }
 
   private getFallbackContent(prompt: string, context: UserContext): string {
@@ -323,6 +333,11 @@ export class AIContentService {
       console.log(`🤖 DEBUG: Calling AI provider for evening with prompt: ${prompt}`);
       const aiMessage = await this.provider.generateContent(prompt, context);
       console.log(`🤖 DEBUG: AI provider returned for evening:`, aiMessage);
+      
+      if (!aiMessage || aiMessage.trim().length === 0) {
+        console.log(`🤖 DEBUG: AI returned empty message, using fallback`);
+        return this.getFallbackEveningContent(context);
+      }
       
       const result = {
         subject: `🌙 Day ${context.currentStreak} Complete - Reflection Time`,
