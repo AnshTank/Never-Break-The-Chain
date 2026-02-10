@@ -34,6 +34,9 @@ interface UserProgress {
   totalHabits: number;
   weeklyCompletion: number;
   monthlyCompletion: number;
+  monthToDateCompleted: number;
+  monthToDatePossible: number;
+  trackedDaysThisMonth: number;
   joinDate: Date;
   preferences: {
     morningTime?: string;
@@ -408,13 +411,8 @@ export class EnhancedNotificationScheduler {
   // Generate AI-powered evening email HTML with user's custom MNZD names
   private static generateAIEveningEmailHTML(user: UserProgress, content?: any): string {
     const completionRate = user.totalHabits > 0 ? Math.round((user.completedToday / user.totalHabits) * 100) : 0;
-    
-    // FORCE USE ACTUAL USER MNZD CONFIGS - NEVER USE DEFAULTS
     const mnzdHabits = user.mnzdConfigs && user.mnzdConfigs.length > 0 ? user.mnzdConfigs : [];
     
-    console.log(`🎨 DEBUG: EVENING EMAIL - Using MNZD habits:`, mnzdHabits.map(h => h.name));
-    
-    // Decode HTML entities from AI content
     const decodeHtml = (html: string) => {
       return html
         .replace(/&#39;/g, "'")
@@ -424,11 +422,8 @@ export class EnhancedNotificationScheduler {
         .replace(/&gt;/g, '>');
     };
     
-    // CRITICAL: Use AI-generated message - NO FALLBACK unless AI completely fails
     const encouragementMessage = content?.message ? decodeHtml(content.message) : 
       `Hi ${user.name}! You completed ${user.completedToday} out of ${user.totalHabits} habits today (${completionRate}%). ${completionRate >= 75 ? 'Great work!' : completionRate >= 50 ? 'Good progress!' : 'Tomorrow is a new day!'}`;
-    
-    console.log(`🎨 DEBUG: Evening AI message:`, encouragementMessage);
 
     const habitCards = mnzdHabits.length > 0 ? mnzdHabits.map(habit => `
       <div style="background: ${habit.color || '#8b5cf6'}15; border: 1px solid ${habit.color || '#8b5cf6'}40; border-radius: 6px; padding: 8px; text-align: center; margin: 2px;">
@@ -447,17 +442,14 @@ export class EnhancedNotificationScheduler {
       <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; margin: 0; padding: 12px;">
         <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
           
-          <!-- Header -->
           <div style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); padding: 16px; text-align: center;">
             <h1 style="color: white; margin: 0; font-size: 18px; font-weight: 700;">Evening Check-in</h1>
             <p style="color: rgba(255,255,255,0.9); margin: 4px 0 0; font-size: 12px;">Never Break The Chain</p>
           </div>
           
-          <!-- Content -->
           <div style="padding: 16px;">
             <h2 style="color: #1e293b; margin: 0 0 12px; font-size: 16px;">Hi ${user.name}!</h2>
             
-            <!-- Progress Display -->
             <div style="background: #f0f9ff; border: 1px solid #6366f1; border-radius: 8px; padding: 12px; margin: 12px 0; text-align: center;">
               <div style="font-size: 24px; font-weight: 800; color: #4f46e5; margin-bottom: 2px;">
                 ${completionRate}%
@@ -469,18 +461,16 @@ export class EnhancedNotificationScheduler {
                 ${user.completedToday}/${user.totalHabits} habits today
               </p>
               <p style="color: #6366f1; margin: 4px 0 0; font-size: 10px;">
-                ${Math.round((user.monthlyCompletion || 0) * user.totalHabits * 30)}/${user.totalHabits * 30} tasks this month
+                ${user.monthToDateCompleted}/${user.monthToDatePossible} tasks this month
               </p>
             </div>
             
-            <!-- AI-Generated Encouragement Message -->
             <div style="background: ${completionRate >= 80 ? '#f0fdf4' : completionRate >= 50 ? '#fef3c7' : '#fef2f2'}; border-left: 3px solid ${completionRate >= 80 ? '#10b981' : completionRate >= 50 ? '#f59e0b' : '#ef4444'}; border-radius: 6px; padding: 12px; margin: 12px 0;">
               <p style="color: ${completionRate >= 80 ? '#065f46' : completionRate >= 50 ? '#92400e' : '#991b1b'}; margin: 0; font-size: 14px; line-height: 1.4;">
                 ${encouragementMessage}
               </p>
             </div>
             
-            <!-- Custom MNZD Habits -->
             <div style="margin: 16px 0;">
               <h3 style="color: #1e293b; margin: 0 0 8px; font-size: 14px; font-weight: 600; text-align: center;">
                 Your Focus Areas
@@ -490,7 +480,6 @@ export class EnhancedNotificationScheduler {
               </div>
             </div>
             
-            <!-- CTA -->
             <div style="text-align: center; margin: 16px 0;">
               <a href="https://never-break-the-chain.vercel.app/dashboard" 
                  style="display: inline-block; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 13px;">
@@ -499,7 +488,6 @@ export class EnhancedNotificationScheduler {
             </div>
           </div>
           
-          <!-- Footer -->
           <div style="background: #f8fafc; padding: 12px; text-align: center; border-top: 1px solid #e2e8f0;">
             <p style="color: #94a3b8; margin: 0; font-size: 10px;">
               © 2026 Never Break The Chain by Ansh Tank
@@ -514,13 +502,14 @@ export class EnhancedNotificationScheduler {
   // Calculate proper weekly stats (Monday to Sunday) with daily completions and TASK-BASED calculation
   private static calculateProperWeeklyStats(user: UserProgress, progressData?: any[]) {
     const today = new Date();
-    const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const utcToday = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+    const dayOfWeek = utcToday.getUTCDay(); // 0 = Sunday, 1 = Monday, etc.
     const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Days back to last Monday
     
-    const lastMonday = new Date(today);
-    lastMonday.setDate(today.getDate() - daysToMonday);
+    const lastMonday = new Date(utcToday);
+    lastMonday.setUTCDate(utcToday.getUTCDate() - daysToMonday);
     
-    console.log(`📊 DEBUG: Week calculation - Today: ${today.toISOString().split('T')[0]}, Last Monday: ${lastMonday.toISOString().split('T')[0]}`);
+    console.log(`📊 DEBUG: Week calculation - Today UTC: ${utcToday.toISOString().split('T')[0]}, Day of week: ${dayOfWeek}, Last Monday: ${lastMonday.toISOString().split('T')[0]}`);
     
     // Get user's custom MNZD names using helper methods
     const topHabit = this.getStrongestHabit(user);
@@ -534,7 +523,8 @@ export class EnhancedNotificationScheduler {
     const totalPossibleTasks = 7 * user.totalHabits; // 7 days * number of habits
     
     for (let i = 0; i < 7; i++) {
-      const checkDate = new Date(lastMonday.getTime() + i * 24 * 60 * 60 * 1000);
+      const checkDate = new Date(lastMonday);
+      checkDate.setUTCDate(lastMonday.getUTCDate() + i);
       const dateStr = checkDate.toISOString().split('T')[0];
       
       // Find progress for this specific day
@@ -543,10 +533,15 @@ export class EnhancedNotificationScheduler {
       
       dailyCompletions.push(completedTasks);
       totalTasksCompleted += completedTasks;
+      
+      console.log(`📊 DEBUG: ${dateStr} - Completed: ${completedTasks}/${user.totalHabits}`);
     }
     
     console.log(`📊 DEBUG: Daily completions for week:`, dailyCompletions);
     console.log(`📊 DEBUG: Total tasks completed: ${totalTasksCompleted}/${totalPossibleTasks}`);
+    
+    const weekEnd = new Date(lastMonday);
+    weekEnd.setUTCDate(lastMonday.getUTCDate() + 6);
     
     return {
       tasksCompleted: totalTasksCompleted,
@@ -554,7 +549,7 @@ export class EnhancedNotificationScheduler {
       topHabit,
       improvementArea,
       weekStart: lastMonday.toISOString().split('T')[0],
-      weekEnd: new Date(lastMonday.getTime() + 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      weekEnd: weekEnd.toISOString().split('T')[0],
       dailyCompletions,
       totalHabits: user.totalHabits
     };
@@ -598,29 +593,35 @@ export class EnhancedNotificationScheduler {
               </p>
             </div>
             
-            <!-- Week Visualization - PROPER SPACING AND COLORS -->
+            <!-- Week Visualization - FIXED SPACING AND LAYOUT -->
             <div style="margin: 16px 0;">
               <h3 style="color: #1e293b; margin: 0 0 8px; font-size: 14px; font-weight: 600; text-align: center;">
                 ${weeklyStats.weekStart} to ${weeklyStats.weekEnd}
               </h3>
-              <div style="display: flex; justify-content: space-between; gap: 6px; margin: 8px 0; padding: 0 4px;">
-                ${Array.from({ length: 7 }, (_, i) => {
-                  const dayCompletion = weeklyStats.dailyCompletions ? weeklyStats.dailyCompletions[i] || 0 : (i < weeklyStats.daysCompleted ? 4 : 0);
-                  const getColor = (completion: number) => {
-                    if (completion === 0) return '#e5e7eb';
-                    if (completion === 1) return '#86efac';
-                    if (completion === 2) return '#4ade80';
-                    if (completion === 3) return '#22c55e';
-                    return '#16a34a';
-                  };
-                  const getTextColor = (completion: number) => completion === 0 ? '#6b7280' : 'white';
-                  return `
-                    <div style="flex: 1; height: 28px; border-radius: 6px; background-color: ${getColor(dayCompletion)}; display: flex; align-items: center; justify-content: center; color: ${getTextColor(dayCompletion)}; font-size: 12px; font-weight: 600; margin: 0 1px;">
-                      ${i + 1}
-                    </div>
-                  `;
-                }).join('')}
-              </div>
+              <table style="width: 100%; border-collapse: separate; border-spacing: 4px; margin: 8px 0;">
+                <tr>
+                  ${Array.from({ length: 7 }, (_, i) => {
+                    const dayCompletion = weeklyStats.dailyCompletions ? weeklyStats.dailyCompletions[i] || 0 : 0;
+                    const getColor = (completion: number) => {
+                      if (completion === 0) return '#e5e7eb';
+                      if (completion === 1) return '#86efac';
+                      if (completion === 2) return '#4ade80';
+                      if (completion === 3) return '#22c55e';
+                      return '#16a34a';
+                    };
+                    const getTextColor = (completion: number) => completion === 0 ? '#6b7280' : 'white';
+                    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                    return `
+                      <td style="text-align: center; padding: 0;">
+                        <div style="background-color: ${getColor(dayCompletion)}; border-radius: 6px; padding: 12px 8px; min-height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                          <div style="color: ${getTextColor(dayCompletion)}; font-size: 16px; font-weight: 700; margin-bottom: 2px;">${dayCompletion}</div>
+                          <div style="color: ${getTextColor(dayCompletion)}; font-size: 10px; opacity: 0.8;">${dayNames[i]}</div>
+                        </div>
+                      </td>
+                    `;
+                  }).join('')}
+                </tr>
+              </table>
             </div>
             
             <!-- AI-Generated Weekly Message -->
@@ -778,6 +779,45 @@ export class EnhancedNotificationScheduler {
     `;
   }
 
+  // Calculate month-to-date statistics
+  private static calculateMonthToDateStats(
+    progressData: any[],
+    totalHabits: number,
+    now: Date
+  ): {
+    monthToDateCompleted: number;
+    monthToDatePossible: number;
+    trackedDaysThisMonth: number;
+  } {
+    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const firstOfMonth = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
+    
+    const todayStr = today.toISOString().split('T')[0];
+    const firstOfMonthStr = firstOfMonth.toISOString().split('T')[0];
+    
+    const daysElapsed = today.getUTCDate();
+    const monthToDatePossible = daysElapsed * totalHabits;
+    
+    const currentMonthData = progressData.filter(day => 
+      day.date >= firstOfMonthStr && day.date <= todayStr
+    );
+    
+    const monthToDateCompleted = currentMonthData.reduce((sum, day) => {
+      const completed = day.tasks?.filter((t: any) => t.completed === true).length || 0;
+      return sum + completed;
+    }, 0);
+    
+    const trackedDaysThisMonth = currentMonthData.filter(day => {
+      return day.tasks?.some((t: any) => t.completed === true);
+    }).length;
+    
+    return {
+      monthToDateCompleted,
+      monthToDatePossible,
+      trackedDaysThisMonth
+    };
+  }
+
   // Get users eligible for notifications
   private static async getEligibleUsers(db: any): Promise<UserProgress[]> {
     console.log('🔍 DEBUG: Starting getEligibleUsers...');
@@ -808,12 +848,17 @@ export class EnhancedNotificationScheduler {
         }
 
         // Get user's daily progress for streak calculation
+        // FIX: Use email as userId since that's how it's stored in dailyProgress collection
         const progressData = await db.collection('dailyProgress')
-          .find({ userId: user._id.toString() })
+          .find({ userId: user.email })
           .sort({ date: -1 })
           .limit(100) // Last 100 days for streak calculation
           .toArray();
         console.log(`🔍 DEBUG: User ${user.email} has ${progressData.length} progress records`);
+        console.log(`🔍 DEBUG: Querying dailyProgress with userId: ${user.email}`);
+        if (progressData.length > 0) {
+          console.log(`🔍 DEBUG: Sample progress record:`, JSON.stringify(progressData[0], null, 2));
+        }
 
         // Calculate current streak
         const currentStreak = this.calculateCurrentStreak(progressData);
@@ -832,6 +877,9 @@ export class EnhancedNotificationScheduler {
         // Calculate weekly completion rate
         const weeklyCompletion = this.calculateWeeklyCompletion(progressData, mnzdConfigs.length);
         const monthlyCompletion = this.calculateMonthlyCompletion(progressData, mnzdConfigs.length);
+        
+        // Calculate month-to-date stats
+        const monthStats = this.calculateMonthToDateStats(progressData, mnzdConfigs.length, new Date());
         
         // Calculate habit stats with real MNZD names
         const habitStats = this.calculateRealHabitStats(progressData, mnzdConfigs);
@@ -858,6 +906,9 @@ export class EnhancedNotificationScheduler {
           totalHabits: mnzdConfigs.length,
           weeklyCompletion,
           monthlyCompletion,
+          monthToDateCompleted: monthStats.monthToDateCompleted,
+          monthToDatePossible: monthStats.monthToDatePossible,
+          trackedDaysThisMonth: monthStats.trackedDaysThisMonth,
           joinDate: user.createdAt || new Date(),
           preferences: {
             morningTime: '07:00',
@@ -1031,7 +1082,10 @@ export class EnhancedNotificationScheduler {
             rate: stats.total > 0 ? stats.completed / stats.total : 0
           })),
           todayCompleted: user.completedToday,
-          totalHabits: user.totalHabits
+          totalHabits: user.totalHabits,
+          monthToDateCompleted: user.monthToDateCompleted,
+          monthToDatePossible: user.monthToDatePossible,
+          trackedDaysThisMonth: user.trackedDaysThisMonth
         };
         console.log(`🤖 DEBUG: AI context for ${user.email}:`, JSON.stringify(morningContext, null, 2));
         const morningContent = await DynamicContentGenerator.generateMorningMotivation(morningContext);
@@ -1095,10 +1149,15 @@ export class EnhancedNotificationScheduler {
         // Get user's progress data for accurate weekly stats
         const { db } = await connectToDatabase();
         const progressData = await db.collection('dailyProgress')
-          .find({ userId: user.userId })
+          .find({ userId: user.email })
           .sort({ date: -1 })
           .limit(30)
           .toArray();
+        
+        console.log(`📊 DEBUG: Fetched ${progressData.length} progress records for ${user.email}`);
+        if (progressData.length > 0) {
+          console.log(`📊 DEBUG: Sample records:`, progressData.slice(0, 3).map((p: any) => ({ date: p.date, tasks: p.tasks?.length })));
+        }
         
         const weeklyStats = this.calculateProperWeeklyStats(user, progressData);
         console.log(`📊 DEBUG: Weekly stats for ${user.email}:`, weeklyStats);
@@ -1133,9 +1192,12 @@ export class EnhancedNotificationScheduler {
         console.log(`🤖 DEBUG: Weekly AI context for ${user.email}:`, JSON.stringify(weeklyContext, null, 2));
         const weeklyContent = await aiContentService.generateWeeklySummary(weeklyContext);
         
+        const weekNum = Math.ceil((new Date().getTime() - new Date(new Date().getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
+        const completionRate = weeklyStats.totalPossibleTasks > 0 ? Math.round((weeklyStats.tasksCompleted / weeklyStats.totalPossibleTasks) * 100) : 0;
+        
         return await sendEmail({
           to: user.email,
-          subject: weeklyContent.subject || `📊 Weekly Summary - ${user.name}`,
+          subject: weeklyContent.subject || `Week ${weekNum} - ${completionRate}% Complete`,
           html: this.generateAIWeeklyHTML(user, weeklyStats, weeklyContent)
         });
 
@@ -1166,21 +1228,25 @@ export class EnhancedNotificationScheduler {
 
   // Generate AI-powered morning email HTML with user's custom MNZD names
   private static generateAIMorningEmailHTML(user: UserProgress, content: any): string {
-    // FORCE USE ACTUAL USER MNZD CONFIGS
-    const mnzdHabits = user.mnzdConfigs && user.mnzdConfigs.length > 0 ? user.mnzdConfigs : [
-      { id: 'meditation', name: 'DSA', color: '#8b5cf6' },
-      { id: 'nutrition', name: 'Development', color: '#06b6d4' },
-      { id: 'zone', name: 'Communication', color: '#f59e0b' },
-      { id: 'discipline', name: 'Tech Update', color: '#10b981' }
-    ];
+    const mnzdHabits = user.mnzdConfigs && user.mnzdConfigs.length > 0 ? user.mnzdConfigs : [];
     
-    console.log(`🎨 DEBUG: MORNING EMAIL - Using MNZD habits:`, mnzdHabits.map(h => h.name));
+    const decodeHtml = (html: string) => {
+      return html
+        .replace(/&#39;/g, "'")
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>');
+    };
+    
+    const message = content?.message ? decodeHtml(content.message) : 
+      `Good morning ${user.name}! You've tracked ${user.trackedDaysThisMonth} days this month with ${user.monthToDateCompleted} tasks completed. Let's make today count!`;
 
-    const habitCards = mnzdHabits.map(habit => `
+    const habitCards = mnzdHabits.length > 0 ? mnzdHabits.map(habit => `
       <div style="background: ${habit.color || '#8b5cf6'}15; border: 1px solid ${habit.color || '#8b5cf6'}40; border-radius: 6px; padding: 8px; text-align: center; margin: 2px;">
         <div style="color: ${habit.color || '#8b5cf6'}; font-size: 13px; font-weight: 600;">${habit.name}</div>
       </div>
-    `).join('');
+    `).join('') : '<p style="color: #64748b; font-size: 12px; text-align: center;">No habits configured yet</p>';
 
     return `
       <!DOCTYPE html>
@@ -1193,37 +1259,32 @@ export class EnhancedNotificationScheduler {
       <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; margin: 0; padding: 12px;">
         <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
           
-          <!-- Header -->
           <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 16px; text-align: center;">
             <h1 style="color: white; margin: 0; font-size: 18px; font-weight: 700;">Good Morning!</h1>
             <p style="color: rgba(255,255,255,0.9); margin: 4px 0 0; font-size: 12px;">Never Break The Chain</p>
           </div>
           
-          <!-- Content -->
           <div style="padding: 16px;">
             <h2 style="color: #1e293b; margin: 0 0 12px; font-size: 16px;">Hi ${user.name}!</h2>
             
-            <!-- Days Tracked Display -->
             <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px; margin: 12px 0; text-align: center;">
               <div style="font-size: 24px; font-weight: 800; color: #d97706; margin-bottom: 2px;">
-                ${user.currentStreak}
+                ${user.trackedDaysThisMonth}
               </div>
               <p style="color: #92400e; margin: 0; font-size: 12px; font-weight: 600;">
-                Days Tracked
+                Days Tracked This Month
               </p>
               <p style="color: #92400e; margin: 4px 0 0; font-size: 10px;">
-                ${Math.round((user.monthlyCompletion || 0) * user.totalHabits * 30)}/${user.totalHabits * 30} tasks this month
+                ${user.monthToDateCompleted}/${user.monthToDatePossible} tasks this month
               </p>
             </div>
             
-            <!-- AI Message -->
             <div style="background: #f0f9ff; border-left: 3px solid #0ea5e9; border-radius: 6px; padding: 12px; margin: 12px 0;">
               <p style="color: #0369a1; margin: 0; font-size: 14px; line-height: 1.4;">
-                ${content.message}
+                ${message}
               </p>
             </div>
             
-            <!-- Custom MNZD Habits -->
             <div style="margin: 16px 0;">
               <h3 style="color: #1e293b; margin: 0 0 8px; font-size: 14px; font-weight: 600; text-align: center;">
                 Today's Focus Areas
@@ -1233,7 +1294,6 @@ export class EnhancedNotificationScheduler {
               </div>
             </div>
             
-            <!-- CTA -->
             <div style="text-align: center; margin: 16px 0;">
               <a href="https://never-break-the-chain.vercel.app/dashboard" 
                  style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 13px;">
@@ -1242,7 +1302,6 @@ export class EnhancedNotificationScheduler {
             </div>
           </div>
           
-          <!-- Footer -->
           <div style="background: #f8fafc; padding: 12px; text-align: center; border-top: 1px solid #e2e8f0;">
             <p style="color: #94a3b8; margin: 0; font-size: 10px;">
               © 2026 Never Break The Chain by Ansh Tank

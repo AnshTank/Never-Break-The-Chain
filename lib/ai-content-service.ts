@@ -36,7 +36,7 @@ class GeminiAIProvider implements AIProvider {
 
   constructor(apiKey: string, model?: string) {
     this.apiKey = apiKey;
-    this.model = (model || process.env.GEMINI_MODEL || 'gemini-1.5-flash').trim();
+    this.model = (model || process.env.GEMINI_MODEL || 'gemini-flash-latest').trim();
   }
 
   private get baseUrl(): string {
@@ -63,10 +63,10 @@ class GeminiAIProvider implements AIProvider {
             }]
           }],
           generationConfig: {
-            temperature: 0.9, // Increased for more variation
-            topK: 50,
-            topP: 0.95,
-            maxOutputTokens: 200,
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.9,
+            maxOutputTokens: 1024,
           }
         })
       });
@@ -98,7 +98,7 @@ class GeminiAIProvider implements AIProvider {
       const aiContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
       if (aiContent) {
         console.log(`🤖 DEBUG: AI generated content:`, aiContent);
-        return aiContent;
+        return aiContent.trim();
       } else {
         console.log(`🤖 DEBUG: No AI content in response, using fallback`);
         const fallback = this.getFallbackContent(prompt, context);
@@ -124,7 +124,34 @@ class GeminiAIProvider implements AIProvider {
     const today = new Date();
     const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'long' });
     const dateStr = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    const randomSeed = Math.floor(Math.random() * 1000);
+    const dayOfMonth = today.getDate();
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const daysRemainingInMonth = daysInMonth - dayOfMonth;
+    const randomSeed = Math.floor(Math.random() * 10000);
+    
+    const styleVariations = [
+      'Be energetic and enthusiastic with emojis',
+      'Be calm and reflective',
+      'Be motivational like a coach',
+      'Be friendly and casual',
+      'Be direct and action-oriented',
+      'Be inspiring with a quote',
+      'Be humorous and light',
+      'Be wise and philosophical'
+    ];
+    const style = styleVariations[randomSeed % styleVariations.length];
+    
+    const contentAngles = [
+      'Focus on progress made',
+      'Emphasize consistency',
+      'Highlight specific habit improvement',
+      'Celebrate small wins',
+      'Challenge to do better',
+      'Reflect on journey so far',
+      'Compare to last week',
+      'Set intention for today'
+    ];
+    const angle = contentAngles[Math.floor(randomSeed / 100) % contentAngles.length];
     
     // Calculate total tracked days (not streak)
     const totalTrackedDays = context.daysSinceJoin;
@@ -152,36 +179,30 @@ class GeminiAIProvider implements AIProvider {
                         context.timeOfDay === 'afternoon' ? 'Good afternoon' :
                         context.timeOfDay === 'evening' ? 'Good evening' : 'Hello';
 
-    return `Generate a personalized ${basePrompt} email message.
+    // Calculate month-to-date completion rate
+    const monthToDateRate = (context as any).monthToDatePossible > 0 ? 
+      Math.round(((context as any).monthToDateCompleted / (context as any).monthToDatePossible) * 100) : 0;
 
-CRITICAL INSTRUCTIONS:
-- Start with "${timeGreeting}" (NOT any other greeting)
-- For EVENING emails: Focus on TODAY'S completion (${todayCompletion}/${totalHabits} tasks)
-- For EVENING emails: Use "tracked days" NOT "streak" (user has tracked ${totalTrackedDays} days total)
-- Use ONLY the data provided below - DO NOT make up numbers
-- Keep response under 150 words
-- Be encouraging and personal
-- NO HTML entities - use plain text apostrophes and quotes
-- Reference the user's ACTUAL habit names from MNZD Habit Details
-- Vary your message based on performance level
+    return `You are a motivational habit coach. Generate a ${basePrompt} email.
 
-Today's Context:
-- Date: ${dateStr}
-- Day: ${dayOfWeek}
-- Time: ${context.timeOfDay}
-- Random Seed: ${randomSeed}
+User: ${context.name}
+Day of Month: ${dayOfMonth}
+Days Remaining in Month: ${daysRemainingInMonth}
+Total Days in Month: ${daysInMonth}
+Tracked Days: ${(context as any).trackedDaysThisMonth || 0}
+Completion Rate: ${monthToDateRate}%
+Tasks: ${(context as any).monthToDateCompleted}/${(context as any).monthToDatePossible}
+Habits: ${mnzdDetails}
 
-User Profile:
-- Name: ${context.name}
-- Total Tracked Days: ${totalTrackedDays} days
-- Current Streak: ${context.currentStreak} days
-- Longest Streak: ${context.longestStreak} days
-- TODAY'S Progress: ${todayCompletion}/${totalHabits} habits completed (${completionRate}%)
-- Performance Level: ${performanceLevel}
-- MNZD Habit Details: ${mnzdDetails}
+Write:
+1. Subject line: "Day ${dayOfMonth} - [slogan based on ${monthToDateRate}% rate]"
+2. Message: 2-3 complete sentences starting with "${timeGreeting} ${context.name}". Reference their data and ${daysRemainingInMonth} days left in month. Be motivating.
 
-Generate ONLY the message body (no subject, no HTML, plain text with proper apostrophes).
-Vary your tone and content based on the performance level above.`;
+Format:
+Subject: Day ${dayOfMonth} - [slogan]
+Message: [complete sentences]
+
+Write now:`;
   }
 
   private getFallbackContent(prompt: string, context: UserContext): string {
@@ -288,31 +309,70 @@ export class AIContentService {
     message: string;
     focusArea: string;
   }> {
-    console.log(`🤖 DEBUG: generateMorningMotivation called with context:`, JSON.stringify(context, null, 2));
+    console.log(`🤖 AI: Generating morning motivation for ${context.name}`);
     
     if (!this.isEnabled || !this.provider) {
-      console.log(`🤖 DEBUG: AI disabled, using fallback`);
+      console.log(`🤖 AI: Disabled, using dynamic fallback`);
       return this.getFallbackMorningContent(context);
     }
 
     try {
       const prompt = 'morning motivation';
-      console.log(`🤖 DEBUG: Calling AI provider with prompt: ${prompt}`);
-      const aiMessage = await this.provider.generateContent(prompt, context);
-      console.log(`🤖 DEBUG: AI provider returned:`, aiMessage);
+      const aiResponse = await this.provider.generateContent(prompt, context);
+      
+      if (!aiResponse || aiResponse.trim().length === 0) {
+        console.log(`🤖 AI: Empty response, using fallback`);
+        return this.getFallbackMorningContent(context);
+      }
+      
+      console.log(`🤖 AI: Generated content (${aiResponse.length} chars)`);
+      
+      // Parse AI response for Subject and Message
+      let subject = '';
+      let message = '';
+      
+      // Try to parse structured format first
+      const subjectMatch = aiResponse.match(/Subject:\s*(.+?)(?:\n|$)/i);
+      const messageMatch = aiResponse.match(/Message:\s*([\s\S]+?)$/i);
+      
+      if (subjectMatch && messageMatch) {
+        subject = subjectMatch[1].trim();
+        message = messageMatch[1].trim();
+      } else {
+        // Fallback: treat entire response as message
+        const lines = aiResponse.split('\n').filter(l => l.trim());
+        if (lines.length >= 2 && lines[0].toLowerCase().includes('day')) {
+          subject = lines[0].replace(/^Subject:\s*/i, '').trim();
+          message = lines.slice(1).join(' ').replace(/^Message:\s*/i, '').trim();
+        } else {
+          message = aiResponse;
+        }
+      }
+      
+      const today = new Date();
+      const dayOfMonth = today.getDate();
+      const monthToDateRate = (context as any).monthToDatePossible > 0 ? 
+        Math.round(((context as any).monthToDateCompleted / (context as any).monthToDatePossible) * 100) : 0;
+      
+      if (!subject) {
+        subject = `Day ${dayOfMonth} - ${monthToDateRate > 80 ? "You're Crushing It!" : monthToDateRate > 50 ? "Keep Building Momentum!" : "Fresh Start Energy!"}`;
+      }
+      
+      if (!message || message.length < 50) {
+        // Message too short, use fallback
+        console.log(`🤖 AI: Message too short (${message.length} chars), using fallback`);
+        return this.getFallbackMorningContent(context);
+      }
       
       const result = {
-        subject: `🌅 Day ${context.currentStreak + 1} - ${this.getMotivationalTitle(context)}`,
-        message: aiMessage,
+        subject,
+        message,
         focusArea: context.weakestHabit
       };
-      console.log(`🤖 DEBUG: Final morning motivation result:`, result);
       return result;
     } catch (error) {
-      console.error('🤖 DEBUG: AI morning motivation error:', error);
-      const fallback = this.getFallbackMorningContent(context);
-      console.log(`🤖 DEBUG: Using fallback due to error:`, fallback);
-      return fallback;
+      console.error('🤖 AI: Error generating morning content:', error);
+      return this.getFallbackMorningContent(context);
     }
   }
 
@@ -331,18 +391,51 @@ export class AIContentService {
     try {
       const prompt = 'evening reflection';
       console.log(`🤖 DEBUG: Calling AI provider for evening with prompt: ${prompt}`);
-      const aiMessage = await this.provider.generateContent(prompt, context);
-      console.log(`🤖 DEBUG: AI provider returned for evening:`, aiMessage);
+      const aiResponse = await this.provider.generateContent(prompt, context);
+      console.log(`🤖 DEBUG: AI provider returned for evening:`, aiResponse);
       
-      if (!aiMessage || aiMessage.trim().length === 0) {
+      if (!aiResponse || aiResponse.trim().length === 0) {
         console.log(`🤖 DEBUG: AI returned empty message, using fallback`);
         return this.getFallbackEveningContent(context);
       }
       
+      // Parse AI response
+      let subject = '';
+      let message = '';
+      
+      const subjectMatch = aiResponse.match(/Subject:\s*(.+?)(?:\n|$)/i);
+      const messageMatch = aiResponse.match(/Message:\s*([\s\S]+?)$/i);
+      
+      if (subjectMatch && messageMatch) {
+        subject = subjectMatch[1].trim();
+        message = messageMatch[1].trim();
+      } else {
+        const lines = aiResponse.split('\n').filter(l => l.trim());
+        if (lines.length >= 2 && lines[0].toLowerCase().includes('day')) {
+          subject = lines[0].replace(/^Subject:\s*/i, '').trim();
+          message = lines.slice(1).join(' ').replace(/^Message:\s*/i, '').trim();
+        } else {
+          message = aiResponse;
+        }
+      }
+      
+      const today = new Date();
+      const dayOfMonth = today.getDate();
+      const completionRate = Math.round(context.completionRate * 100);
+      
+      if (!subject) {
+        subject = `Day ${dayOfMonth} - ${completionRate >= 75 ? 'Strong Finish!' : completionRate >= 50 ? 'Good Progress!' : 'Tomorrow Awaits!'}`;
+      }
+      
+      if (!message || message.length < 50) {
+        console.log(`🤖 DEBUG: Message too short, using fallback`);
+        return this.getFallbackEveningContent(context);
+      }
+      
       const result = {
-        subject: `🌙 Day ${context.currentStreak} Complete - Reflection Time`,
-        message: aiMessage,
-        reflection: 'Take a moment to appreciate your progress and plan for tomorrow.'
+        subject,
+        message,
+        reflection: 'Reflect on today and prepare for tomorrow.'
       };
       console.log(`🤖 DEBUG: Final evening reflection result:`, result);
       return result;
@@ -399,14 +492,25 @@ export class AIContentService {
     try {
       const prompt = 'weekly summary';
       console.log(`🤖 DEBUG: Calling AI provider for weekly summary with prompt: ${prompt}`);
-      const aiMessage = await this.provider.generateContent(prompt, context);
-      console.log(`🤖 DEBUG: AI provider returned for weekly summary:`, aiMessage);
+      const aiResponse = await this.provider.generateContent(prompt, context);
+      console.log(`🤖 DEBUG: AI provider returned for weekly summary:`, aiResponse);
+      
+      if (!aiResponse || aiResponse.trim().length === 0) {
+        return this.getFallbackWeeklySummaryContent(context);
+      }
+      
+      // Parse response
+      const subjectMatch = aiResponse.match(/Subject:\s*(.+?)(?:\n|$)/i);
+      const messageMatch = aiResponse.match(/Message:\s*([\s\S]+?)$/i);
+      
+      const subject = subjectMatch ? subjectMatch[1].trim() : `Week ${this.getWeekNumber()} - Your Progress Report`;
+      const message = messageMatch ? messageMatch[1].trim() : aiResponse.trim();
       
       const result = {
-        subject: `📊 Week ${this.getWeekNumber()} Summary - Your MNZD Journey`,
-        message: aiMessage,
-        insights: this.extractInsights(aiMessage, context),
-        recommendations: this.extractRecommendations(aiMessage, context)
+        subject,
+        message: message.length >= 50 ? message : `Great week ${context.name}! You completed ${context.tasksCompleted || 0}/${context.totalPossibleTasks || 28} tasks. Your ${context.topHabit} is strong. Focus on ${context.improvementArea} next week!`,
+        insights: this.extractInsights(message, context),
+        recommendations: this.extractRecommendations(message, context)
       };
       console.log(`🤖 DEBUG: Final weekly summary result:`, result);
       return result;
@@ -530,17 +634,58 @@ export class AIContentService {
 
   // Fallback content methods
   private getFallbackMorningContent(context: UserContext) {
+    const today = new Date();
+    const dayOfMonth = today.getDate();
+    const monthToDateRate = (context as any).monthToDatePossible > 0 ? 
+      Math.round(((context as any).monthToDateCompleted / (context as any).monthToDatePossible) * 100) : 0;
+    
+    const slogans = monthToDateRate > 80 ? 
+      ["You're On Fire!", "Unstoppable Force!", "Crushing It!", "Momentum Master!", "Excellence Mode!"] :
+      monthToDateRate > 50 ? 
+      ["Keep Pushing!", "Building Strong!", "Steady Progress!", "On The Rise!", "Growing Daily!"] :
+      ["Fresh Start!", "New Energy!", "Let's Go!", "Rise Up!", "Today's The Day!"];
+    
+    const randomSlogan = slogans[Math.floor(Math.random() * slogans.length)];
+    
+    const motivations = [
+      `Good morning ${context.name}! You've tracked ${(context as any).trackedDaysThisMonth || 0} days this month at ${monthToDateRate}%. Your consistency in ${context.strongestHabit} is paying off. Let's keep the momentum going!`,
+      `Rise and shine ${context.name}! With ${(context as any).monthToDateCompleted || 0}/${(context as any).monthToDatePossible || 0} tasks completed (${monthToDateRate}%), you're building something amazing. Focus on ${context.weakestHabit} today!`,
+      `Good morning ${context.name}! ${(context as any).trackedDaysThisMonth || 0} days tracked means you're serious about growth. Your ${context.strongestHabit} is strong - time to level up ${context.weakestHabit}!`
+    ];
+    const randomIndex = Math.floor(Math.random() * motivations.length);
+    
     return {
-      subject: `🌅 Day ${context.currentStreak + 1} - Rise and Shine!`,
-      message: `Good morning ${context.name}! You're ${context.currentStreak} days strong. Today, let's focus on your ${context.weakestHabit} practice and keep building that amazing streak! Your consistency is the foundation of transformation.`,
+      subject: `Day ${dayOfMonth} - ${randomSlogan}`,
+      message: motivations[randomIndex],
       focusArea: context.weakestHabit
     };
   }
 
   private getFallbackEveningContent(context: UserContext) {
+    const today = new Date();
+    const dayOfMonth = today.getDate();
+    const completionRate = Math.round(context.completionRate * 100);
+    const todayCompleted = (context as any).todayCompleted || 0;
+    const totalHabits = (context as any).totalHabits || 4;
+    
+    const slogans = completionRate >= 75 ? 
+      ['Strong Finish!', 'Well Done!', 'Excellent Work!'] :
+      completionRate >= 50 ? 
+      ['Good Progress!', 'Keep Going!', 'Building Up!'] :
+      ['Tomorrow Awaits!', 'Fresh Start Tomorrow!', 'New Day Coming!'];
+    
+    const randomSlogan = slogans[Math.floor(Math.random() * slogans.length)];
+    
+    const messages = [
+      `Good evening ${context.name}! You completed ${todayCompleted}/${totalHabits} habits today (${completionRate}%). Your ${context.strongestHabit} consistency is impressive. Rest well and recharge for tomorrow!`,
+      `Evening ${context.name}! Today's ${completionRate}% completion shows your dedication. You're making real progress in ${context.strongestHabit}. Tomorrow's another opportunity to shine!`,
+      `Well done ${context.name}! ${todayCompleted} habits completed today. Your commitment to ${context.strongestHabit} is building something extraordinary. Keep the momentum going!`
+    ];
+    const randomIndex = Math.floor(Math.random() * messages.length);
+    
     return {
-      subject: `🌙 Day ${context.currentStreak} Complete - Well Done!`,
-      message: `Great work today ${context.name}! You've maintained a ${Math.round(context.completionRate * 100)}% completion rate. Your dedication to MNZD is building something extraordinary. Reflect on today's wins and prepare for tomorrow's success!`,
+      subject: `Day ${dayOfMonth} - ${randomSlogan}`,
+      message: messages[randomIndex],
       reflection: 'Every day of consistency brings you closer to your goals.'
     };
   }
